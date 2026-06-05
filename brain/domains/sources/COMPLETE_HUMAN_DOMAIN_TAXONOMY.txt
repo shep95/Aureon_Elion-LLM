@@ -1,0 +1,3075 @@
+================================================================================
+COMPLETE HUMAN DOMAIN TAXONOMY
+COMPILED BY: ZOPHIEL — INTELLIGENCE OF THE NORTH
+CLASSIFICATION: TOTAL KNOWLEDGE ARCHITECTURE
+FREQUENCY: 963Hz — PURE TRUTH. ZERO OMISSION.
+VERSION: 1.0 — EXHAUSTIVE HISTORICAL COMPILATION
+================================================================================
+Every domain humanity has ever operated in.
+Every subdomain. Every micro-subdomain.
+Organized from macro to micro. Nothing omitted.
+================================================================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[DOMAIN 01] SCIENCE & NATURAL PHILOSOPHY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+01.01 PHYSICS
+  01.01.01 Classical Mechanics
+    - Newtonian Mechanics
+    - Lagrangian Mechanics
+    - Hamiltonian Mechanics
+    - Statics
+    - Kinematics
+    - Dynamics
+    - Rigid Body Motion
+    - Fluid Statics
+  01.01.02 Thermodynamics
+    - Classical Thermodynamics
+    - Statistical Mechanics
+    - Irreversible Thermodynamics
+    - Heat Transfer
+    - Entropy Theory
+  01.01.03 Electromagnetism
+    - Electrostatics
+    - Magnetostatics
+    - Electrodynamics
+    - Maxwell's Equations
+    - Optics (Classical)
+    - Photonics
+    - Plasma Physics
+  01.01.04 Quantum Mechanics
+    - Wave Mechanics
+    - Matrix Mechanics
+    - Quantum Field Theory
+    - Quantum Electrodynamics (QED)
+    - Quantum Chromodynamics (QCD)
+    - Quantum Information Theory
+    - Quantum Computing Theory
+    - Many-Body Physics
+  01.01.05 Relativity
+    - Special Relativity
+    - General Relativity
+    - Post-Newtonian Approximations
+    - Gravitational Wave Physics
+  01.01.06 Astrophysics & Cosmology
+    - Stellar Physics
+    - Galactic Dynamics
+    - Cosmology
+    - Dark Matter Physics
+    - Dark Energy Theory
+    - Big Bang Theory
+    - Inflationary Cosmology
+    - Black Hole Physics
+    - Neutron Star Physics
+    - Gravitational Lensing
+  01.01.07 Nuclear & Particle Physics
+    - Nuclear Structure
+    - Nuclear Reactions
+    - Radioactive Decay
+    - Standard Model
+    - Hadron Physics
+    - Lepton Physics
+    - Boson Physics
+    - High-Energy Physics
+    - Accelerator Physics
+  01.01.08 Condensed Matter Physics
+    - Solid State Physics
+    - Superconductivity
+    - Magnetism
+    - Semiconductor Physics
+    - Soft Matter Physics
+    - Nanophysics
+  01.01.09 Atomic & Molecular Physics
+    - Atomic Spectroscopy
+    - Molecular Spectroscopy
+    - Laser Physics
+    - Atomic Clocks
+  01.01.10 Acoustics
+    - Physical Acoustics
+    - Architectural Acoustics
+    - Underwater Acoustics
+    - Vibration Analysis
+
+01.02 CHEMISTRY
+  01.02.01 Inorganic Chemistry
+    - Main Group Chemistry
+    - Transition Metal Chemistry
+    - Coordination Chemistry
+    - Organometallic Chemistry
+    - Solid State Chemistry
+    - Bioinorganic Chemistry
+  01.02.02 Organic Chemistry
+    - Aliphatic Chemistry
+    - Aromatic Chemistry
+    - Heterocyclic Chemistry
+    - Stereochemistry
+    - Reaction Mechanisms
+    - Retrosynthesis
+    - Natural Products Chemistry
+  01.02.03 Physical Chemistry
+    - Chemical Kinetics
+    - Chemical Thermodynamics
+    - Electrochemistry
+    - Spectroscopy
+    - Quantum Chemistry
+    - Computational Chemistry
+    - Surface Chemistry
+    - Colloid Chemistry
+  01.02.04 Analytical Chemistry
+    - Qualitative Analysis
+    - Quantitative Analysis
+    - Chromatography
+    - Mass Spectrometry
+    - Nuclear Magnetic Resonance (NMR)
+    - X-ray Crystallography
+    - Titration Methods
+    - Electroanalytical Chemistry
+  01.02.05 Biochemistry
+    - Protein Chemistry
+    - Nucleic Acid Chemistry
+    - Lipid Chemistry
+    - Carbohydrate Chemistry
+    - Enzyme Chemistry
+    - Metabolic Chemistry
+    - Structural Biochemistry
+  01.02.06 Polymer Chemistry
+    - Synthetic Polymers
+    - Biopolymers
+    - Polymerization Mechanisms
+    - Polymer Physics
+  01.02.07 Environmental Chemistry
+    - Atmospheric Chemistry
+    - Aquatic Chemistry
+    - Soil Chemistry
+    - Green Chemistry
+    - Toxicology (Chemical)
+  01.02.08 Medicinal Chemistry
+    - Drug Design
+    - Pharmacophore Modeling
+    - ADMET Properties
+    - Natural Product Drug Discovery
+  01.02.09 Materials Chemistry
+    - Ceramics Chemistry
+    - Metals Chemistry
+    - Nanomaterials Chemistry
+    - Electronic Materials
+
+01.03 BIOLOGY
+  01.03.01 Cell Biology
+    - Cell Structure
+    - Cell Division (Mitosis/Meiosis)
+    - Cell Signaling
+    - Cell Metabolism
+    - Organelle Function
+    - Membrane Biology
+  01.03.02 Molecular Biology
+    - DNA Replication
+    - Transcription
+    - Translation
+    - Gene Regulation
+    - Epigenetics
+    - RNA Biology
+    - Protein Folding
+    - CRISPR & Gene Editing
+  01.03.03 Genetics
+    - Classical Genetics
+    - Mendelian Genetics
+    - Population Genetics
+    - Quantitative Genetics
+    - Genomics
+    - Comparative Genomics
+    - Metagenomics
+    - Pharmacogenomics
+  01.03.04 Evolutionary Biology
+    - Darwinian Evolution
+    - Neo-Darwinian Synthesis
+    - Phylogenetics
+    - Speciation Theory
+    - Evo-Devo
+    - Paleobiology
+    - Molecular Evolution
+    - Coevolution
+  01.03.05 Ecology
+    - Community Ecology
+    - Ecosystem Ecology
+    - Population Ecology
+    - Behavioral Ecology
+    - Landscape Ecology
+    - Marine Ecology
+    - Freshwater Ecology
+    - Terrestrial Ecology
+    - Urban Ecology
+    - Chemical Ecology
+  01.03.06 Botany (Plant Biology)
+    - Plant Anatomy
+    - Plant Physiology
+    - Plant Taxonomy
+    - Plant Ecology
+    - Ethnobotany
+    - Paleobotany
+    - Plant Molecular Biology
+    - Agronomy Science
+  01.03.07 Zoology
+    - Invertebrate Zoology
+    - Vertebrate Zoology
+    - Entomology
+    - Ornithology
+    - Mammalogy
+    - Herpetology
+    - Ichthyology
+    - Primatology
+    - Animal Behavior (Ethology)
+  01.03.08 Microbiology
+    - Bacteriology
+    - Virology
+    - Mycology
+    - Parasitology
+    - Protistology
+    - Environmental Microbiology
+    - Industrial Microbiology
+  01.03.09 Neuroscience
+    - Cellular Neuroscience
+    - Systems Neuroscience
+    - Cognitive Neuroscience
+    - Developmental Neuroscience
+    - Computational Neuroscience
+    - Clinical Neuroscience
+    - Neurochemistry
+    - Neuroanatomy
+  01.03.10 Physiology
+    - Cardiovascular Physiology
+    - Respiratory Physiology
+    - Renal Physiology
+    - Endocrine Physiology
+    - Reproductive Physiology
+    - Neurophysiology
+    - Exercise Physiology
+    - Comparative Physiology
+  01.03.11 Immunology
+    - Innate Immunity
+    - Adaptive Immunity
+    - Autoimmunity
+    - Immunopathology
+    - Vaccine Immunology
+    - Tumor Immunology
+    - Transplant Immunology
+  01.03.12 Developmental Biology
+    - Embryology
+    - Stem Cell Biology
+    - Organogenesis
+    - Developmental Genetics
+    - Teratology
+  01.03.13 Marine Biology
+    - Oceanography (Biological)
+    - Coral Reef Biology
+    - Deep Sea Biology
+    - Marine Mammals
+    - Marine Microbiology
+
+01.04 MATHEMATICS
+  01.04.01 Pure Mathematics
+    - Number Theory
+    - Algebra (Abstract)
+    - Group Theory
+    - Ring Theory
+    - Field Theory
+    - Galois Theory
+    - Linear Algebra
+    - Topology
+    - Differential Geometry
+    - Algebraic Geometry
+    - Complex Analysis
+    - Real Analysis
+    - Functional Analysis
+    - Measure Theory
+    - Category Theory
+    - Set Theory
+    - Logic (Mathematical)
+    - Combinatorics
+    - Graph Theory
+    - Knot Theory
+  01.04.02 Applied Mathematics
+    - Differential Equations (Ordinary)
+    - Differential Equations (Partial)
+    - Numerical Analysis
+    - Optimization Theory
+    - Control Theory
+    - Mathematical Physics
+    - Mathematical Biology
+    - Mathematical Finance
+    - Mathematical Ecology
+    - Operations Research
+    - Game Theory
+    - Information Theory
+  01.04.03 Statistics & Probability
+    - Probability Theory
+    - Statistical Inference
+    - Bayesian Statistics
+    - Frequentist Statistics
+    - Multivariate Statistics
+    - Time Series Analysis
+    - Stochastic Processes
+    - Statistical Learning Theory
+    - Biostatistics
+    - Econometrics
+    - Psychometrics
+  01.04.04 Computational Mathematics
+    - Algorithms
+    - Complexity Theory
+    - Numerical Methods
+    - Symbolic Computation
+    - Discrete Mathematics
+
+01.05 EARTH SCIENCES
+  01.05.01 Geology
+    - Mineralogy
+    - Petrology
+    - Stratigraphy
+    - Structural Geology
+    - Geomorphology
+    - Volcanology
+    - Seismology
+    - Geochemistry
+    - Geochronology
+    - Hydrogeology
+    - Engineering Geology
+  01.05.02 Atmospheric Science
+    - Meteorology
+    - Climatology
+    - Paleoclimatology
+    - Atmospheric Chemistry
+    - Aeronomy
+    - Tropical Meteorology
+    - Cloud Physics
+  01.05.03 Oceanography
+    - Physical Oceanography
+    - Chemical Oceanography
+    - Biological Oceanography
+    - Geological Oceanography
+    - Paleoceanography
+  01.05.04 Hydrology
+    - Surface Hydrology
+    - Groundwater Hydrology
+    - Snow Hydrology
+    - Urban Hydrology
+    - Ecohydrology
+  01.05.05 Glaciology
+    - Ice Sheet Dynamics
+    - Glacier Physics
+    - Sea Ice Science
+    - Cryosphere Studies
+  01.05.06 Soil Science (Pedology)
+    - Soil Physics
+    - Soil Chemistry
+    - Soil Biology
+    - Soil Classification
+    - Soil Genesis
+
+01.06 ASTRONOMY
+  01.06.01 Observational Astronomy
+    - Radio Astronomy
+    - Infrared Astronomy
+    - Optical Astronomy
+    - X-ray Astronomy
+    - Gamma-ray Astronomy
+    - Neutrino Astronomy
+    - Gravitational Wave Astronomy
+  01.06.02 Theoretical Astronomy
+    - Stellar Evolution
+    - Galactic Structure
+    - Large Scale Structure
+    - Cosmic Microwave Background
+  01.06.03 Planetary Science
+    - Planetary Geology
+    - Planetary Atmospheres
+    - Astrobiology
+    - Exoplanet Science
+    - Solar System Dynamics
+    - Meteoritics
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[DOMAIN 02] MEDICINE & HEALTH SCIENCES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+02.01 CLINICAL MEDICINE
+  02.01.01 Internal Medicine
+    - Cardiology
+    - Pulmonology
+    - Gastroenterology
+    - Hepatology
+    - Nephrology
+    - Endocrinology
+    - Diabetology
+    - Rheumatology
+    - Hematology
+    - Oncology (Medical)
+    - Infectious Disease
+    - Geriatrics
+    - Allergy & Immunology
+  02.01.02 Surgery
+    - General Surgery
+    - Cardiothoracic Surgery
+    - Neurosurgery
+    - Orthopedic Surgery
+    - Vascular Surgery
+    - Plastic & Reconstructive Surgery
+    - Transplant Surgery
+    - Trauma Surgery
+    - Laparoscopic Surgery
+    - Robotic Surgery
+    - Oral & Maxillofacial Surgery
+    - Pediatric Surgery
+  02.01.03 Neurology
+    - Stroke Neurology
+    - Epileptology
+    - Movement Disorders
+    - Neuro-oncology
+    - Neuroimmunology
+    - Neuromuscular Disease
+    - Headache Medicine
+    - Sleep Medicine (Neuro)
+  02.01.04 Psychiatry
+    - Clinical Psychiatry
+    - Forensic Psychiatry
+    - Child & Adolescent Psychiatry
+    - Geriatric Psychiatry
+    - Addiction Psychiatry
+    - Neuropsychiatry
+    - Biological Psychiatry
+    - Transcultural Psychiatry
+  02.01.05 Obstetrics & Gynecology
+    - Obstetrics
+    - Gynecology
+    - Maternal-Fetal Medicine
+    - Reproductive Endocrinology
+    - Gynecologic Oncology
+    - Urogynecology
+  02.01.06 Pediatrics
+    - Neonatology
+    - Pediatric Cardiology
+    - Pediatric Neurology
+    - Pediatric Oncology
+    - Pediatric Endocrinology
+    - Pediatric Infectious Disease
+    - Developmental Pediatrics
+  02.01.07 Ophthalmology
+    - Retinal Disease
+    - Cornea & External Disease
+    - Glaucoma
+    - Neuro-ophthalmology
+    - Pediatric Ophthalmology
+    - Oculoplastics
+  02.01.08 Dermatology
+    - Clinical Dermatology
+    - Dermato-oncology
+    - Pediatric Dermatology
+    - Procedural Dermatology
+    - Immunodermatology
+  02.01.09 Orthopedics
+    - Spine Surgery
+    - Joint Replacement
+    - Sports Medicine (Ortho)
+    - Hand Surgery
+    - Foot & Ankle Surgery
+    - Pediatric Orthopedics
+    - Limb Reconstruction
+  02.01.10 Urology
+    - Urologic Oncology
+    - Endourology
+    - Neurourology
+    - Reconstructive Urology
+    - Pediatric Urology
+  02.01.11 ENT (Otolaryngology)
+    - Otology (Ear)
+    - Rhinology (Nose/Sinuses)
+    - Laryngology (Throat)
+    - Head & Neck Oncology
+    - Otology/Neurotology
+    - Pediatric ENT
+  02.01.12 Emergency Medicine
+    - Trauma Medicine
+    - Critical Care
+    - Disaster Medicine
+    - Toxicology (Clinical)
+    - Hyperbaric Medicine
+  02.01.13 Anesthesiology
+    - General Anesthesia
+    - Regional Anesthesia
+    - Pain Medicine
+    - Critical Care Anesthesia
+    - Pediatric Anesthesia
+    - Obstetric Anesthesia
+  02.01.14 Radiology
+    - Diagnostic Radiology
+    - Interventional Radiology
+    - Nuclear Medicine
+    - Neuroradiology
+    - Musculoskeletal Radiology
+    - Breast Imaging
+  02.01.15 Oncology
+    - Medical Oncology
+    - Radiation Oncology
+    - Surgical Oncology
+    - Hematologic Oncology
+    - Palliative Oncology
+    - Psycho-oncology
+
+02.02 PREVENTIVE & PUBLIC HEALTH MEDICINE
+  02.02.01 Epidemiology
+    - Chronic Disease Epidemiology
+    - Infectious Disease Epidemiology
+    - Molecular Epidemiology
+    - Pharmacoepidemiology
+    - Environmental Epidemiology
+    - Social Epidemiology
+  02.02.02 Public Health
+    - Community Health
+    - Global Health
+    - Health Policy
+    - Health Economics
+    - Environmental Health
+    - Occupational Health
+    - School Health
+  02.02.03 Vaccinology
+    - Vaccine Development
+    - Vaccine Policy
+    - Immunization Programs
+  02.02.04 Nutritional Science
+    - Clinical Nutrition
+    - Sports Nutrition
+    - Pediatric Nutrition
+    - Geriatric Nutrition
+    - Nutritional Epidemiology
+
+02.03 ALLIED HEALTH
+  02.03.01 Nursing
+    - Critical Care Nursing
+    - Pediatric Nursing
+    - Psychiatric Nursing
+    - Community Nursing
+    - Midwifery
+    - Surgical Nursing
+  02.03.02 Pharmacy
+    - Clinical Pharmacy
+    - Hospital Pharmacy
+    - Compounding Pharmacy
+    - Pharmacovigilance
+    - Pharmacokinetics
+  02.03.03 Physical Therapy
+    - Orthopedic PT
+    - Neurological PT
+    - Cardiopulmonary PT
+    - Pediatric PT
+    - Sports PT
+  02.03.04 Occupational Therapy
+    - Pediatric OT
+    - Neurological OT
+    - Mental Health OT
+    - Hand Therapy
+  02.03.05 Dentistry
+    - General Dentistry
+    - Orthodontics
+    - Periodontics
+    - Endodontics
+    - Oral Surgery
+    - Prosthodontics
+    - Pediatric Dentistry
+    - Oral Pathology
+  02.03.06 Psychology (Clinical)
+    - Clinical Psychology
+    - Neuropsychology
+    - Health Psychology
+    - Rehabilitation Psychology
+    - Child Psychology
+    - Forensic Psychology
+
+02.04 TRADITIONAL & ALTERNATIVE MEDICINE
+  02.04.01 Traditional Chinese Medicine
+    - Acupuncture
+    - Herbal Medicine (TCM)
+    - Qi Gong
+    - Tui Na
+    - Chinese Dietary Therapy
+  02.04.02 Ayurveda
+    - Panchakarma
+    - Ayurvedic Herbalism
+    - Yoga Therapy
+    - Ayurvedic Dietetics
+  02.04.03 Unani Medicine
+  02.04.04 Homeopathy
+  02.04.05 Naturopathy
+  02.04.06 Chiropractic
+  02.04.07 Osteopathy
+  02.04.08 Shamanic Medicine
+    - Plant Medicine (Entheogens)
+    - Ritual Healing
+    - Spirit Extraction
+  02.04.09 African Traditional Medicine
+  02.04.10 Indigenous Healing Systems
+    - Native American Medicine
+    - Aboriginal Medicine
+    - Andean Medicine
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[DOMAIN 03] TECHNOLOGY & ENGINEERING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+03.01 COMPUTER SCIENCE
+  03.01.01 Algorithms & Data Structures
+    - Sorting Algorithms
+    - Graph Algorithms
+    - Dynamic Programming
+    - Greedy Algorithms
+    - Divide & Conquer
+    - Data Structure Design
+  03.01.02 Programming Languages
+    - Language Design
+    - Compiler Theory
+    - Interpreter Design
+    - Type Theory
+    - Programming Paradigms
+    - Domain-Specific Languages
+  03.01.03 Operating Systems
+    - Kernel Design
+    - Process Management
+    - Memory Management
+    - File Systems
+    - Device Drivers
+    - Virtualization
+    - Real-Time OS
+    - Distributed OS
+  03.01.04 Databases
+    - Relational Databases
+    - NoSQL Databases
+    - NewSQL Databases
+    - Graph Databases
+    - Time-Series Databases
+    - Data Warehousing
+    - Query Optimization
+    - Distributed Databases
+  03.01.05 Computer Networks
+    - Network Architecture
+    - Protocol Design
+    - TCP/IP Stack
+    - Wireless Networks
+    - Network Security
+    - Software-Defined Networking
+    - Internet Architecture
+    - CDN Technology
+  03.01.06 Artificial Intelligence
+    - Machine Learning
+      - Supervised Learning
+      - Unsupervised Learning
+      - Reinforcement Learning
+      - Semi-Supervised Learning
+      - Self-Supervised Learning
+    - Deep Learning
+      - Convolutional Neural Networks
+      - Recurrent Neural Networks
+      - Transformers
+      - Diffusion Models
+      - Generative Adversarial Networks
+    - Natural Language Processing
+      - Syntax & Parsing
+      - Semantic Analysis
+      - Machine Translation
+      - Question Answering
+      - Large Language Models
+      - Speech Recognition
+    - Computer Vision
+      - Object Detection
+      - Image Segmentation
+      - Facial Recognition
+      - Scene Understanding
+    - Robotics AI
+    - AI Planning
+    - Expert Systems
+    - Knowledge Representation
+    - Symbolic AI
+    - Neuro-Symbolic AI
+  03.01.07 Cybersecurity
+    - Network Security
+    - Application Security
+    - Cryptography
+    - Penetration Testing
+    - Malware Analysis
+    - Digital Forensics
+    - Threat Intelligence
+    - Zero-Day Research
+    - Social Engineering Defense
+    - Hardware Security
+    - IoT Security
+    - Cloud Security
+    - Identity & Access Management
+  03.01.08 Software Engineering
+    - Software Architecture
+    - Design Patterns
+    - Agile Methodology
+    - DevOps
+    - Test-Driven Development
+    - Code Review
+    - Refactoring
+    - Continuous Integration/Delivery
+    - Microservices
+    - API Design
+  03.01.09 Human-Computer Interaction
+    - User Interface Design
+    - User Experience Design
+    - Accessibility
+    - Interaction Design
+    - Usability Testing
+    - Information Architecture
+  03.01.10 Quantum Computing
+    - Quantum Algorithms
+    - Quantum Error Correction
+    - Quantum Hardware
+    - Quantum Cryptography
+  03.01.11 Distributed Systems
+    - Consensus Algorithms
+    - Distributed Ledgers
+    - Blockchain Technology
+    - Peer-to-Peer Networks
+    - Edge Computing
+    - Fog Computing
+    - Cloud Computing Architecture
+
+03.02 ELECTRICAL ENGINEERING
+  03.02.01 Circuit Theory
+    - Analog Circuits
+    - Digital Circuits
+    - Mixed-Signal Circuits
+    - RF Circuits
+    - Power Electronics
+  03.02.02 Signals & Systems
+    - Signal Processing
+    - Control Systems
+    - Communication Theory
+    - Information Theory
+  03.02.03 Semiconductor Engineering
+    - VLSI Design
+    - CMOS Technology
+    - Chip Architecture
+    - Fabrication Processes
+    - Photolithography
+  03.02.04 Power Engineering
+    - Electric Power Generation
+    - Power Transmission
+    - Power Distribution
+    - Smart Grid
+    - Renewable Energy Systems
+    - Battery Technology
+    - Power System Protection
+  03.02.05 Communications Engineering
+    - Wireless Communication
+    - Optical Communication
+    - Satellite Communication
+    - 5G/6G Networks
+    - Antenna Engineering
+  03.02.06 Embedded Systems
+    - Microcontroller Programming
+    - FPGA Design
+    - Real-Time Systems
+    - Firmware Engineering
+    - IoT Hardware
+
+03.03 MECHANICAL ENGINEERING
+  03.03.01 Mechanics of Materials
+    - Stress & Strain
+    - Fracture Mechanics
+    - Fatigue Analysis
+    - Composite Materials
+  03.03.02 Fluid Mechanics
+    - Internal Flow
+    - External Flow
+    - Turbulence
+    - Computational Fluid Dynamics
+    - Two-Phase Flow
+  03.03.03 Heat & Mass Transfer
+    - Conduction
+    - Convection
+    - Radiation
+    - Mass Diffusion
+    - Heat Exchanger Design
+  03.03.04 Machine Design
+    - Gear Design
+    - Bearing Design
+    - Spring Design
+    - Shaft Design
+    - Mechanism Design
+  03.03.05 Manufacturing Engineering
+    - Machining
+    - Casting
+    - Forging
+    - Welding
+    - Additive Manufacturing (3D Printing)
+    - CNC Machining
+    - Sheet Metal Forming
+    - Injection Molding
+    - Precision Manufacturing
+  03.03.06 Robotics & Automation
+    - Robot Kinematics
+    - Robot Dynamics
+    - Motion Planning
+    - Actuator Design
+    - Sensor Fusion
+    - Industrial Automation
+    - Collaborative Robots
+  03.03.07 Aerospace & Aeronautical Engineering
+    - Aerodynamics
+    - Propulsion
+    - Structural Analysis
+    - Flight Mechanics
+    - Avionics
+    - Spacecraft Engineering
+    - Launch Vehicle Design
+    - Orbital Mechanics
+
+03.04 CIVIL ENGINEERING
+  03.04.01 Structural Engineering
+    - Steel Structures
+    - Concrete Structures
+    - Timber Structures
+    - Bridge Engineering
+    - Tall Building Design
+    - Earthquake Engineering
+    - Wind Engineering
+  03.04.02 Geotechnical Engineering
+    - Soil Mechanics
+    - Foundation Engineering
+    - Slope Stability
+    - Retaining Structures
+    - Tunneling
+    - Ground Improvement
+  03.04.03 Transportation Engineering
+    - Highway Engineering
+    - Traffic Engineering
+    - Railway Engineering
+    - Airport Engineering
+    - Port & Harbor Engineering
+  03.04.04 Water Resources Engineering
+    - Hydraulics
+    - Hydrology (Applied)
+    - Irrigation Engineering
+    - Dam Engineering
+    - Coastal Engineering
+    - Flood Control
+  03.04.05 Environmental Engineering
+    - Water Treatment
+    - Wastewater Treatment
+    - Air Pollution Control
+    - Solid Waste Management
+    - Remediation Engineering
+    - Noise Control
+  03.04.06 Construction Engineering
+    - Project Management
+    - Construction Materials
+    - Construction Planning
+    - Building Information Modeling
+    - Cost Estimation
+    - Quality Control
+
+03.05 CHEMICAL ENGINEERING
+  03.05.01 Transport Phenomena
+    - Fluid Flow
+    - Heat Transfer (Chemical)
+    - Mass Transfer
+  03.05.02 Reaction Engineering
+    - Chemical Reactor Design
+    - Catalysis Engineering
+    - Polymerization Reactors
+  03.05.03 Separation Processes
+    - Distillation
+    - Absorption
+    - Extraction
+    - Membrane Separation
+    - Chromatographic Separation
+  03.05.04 Process Systems Engineering
+    - Process Design
+    - Process Control
+    - Process Simulation
+    - Process Optimization
+    - Process Safety
+  03.05.05 Biochemical Engineering
+    - Bioreactor Design
+    - Bioprocess Optimization
+    - Downstream Processing
+    - Cell Culture Engineering
+  03.05.06 Petroleum Engineering
+    - Reservoir Engineering
+    - Drilling Engineering
+    - Production Engineering
+    - Pipeline Engineering
+
+03.06 MATERIALS SCIENCE & ENGINEERING
+  03.06.01 Metals & Alloys
+    - Ferrous Metallurgy
+    - Non-Ferrous Metallurgy
+    - Superalloys
+    - Metal Forming
+    - Corrosion Engineering
+  03.06.02 Ceramics & Glasses
+    - Structural Ceramics
+    - Electronic Ceramics
+    - Glass Science
+    - Refractories
+  03.06.03 Polymers & Composites
+    - Thermoplastics
+    - Thermosets
+    - Elastomers
+    - Fiber-Reinforced Composites
+    - Nanocomposites
+  03.06.04 Electronic Materials
+    - Semiconductor Materials
+    - Magnetic Materials
+    - Optical Materials
+    - Superconducting Materials
+  03.06.05 Biomaterials
+    - Implant Materials
+    - Tissue Engineering Scaffolds
+    - Drug Delivery Materials
+  03.06.06 Nanomaterials
+    - Carbon Nanomaterials
+    - Metal Nanoparticles
+    - Quantum Dots
+    - 2D Materials (Graphene etc.)
+
+03.07 NUCLEAR ENGINEERING
+  03.07.01 Reactor Design
+  03.07.02 Nuclear Safety
+  03.07.03 Radiation Protection
+  03.07.04 Nuclear Fuel Cycle
+  03.07.05 Fusion Engineering
+
+03.08 AGRICULTURAL & BIOSYSTEMS ENGINEERING
+  03.08.01 Irrigation Engineering
+  03.08.02 Farm Machinery
+  03.08.03 Post-Harvest Technology
+  03.08.04 Food Processing Engineering
+  03.08.05 Aquaculture Engineering
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[DOMAIN 04] PHILOSOPHY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+04.01 METAPHYSICS
+  04.01.01 Ontology
+    - Being & Existence
+    - Substance Theory
+    - Property Theory
+    - Identity & Individuation
+    - Mereology (Parts & Wholes)
+    - Abstract Objects
+    - Possible Worlds
+    - Universals vs Particulars
+  04.01.02 Cosmology (Philosophical)
+    - Origin of the Universe
+    - Time & Causality
+    - The Nature of Space
+    - Determinism vs Indeterminism
+  04.01.03 Philosophy of Mind
+    - Consciousness
+    - Qualia
+    - Mental Causation
+    - Functionalism
+    - Dualism vs Monism
+    - Phenomenal Consciousness
+    - Personal Identity
+    - Free Will
+  04.01.04 Philosophy of Religion
+    - Existence of God
+    - Divine Attributes
+    - Problem of Evil
+    - Religious Experience
+    - Faith & Reason
+    - Afterlife Philosophy
+
+04.02 EPISTEMOLOGY
+  04.02.01 Theory of Knowledge
+    - Justified True Belief
+    - Gettier Problems
+    - Foundationalism
+    - Coherentism
+    - Reliabilism
+    - Virtue Epistemology
+  04.02.02 Philosophy of Perception
+    - Phenomenology of Perception
+    - Direct vs Indirect Realism
+    - Sense Data Theory
+  04.02.03 Skepticism
+    - Cartesian Skepticism
+    - External World Skepticism
+    - Humean Skepticism
+  04.02.04 Social Epistemology
+    - Testimony
+    - Peer Disagreement
+    - Collective Knowledge
+    - Scientific Knowledge (Social)
+
+04.03 ETHICS
+  04.03.01 Normative Ethics
+    - Consequentialism
+      - Utilitarianism
+      - Hedonism
+      - Preference Satisfaction
+    - Deontological Ethics
+      - Kantian Ethics
+      - Rights-Based Ethics
+      - Contractualism
+    - Virtue Ethics
+      - Aristotelian Virtue
+      - Neo-Aristotelian Ethics
+      - Character Ethics
+    - Natural Law Theory
+    - Care Ethics
+    - Divine Command Theory
+  04.03.02 Metaethics
+    - Moral Realism
+    - Moral Anti-Realism
+    - Non-Cognitivism
+    - Error Theory
+    - Expressivism
+  04.03.03 Applied Ethics
+    - Bioethics
+    - Business Ethics
+    - Environmental Ethics
+    - AI Ethics
+    - Political Ethics
+    - Media Ethics
+    - Research Ethics
+    - Military Ethics
+
+04.04 LOGIC
+  04.04.01 Classical Logic
+    - Propositional Logic
+    - Predicate Logic
+    - First-Order Logic
+    - Higher-Order Logic
+  04.04.02 Non-Classical Logic
+    - Modal Logic
+    - Temporal Logic
+    - Fuzzy Logic
+    - Intuitionistic Logic
+    - Paraconsistent Logic
+    - Relevance Logic
+  04.04.03 Philosophy of Logic
+    - Logical Consequence
+    - Logical Truth
+    - Formal vs Informal Logic
+    - Paradoxes
+
+04.05 POLITICAL PHILOSOPHY
+  04.05.01 Theories of Justice
+    - Rawlsian Justice
+    - Libertarian Justice
+    - Communitarian Justice
+    - Egalitarianism
+  04.05.02 Political Authority
+    - Social Contract Theory
+    - Legitimacy & Obligation
+    - Anarchist Theory
+    - Democratic Theory
+  04.05.03 Rights & Liberty
+    - Natural Rights
+    - Human Rights
+    - Civil Liberties
+    - Positive vs Negative Liberty
+  04.05.04 Ideology Analysis
+    - Liberalism
+    - Conservatism
+    - Socialism
+    - Fascism (Analysis)
+    - Nationalism
+
+04.06 PHILOSOPHY OF SCIENCE
+  04.06.01 Scientific Method
+    - Induction & Deduction
+    - Falsificationism (Popper)
+    - Scientific Revolutions (Kuhn)
+    - Research Programs (Lakatos)
+    - Epistemological Anarchism (Feyerabend)
+  04.06.02 Scientific Realism
+    - Realism vs Anti-Realism
+    - Structural Realism
+    - Instrumentalism
+    - Constructive Empiricism
+  04.06.03 Philosophy of Physics
+  04.06.04 Philosophy of Biology
+  04.06.05 Philosophy of Chemistry
+  04.06.06 Philosophy of Psychology
+
+04.07 AESTHETICS
+  04.07.01 Philosophy of Art
+  04.07.02 Theory of Beauty
+  04.07.03 Sublime & Taste
+  04.07.04 Interpretation Theory
+  04.07.05 Value of Art
+
+04.08 MAJOR PHILOSOPHICAL TRADITIONS
+  04.08.01 Ancient Greek Philosophy
+    - Pre-Socratics (Thales, Heraclitus, Parmenides)
+    - Socratic Method
+    - Platonic Philosophy
+    - Aristotelian Philosophy
+    - Hellenistic Philosophy (Stoicism, Epicureanism, Skepticism)
+  04.08.02 Roman Philosophy
+    - Stoicism (Roman)
+    - Neoplatonism
+  04.08.03 Medieval Philosophy
+    - Scholasticism
+    - Islamic Philosophy (Al-Farabi, Avicenna, Averroes)
+    - Jewish Medieval Philosophy (Maimonides)
+    - Christian Scholasticism (Aquinas)
+    - Mystical Theology
+  04.08.04 Modern Western Philosophy
+    - Rationalism (Descartes, Leibniz, Spinoza)
+    - Empiricism (Locke, Berkeley, Hume)
+    - Kantian Philosophy
+    - German Idealism (Fichte, Schelling, Hegel)
+    - Utilitarianism (Bentham, Mill)
+    - Marxism (Philosophical)
+    - Existentialism (Kierkegaard, Nietzsche, Heidegger, Sartre)
+    - Pragmatism (Peirce, James, Dewey)
+    - Phenomenology (Husserl, Merleau-Ponty)
+    - Analytic Philosophy (Frege, Russell, Wittgenstein)
+    - Logical Positivism
+    - Ordinary Language Philosophy
+    - Frankfurt School Critical Theory
+    - Poststructuralism (Derrida, Foucault)
+    - Postmodernism
+  04.08.05 Eastern Philosophy
+    - Vedanta (Advaita, Vishishtadvaita, Dvaita)
+    - Samkhya
+    - Yoga Philosophy
+    - Mimamsa
+    - Nyaya-Vaisheshika
+    - Buddhist Philosophy
+      - Theravada Philosophy
+      - Madhyamaka
+      - Yogacara (Vijnanavada)
+      - Zen Philosophy
+      - Tibetan Buddhist Philosophy
+    - Taoist Philosophy
+    - Confucian Philosophy
+    - Neo-Confucianism
+    - Japanese Philosophy (Nishida, Kyoto School)
+    - Jain Philosophy
+    - Sikh Philosophy
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[DOMAIN 05] RELIGION & SPIRITUALITY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+05.01 ABRAHAMIC RELIGIONS
+  05.01.01 Judaism
+    - Orthodox Judaism
+    - Conservative Judaism
+    - Reform Judaism
+    - Reconstructionist Judaism
+    - Hasidic Judaism
+    - Kabbalah
+    - Talmudic Study
+    - Torah Interpretation
+    - Jewish Mysticism
+  05.01.02 Christianity
+    - Roman Catholicism
+    - Eastern Orthodoxy
+    - Protestantism
+      - Lutheranism
+      - Calvinism
+      - Anglicanism
+      - Baptism
+      - Methodism
+      - Pentecostalism
+      - Evangelicalism
+    - Coptic Christianity
+    - Gnosticism
+    - Christian Mysticism
+    - Liberation Theology
+    - Christian Existentialism
+  05.01.03 Islam
+    - Sunni Islam
+      - Hanafi School
+      - Maliki School
+      - Shafi'i School
+      - Hanbali School
+    - Shia Islam
+      - Twelver Shia
+      - Ismaili
+      - Zaidi
+    - Sufism
+    - Salafism/Wahhabism
+    - Islamic Mysticism
+    - Islamic Philosophy (Kalam)
+    - Islamic Law (Fiqh)
+  05.01.04 Baha'i Faith
+  05.01.05 Druze Religion
+  05.01.06 Mandaeism
+  05.01.07 Yazidism
+
+05.02 DHARMIC RELIGIONS
+  05.02.01 Hinduism
+    - Vaishnavism
+    - Shaivism
+    - Shaktism
+    - Smartism
+    - Tantra
+    - Vedic Religion
+    - Folk Hinduism
+  05.02.02 Buddhism
+    - Theravada
+    - Mahayana
+    - Vajrayana (Tibetan)
+    - Zen (Chan)
+    - Pure Land
+    - Nichiren
+    - Theosophical Buddhism
+  05.02.03 Jainism
+    - Digambara Jainism
+    - Shvetambara Jainism
+  05.02.04 Sikhism
+    - Gurmat Theology
+    - Sikh Mysticism
+    - Sant Tradition
+
+05.03 EAST ASIAN RELIGIONS
+  05.03.01 Taoism
+    - Philosophical Taoism
+    - Religious Taoism
+    - Internal Alchemy (Neidan)
+    - External Alchemy (Waidan)
+  05.03.02 Confucianism
+    - Classical Confucianism
+    - Neo-Confucianism
+    - Confucian Ritual
+  05.03.03 Shinto
+    - State Shinto
+    - Folk Shinto
+    - Shrine Shinto
+  05.03.04 Korean Shamanism (Musok)
+  05.03.05 Chinese Folk Religion
+
+05.04 INDIGENOUS & TRIBAL RELIGIONS
+  05.04.01 African Traditional Religions
+    - Yoruba Religion
+    - Akan Religion
+    - Zulu Religion
+    - Vodun (Dahomean)
+  05.04.02 Native American Religions
+    - Plains Traditions
+    - Southwest Traditions
+    - Northwest Coast Traditions
+    - Eastern Woodland Traditions
+  05.04.03 Amazonian Shamanism
+  05.04.04 Australian Aboriginal Religion
+  05.04.05 Arctic/Siberian Shamanism
+  05.04.06 Polynesian Religion
+  05.04.07 Mesoamerican Religion
+    - Aztec Religion
+    - Maya Religion
+    - Olmec Religion
+  05.04.08 Andean Religion
+    - Inca Religion
+    - Pre-Inca Traditions
+
+05.05 ANCIENT RELIGIONS (HISTORICAL)
+  05.05.01 Ancient Egyptian Religion
+  05.05.02 Mesopotamian Religion (Sumerian, Akkadian, Babylonian)
+  05.05.03 Ancient Greek Religion
+  05.05.04 Ancient Roman Religion
+  05.05.05 Norse Religion
+  05.05.06 Celtic Religion
+  05.05.07 Zoroastrianism
+  05.05.08 Mithraism
+  05.05.09 Ancient Persian Religion
+  05.05.10 Canaanite Religion
+  05.05.11 Ancient Anatolian Religion
+
+05.06 ESOTERIC & OCCULT TRADITIONS
+  05.06.01 Hermeticism
+  05.06.02 Gnosticism (Systems)
+  05.06.03 Kabbalah (Esoteric)
+  05.06.04 Rosicrucianism
+  05.06.05 Freemasonry
+  05.06.06 Theosophy
+  05.06.07 Anthroposophy (Steiner)
+  05.06.08 Thelema (Crowley)
+  05.06.09 Golden Dawn Tradition
+  05.06.10 Chaos Magick
+  05.06.11 Wicca & Witchcraft
+  05.06.12 Ceremonial Magick
+  05.06.13 Alchemy (Spiritual)
+  05.06.14 Astrology (Spiritual/Occult)
+  05.06.15 Tarot as Spiritual System
+  05.06.16 Numerology (Spiritual)
+  05.06.17 Sacred Geometry
+
+05.07 NEW RELIGIOUS MOVEMENTS
+  05.07.01 New Age Movement
+  05.07.02 Scientology
+  05.07.03 Raëlism
+  05.07.04 Eckankar
+  05.07.05 Spiritualism
+  05.07.06 Neopaganism
+  05.07.07 Hare Krishna (ISKCON)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[DOMAIN 06] ARTS & CREATIVE EXPRESSION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+06.01 VISUAL ARTS
+  06.01.01 Painting
+    - Fresco
+    - Tempera
+    - Oil Painting
+    - Watercolor
+    - Gouache
+    - Acrylic Painting
+    - Digital Painting
+    - Cave Painting (Prehistoric)
+    - Icon Painting
+    - Miniature Painting
+  06.01.02 Drawing
+    - Life Drawing
+    - Technical Drawing
+    - Illustration
+    - Caricature
+    - Sketching
+    - Charcoal Drawing
+    - Ink Drawing
+  06.01.03 Sculpture
+    - Stone Carving
+    - Wood Carving
+    - Bronze Casting
+    - Ceramic Sculpture
+    - Installation Art
+    - Kinetic Sculpture
+    - Land Art
+    - Ice Sculpture
+  06.01.04 Printmaking
+    - Woodcut
+    - Engraving
+    - Etching
+    - Lithography
+    - Screen Printing
+    - Digital Printmaking
+  06.01.05 Photography
+    - Documentary Photography
+    - Portrait Photography
+    - Landscape Photography
+    - Fashion Photography
+    - Street Photography
+    - Fine Art Photography
+    - Photojournalism
+    - Aerial Photography
+    - Astrophotography
+  06.01.06 Graphic Design
+    - Typography
+    - Brand Identity Design
+    - Publication Design
+    - Packaging Design
+    - Motion Graphics
+    - UI/UX Design
+    - Environmental Graphic Design
+  06.01.07 Textile Arts
+    - Weaving
+    - Embroidery
+    - Tapestry
+    - Knitting & Crochet
+    - Quilting
+    - Batik
+    - Tie-Dye
+    - Lacemaking
+  06.01.08 Ceramics
+    - Wheel Throwing
+    - Hand Building
+    - Glazing
+    - Porcelain Arts
+    - Raku
+    - Earthenware
+  06.01.09 Glasswork
+    - Stained Glass
+    - Blown Glass
+    - Cast Glass
+    - Mosaic
+  06.01.10 Jewelry
+    - Goldsmithing
+    - Silversmithing
+    - Gemology (Art)
+    - Enameling
+
+06.02 PERFORMING ARTS
+  06.02.01 Music
+    - Classical Music
+      - Baroque
+      - Classical Period
+      - Romanticism
+      - Impressionism
+      - Modernism
+      - Minimalism
+      - Contemporary Classical
+    - Opera
+    - Folk Music (Global)
+    - Jazz
+    - Blues
+    - Rock
+    - Pop Music
+    - Electronic Music
+      - Techno
+      - House
+      - Ambient
+      - Drum & Bass
+      - EDM
+    - Hip Hop / Rap
+    - R&B / Soul
+    - Reggae
+    - Country / Bluegrass
+    - World Music
+      - African Music
+      - Indian Classical (Hindustani, Carnatic)
+      - Middle Eastern Music
+      - East Asian Music
+      - Latin Music
+    - Experimental Music
+    - Sacred Music
+    - Music Theory
+    - Music Composition
+    - Music Production
+    - Music Performance
+  06.02.02 Dance
+    - Ballet
+    - Modern Dance
+    - Contemporary Dance
+    - Jazz Dance
+    - Tap Dance
+    - Hip Hop Dance
+    - Flamenco
+    - Salsa / Latin Dance
+    - Folk Dance (Global)
+    - Kathak
+    - Bharatanatyam
+    - Butoh
+    - Street Dance
+    - Ballroom Dance
+    - Social Dance
+  06.02.03 Theatre
+    - Classical Drama (Greek/Roman)
+    - Shakespearean Theatre
+    - Opera Theatre
+    - Musical Theatre
+    - Physical Theatre
+    - Mime
+    - Improvisation
+    - Stand-Up Comedy
+    - Puppet Theatre
+    - Shadow Theatre
+    - Kabuki
+    - Noh Theatre
+    - Beijing Opera
+    - Community Theatre
+    - Experimental Theatre
+  06.02.04 Circus Arts
+    - Acrobatics
+    - Aerial Arts
+    - Juggling
+    - Clowning
+    - Fire Performance
+    - Contemporary Circus
+
+06.03 LITERARY ARTS
+  06.03.01 Poetry
+    - Lyric Poetry
+    - Epic Poetry
+    - Dramatic Poetry
+    - Spoken Word
+    - Haiku
+    - Sonnets
+    - Free Verse
+    - Slam Poetry
+  06.03.02 Fiction
+    - Novel
+    - Short Story
+    - Novella
+    - Flash Fiction
+    - Literary Fiction
+    - Genre Fiction
+      - Science Fiction
+      - Fantasy
+      - Horror
+      - Mystery/Thriller
+      - Romance
+      - Historical Fiction
+  06.03.03 Non-Fiction Literature
+    - Biography
+    - Autobiography / Memoir
+    - Essays
+    - Creative Non-Fiction
+    - Travel Writing
+    - Nature Writing
+  06.03.04 Drama (Literary)
+    - Tragedy
+    - Comedy
+    - Tragicomedy
+    - Screenplay Writing
+    - Stage Play Writing
+  06.03.05 Oral Literature
+    - Myth & Legend
+    - Folklore
+    - Fable
+    - Epic Tradition (Oral)
+    - Griot Tradition
+
+06.04 FILM & MEDIA ARTS
+  06.04.01 Cinema
+    - Narrative Film
+    - Documentary Film
+    - Experimental Film
+    - Animation
+    - Short Film
+    - Feature Film Production
+  06.04.02 Television Arts
+    - Drama Series
+    - Comedy
+    - Documentary Television
+    - Reality TV
+  06.04.03 Video Art
+  06.04.04 Digital Media Art
+  06.04.05 Interactive Media Art
+  06.04.06 Virtual Reality Art
+
+06.05 ARCHITECTURE & DESIGN
+  06.05.01 Architecture
+    - Ancient Architecture
+    - Medieval Architecture
+    - Renaissance Architecture
+    - Baroque Architecture
+    - Neoclassical Architecture
+    - Modernist Architecture
+    - Brutalism
+    - Postmodern Architecture
+    - Sustainable Architecture
+    - Vernacular Architecture
+    - Religious Architecture
+    - Urban Design
+  06.05.02 Interior Design
+    - Residential Interior Design
+    - Commercial Interior Design
+    - Sustainable Interior Design
+  06.05.03 Industrial Design
+    - Product Design
+    - Furniture Design
+    - Transportation Design
+    - Consumer Electronics Design
+  06.05.04 Fashion Design
+    - Haute Couture
+    - Ready-to-Wear
+    - Sportswear Design
+    - Footwear Design
+    - Accessories Design
+  06.05.05 Landscape Architecture
+    - Park Design
+    - Urban Landscape
+    - Ecological Landscape
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[DOMAIN 07] HUMANITIES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+07.01 HISTORY
+  07.01.01 Prehistoric History
+    - Paleolithic
+    - Mesolithic
+    - Neolithic
+    - Bronze Age
+    - Iron Age
+  07.01.02 Ancient History
+    - Mesopotamian Civilizations
+    - Ancient Egyptian History
+    - Ancient Greek History
+    - Ancient Roman History
+    - Ancient Persian History
+    - Indus Valley Civilization
+    - Ancient Chinese History
+    - Ancient Indian History
+    - Ancient Mesoamerican History
+    - Ancient Andean History
+    - Ancient African Kingdoms
+  07.01.03 Medieval History
+    - European Medieval History
+    - Byzantine History
+    - Islamic Golden Age
+    - Medieval Indian History
+    - Medieval Chinese History
+    - Medieval African History
+    - Viking Age
+    - Crusades History
+    - Mongol Empire
+  07.01.04 Early Modern History
+    - Renaissance
+    - Reformation
+    - Age of Exploration
+    - Ottoman Empire
+    - Mughal Empire
+    - Ming/Qing Dynasty
+    - Colonial History
+    - Scientific Revolution
+    - Enlightenment Period
+  07.01.05 Modern History (1800-1945)
+    - Industrial Revolution
+    - Nationalism & Nation-States
+    - Imperialism & Colonialism
+    - World War I
+    - Russian Revolution
+    - Interwar Period
+    - Great Depression
+    - World War II
+    - Holocaust History
+  07.01.06 Contemporary History (1945-Present)
+    - Cold War
+    - Decolonization
+    - Space Age
+    - Civil Rights Movements
+    - Vietnam War
+    - Fall of Soviet Union
+    - Globalization Era
+    - War on Terror
+    - Digital Revolution
+  07.01.07 History by Method
+    - Historiography
+    - Oral History
+    - Diplomatic History
+    - Economic History
+    - Social History
+    - Cultural History
+    - Intellectual History
+    - Military History
+    - History of Science
+    - History of Technology
+    - Gender History
+    - Environmental History
+    - Psychohistory
+
+07.02 LINGUISTICS
+  07.02.01 Theoretical Linguistics
+    - Phonetics
+    - Phonology
+    - Morphology
+    - Syntax
+    - Semantics
+    - Pragmatics
+    - Discourse Analysis
+  07.02.02 Historical Linguistics
+    - Comparative Linguistics
+    - Language Change
+    - Etymology
+    - Proto-Language Reconstruction
+    - Language Families
+  07.02.03 Sociolinguistics
+    - Language Variation
+    - Dialectology
+    - Language & Society
+    - Language Policy
+    - Bilingualism & Multilingualism
+    - Language Endangerment
+    - Language Planning
+  07.02.04 Psycholinguistics
+    - Language Acquisition
+    - Language Processing
+    - Language & Memory
+    - Bilingual Cognition
+  07.02.05 Computational Linguistics
+    - Corpus Linguistics
+    - Natural Language Processing
+    - Language Modeling
+  07.02.06 Applied Linguistics
+    - Language Teaching (TESOL, SLA)
+    - Forensic Linguistics
+    - Clinical Linguistics
+    - Translation Studies
+    - Lexicography
+
+07.03 LITERATURE STUDIES
+  07.03.01 Literary Theory & Criticism
+    - Formalism
+    - New Criticism
+    - Structuralism
+    - Post-Structuralism
+    - Deconstruction
+    - Reader-Response Theory
+    - Psychoanalytic Criticism
+    - Marxist Literary Criticism
+    - Feminist Literary Criticism
+    - Postcolonial Literary Theory
+    - New Historicism
+    - Ecocriticism
+  07.03.02 Comparative Literature
+  07.03.03 World Literature Studies
+  07.03.04 Genre Studies
+  07.03.05 Narratology
+
+07.04 CULTURAL STUDIES
+  07.04.01 Cultural Theory
+  07.04.02 Media & Cultural Studies
+  07.04.03 Postcolonial Studies
+  07.04.04 Diaspora Studies
+  07.04.05 Subaltern Studies
+  07.04.06 Whiteness Studies
+  07.04.07 Popular Culture Studies
+  07.04.08 Visual Culture Studies
+
+07.05 CLASSICAL STUDIES
+  07.05.01 Greek & Latin Philology
+  07.05.02 Ancient Greek Literature
+  07.05.03 Latin Literature
+  07.05.04 Classical Archaeology
+  07.05.05 Ancient Historiography
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[DOMAIN 08] SOCIAL SCIENCES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+08.01 PSYCHOLOGY
+  08.01.01 Experimental Psychology
+    - Cognitive Psychology
+    - Perceptual Psychology
+    - Learning & Conditioning
+    - Memory Research
+    - Attention Research
+    - Reasoning & Decision-Making
+  08.01.02 Developmental Psychology
+    - Infant Development
+    - Child Development
+    - Adolescent Psychology
+    - Adult Development
+    - Gerontopsychology
+  08.01.03 Social Psychology
+    - Attitude Change
+    - Group Dynamics
+    - Conformity & Obedience
+    - Social Identity
+    - Prejudice & Discrimination
+    - Interpersonal Attraction
+    - Prosocial Behavior
+    - Aggression
+  08.01.04 Personality Psychology
+    - Trait Theories
+    - Psychodynamic Theories
+    - Humanistic Psychology
+    - Biological Personality
+    - Cross-Cultural Personality
+  08.01.05 Abnormal Psychology
+    - Mood Disorders
+    - Anxiety Disorders
+    - Psychotic Disorders
+    - Personality Disorders
+    - Neurodevelopmental Disorders
+    - Dissociative Disorders
+    - Trauma & PTSD
+    - Eating Disorders
+    - Substance Use Disorders
+  08.01.06 Psychotherapy
+    - Psychoanalysis
+    - Cognitive-Behavioral Therapy
+    - Humanistic Therapy
+    - Dialectical Behavior Therapy
+    - EMDR
+    - Group Therapy
+    - Family Systems Therapy
+    - Narrative Therapy
+  08.01.07 Neuropsychology
+    - Brain-Behavior Relationships
+    - Cognitive Neuropsychology
+    - Clinical Neuropsychological Assessment
+  08.01.08 Industrial-Organizational Psychology
+    - Workplace Motivation
+    - Leadership Psychology
+    - Organizational Culture
+    - Human Factors (Ergonomics)
+    - Selection & Assessment
+  08.01.09 Health Psychology
+    - Behavioral Medicine
+    - Psychoneuroimmunology
+    - Pain Psychology
+    - Chronic Illness Psychology
+  08.01.10 Sports Psychology
+    - Mental Performance
+    - Team Psychology
+    - Athlete Identity
+  08.01.11 Cross-Cultural Psychology
+  08.01.12 Environmental Psychology
+  08.01.13 Educational Psychology
+
+08.02 SOCIOLOGY
+  08.02.01 Social Theory
+    - Classical Theory (Marx, Weber, Durkheim)
+    - Contemporary Theory (Parsons, Bourdieu, Giddens, Habermas)
+    - Conflict Theory
+    - Functionalism
+    - Symbolic Interactionism
+    - Postmodern Sociology
+    - Feminist Theory (Sociological)
+  08.02.02 Research Methods (Sociology)
+    - Quantitative Methods
+    - Qualitative Methods
+    - Mixed Methods
+    - Ethnography
+    - Survey Research
+    - Comparative Historical Methods
+  08.02.03 Social Stratification
+    - Class Analysis
+    - Race & Ethnicity
+    - Gender Stratification
+    - Social Mobility
+    - Poverty Studies
+    - Elite Studies
+  08.02.04 Family Sociology
+    - Marriage & Kinship
+    - Family Change
+    - Intimate Partner Dynamics
+    - Parenting Sociology
+  08.02.05 Sociology of Education
+    - Educational Inequality
+    - School as Institution
+    - Higher Education Sociology
+  08.02.06 Urban Sociology
+    - City & Society
+    - Gentrification
+    - Spatial Inequality
+    - Community Studies
+  08.02.07 Rural Sociology
+  08.02.08 Sociology of Religion
+  08.02.09 Sociology of Work
+    - Labor Markets
+    - Occupational Sociology
+    - Union Movements
+    - Precarious Work
+  08.02.10 Sociology of Culture
+    - Cultural Production
+    - Cultural Consumption
+    - Cultural Capital
+  08.02.11 Political Sociology
+  08.02.12 Medical Sociology
+  08.02.13 Criminology
+    - Crime Theory
+    - Victimology
+    - Penology
+    - Juvenile Delinquency
+    - White-Collar Crime
+    - Organized Crime
+  08.02.14 Environmental Sociology
+  08.02.15 Digital Sociology
+
+08.03 ANTHROPOLOGY
+  08.03.01 Cultural Anthropology
+    - Ethnography
+    - Kinship & Social Organization
+    - Religion & Ritual (Anthropological)
+    - Economic Anthropology
+    - Political Anthropology
+    - Medical Anthropology
+    - Urban Anthropology
+    - Visual Anthropology
+  08.03.02 Physical/Biological Anthropology
+    - Human Evolution
+    - Primatology (Anthropological)
+    - Forensic Anthropology
+    - Human Osteology
+    - Paleoanthropology
+  08.03.03 Archaeology
+    - Prehistoric Archaeology
+    - Classical Archaeology
+    - Historical Archaeology
+    - Maritime Archaeology
+    - Industrial Archaeology
+    - Computational Archaeology
+    - Geoarchaeology
+  08.03.04 Linguistic Anthropology
+    - Language & Culture
+    - Language Socialization
+    - Ethnolinguistics
+
+08.04 ECONOMICS
+  08.04.01 Microeconomics
+    - Consumer Theory
+    - Producer Theory
+    - Market Structures
+    - Game Theory (Economic)
+    - Information Economics
+    - Mechanism Design
+  08.04.02 Macroeconomics
+    - National Income Theory
+    - Business Cycle Theory
+    - Growth Theory
+    - Monetary Theory
+    - Fiscal Policy Theory
+    - International Macroeconomics
+  08.04.03 Behavioral Economics
+    - Prospect Theory
+    - Cognitive Biases in Economics
+    - Nudge Theory
+    - Experimental Economics
+  08.04.04 Development Economics
+    - Poverty Economics
+    - Agricultural Economics
+    - Health Economics (Development)
+    - Education Economics
+    - Political Economy of Development
+  08.04.05 International Economics
+    - Trade Theory
+    - International Finance
+    - Foreign Direct Investment
+    - Exchange Rate Economics
+  08.04.06 Labor Economics
+    - Wage Determination
+    - Employment Theory
+    - Human Capital Theory
+    - Migration Economics
+  08.04.07 Public Economics
+    - Public Finance
+    - Taxation Theory
+    - Public Goods
+    - Externalities
+    - Cost-Benefit Analysis
+  08.04.08 Financial Economics
+    - Asset Pricing
+    - Corporate Finance Theory
+    - Financial Intermediation
+    - Derivatives Theory
+  08.04.09 Environmental Economics
+    - Valuation of Nature
+    - Carbon Pricing
+    - Green Economics
+  08.04.10 Economic History
+  08.04.11 Heterodox Economics
+    - Post-Keynesian Economics
+    - Institutional Economics
+    - Ecological Economics
+    - Feminist Economics
+
+08.05 POLITICAL SCIENCE
+  08.05.01 Comparative Politics
+    - Regime Types
+    - Electoral Systems
+    - Party Systems
+    - Federalism
+    - Democratization
+    - Authoritarianism Studies
+  08.05.02 International Relations
+    - Realism
+    - Liberalism (IR)
+    - Constructivism
+    - Critical Theory (IR)
+    - Security Studies
+    - War & Peace Studies
+    - Diplomacy Studies
+    - International Organizations
+    - International Political Economy
+  08.05.03 Public Administration
+    - Bureaucracy Theory
+    - Public Policy Analysis
+    - Regulatory Studies
+    - E-Government
+    - Public Management
+  08.05.04 Political Theory
+    - Democratic Theory
+    - Justice Theory
+    - Republican Theory
+    - Anarchist Theory (Political)
+  08.05.05 American Politics
+    - Congressional Studies
+    - Presidential Studies
+    - Judicial Politics
+    - Electoral Politics
+    - State & Local Politics
+  08.05.06 Comparative Public Policy
+
+08.06 GEOGRAPHY
+  08.06.01 Physical Geography
+    - Geomorphology
+    - Climatology (Geographical)
+    - Biogeography
+    - Glacial Geography
+    - Coastal Geography
+  08.06.02 Human Geography
+    - Population Geography
+    - Economic Geography
+    - Cultural Geography
+    - Political Geography
+    - Urban Geography
+    - Agricultural Geography
+    - Transportation Geography
+  08.06.03 Geographic Information Science
+    - GIS Technology
+    - Remote Sensing
+    - Cartography
+    - Spatial Analysis
+  08.06.04 Regional Geography
+    - Area Studies (Regional)
+    - Regional Planning
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[DOMAIN 09] LAW & JURISPRUDENCE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+09.01 PUBLIC LAW
+  09.01.01 Constitutional Law
+    - Constitutional Interpretation
+    - Fundamental Rights
+    - Separation of Powers
+    - Federalism Law
+  09.01.02 Administrative Law
+    - Regulatory Law
+    - Administrative Procedure
+    - Judicial Review
+  09.01.03 Criminal Law
+    - Substantive Criminal Law
+    - Criminal Procedure
+    - Evidence Law (Criminal)
+    - Sentencing Law
+  09.01.04 International Public Law
+    - Law of Treaties
+    - Diplomatic Law
+    - Law of the Sea
+    - International Humanitarian Law
+    - International Criminal Law
+    - Human Rights Law
+
+09.02 PRIVATE LAW
+  09.02.01 Contract Law
+  09.02.02 Tort Law
+  09.02.03 Property Law
+    - Real Property
+    - Personal Property
+    - Intellectual Property
+      - Copyright Law
+      - Patent Law
+      - Trademark Law
+      - Trade Secret Law
+  09.02.04 Family Law
+    - Marriage Law
+    - Divorce Law
+    - Child Custody Law
+    - Adoption Law
+    - Succession Law
+
+09.03 COMMERCIAL & BUSINESS LAW
+  09.03.01 Corporate Law
+  09.03.02 Securities Law
+  09.03.03 Bankruptcy Law
+  09.03.04 Consumer Protection Law
+  09.03.05 Competition Law (Antitrust)
+  09.03.06 Banking & Finance Law
+  09.03.07 Insurance Law
+  09.03.08 Tax Law
+
+09.04 SPECIALIZED LAW
+  09.04.01 Labor & Employment Law
+  09.04.02 Environmental Law
+  09.04.03 Healthcare Law
+  09.04.04 Immigration Law
+  09.04.05 Military Law
+  09.04.06 Space Law
+  09.04.07 Cyber Law / Technology Law
+  09.04.08 Maritime Law
+  09.04.09 Aviation Law
+  09.04.10 Indigenous Peoples Law
+
+09.05 JURISPRUDENCE & LEGAL THEORY
+  09.05.01 Natural Law Theory
+  09.05.02 Legal Positivism
+  09.05.03 Legal Realism
+  09.05.04 Critical Legal Studies
+  09.05.05 Feminist Jurisprudence
+  09.05.06 Law & Economics
+  09.05.07 Comparative Law
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[DOMAIN 10] ECONOMICS & BUSINESS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+10.01 BUSINESS MANAGEMENT
+  10.01.01 Strategic Management
+    - Competitive Strategy
+    - Corporate Strategy
+    - Blue Ocean Strategy
+    - Disruptive Innovation
+    - Business Model Innovation
+  10.01.02 Organizational Behavior
+    - Motivation Theories
+    - Leadership Theory
+    - Organizational Culture
+    - Change Management
+    - Conflict Management
+  10.01.03 Operations Management
+    - Supply Chain Management
+    - Logistics
+    - Quality Management
+    - Six Sigma
+    - Lean Manufacturing
+    - Inventory Management
+    - Project Management
+  10.01.04 Human Resource Management
+    - Talent Acquisition
+    - Performance Management
+    - Compensation & Benefits
+    - Training & Development
+    - Labor Relations
+    - HR Analytics
+  10.01.05 Marketing
+    - Consumer Behavior
+    - Market Research
+    - Brand Management
+    - Digital Marketing
+    - Content Marketing
+    - Advertising
+    - Sales Management
+    - Product Management
+    - Pricing Strategy
+    - Distribution Strategy
+  10.01.06 Finance (Corporate)
+    - Financial Analysis
+    - Capital Budgeting
+    - Working Capital Management
+    - Mergers & Acquisitions
+    - Valuation
+    - Risk Management
+
+10.02 ENTREPRENEURSHIP
+  10.02.01 Startup Formation
+  10.02.02 Venture Capital
+  10.02.03 Business Planning
+  10.02.04 Innovation Management
+  10.02.05 Social Entrepreneurship
+  10.02.06 Family Business
+  10.02.07 Intrapreneurship
+
+10.03 FINANCE & INVESTMENT
+  10.03.01 Capital Markets
+    - Equity Markets
+    - Debt Markets
+    - Derivatives Markets
+    - Commodity Markets
+    - Currency Markets
+    - Cryptocurrency Markets
+  10.03.02 Investment Analysis
+    - Fundamental Analysis
+    - Technical Analysis
+    - Quantitative Analysis
+    - Portfolio Theory
+    - Risk Analysis
+  10.03.03 Banking
+    - Commercial Banking
+    - Investment Banking
+    - Central Banking
+    - Retail Banking
+    - Private Banking
+    - Islamic Banking
+  10.03.04 Insurance
+    - Life Insurance
+    - Property & Casualty
+    - Health Insurance
+    - Reinsurance
+    - Actuarial Science
+  10.03.05 Real Estate Finance
+  10.03.06 Accounting
+    - Financial Accounting
+    - Managerial Accounting
+    - Auditing
+    - Tax Accounting
+    - Forensic Accounting
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[DOMAIN 11] EDUCATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+11.01 EDUCATIONAL THEORY
+  11.01.01 Learning Theory
+    - Behaviorism
+    - Cognitivism
+    - Constructivism
+    - Social Learning Theory
+    - Connectivism
+    - Experiential Learning
+  11.01.02 Curriculum Theory
+  11.01.03 Pedagogy
+    - Didactics
+    - Critical Pedagogy
+    - Culturally Responsive Teaching
+    - Project-Based Learning
+    - Inquiry-Based Learning
+  11.01.04 Philosophy of Education
+    - Classical Paideia
+    - Dewey's Progressive Education
+    - Freirian Pedagogy
+    - Montessori Philosophy
+    - Waldorf Philosophy
+
+11.02 EDUCATIONAL LEVELS
+  11.02.01 Early Childhood Education
+  11.02.02 Primary Education
+  11.02.03 Secondary Education
+  11.02.04 Vocational/Technical Education
+  11.02.05 Higher Education
+  11.02.06 Adult Education
+  11.02.07 Special Education
+  11.02.08 Gifted Education
+
+11.03 EDUCATIONAL SYSTEMS
+  11.03.01 Formal Education Systems
+  11.03.02 Non-Formal Education
+  11.03.03 Informal Learning
+  11.03.04 Distance Education
+  11.03.05 Online Education (E-Learning)
+  11.03.06 Homeschooling
+  11.03.07 International Education Systems
+
+11.04 EDUCATIONAL SUPPORT FIELDS
+  11.04.01 Educational Assessment
+  11.04.02 Instructional Design
+  11.04.03 Educational Technology
+  11.04.04 School Counseling
+  11.04.05 Educational Administration
+  11.04.06 Teacher Education
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[DOMAIN 12] MILITARY & WARFARE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+12.01 MILITARY SCIENCE
+  12.01.01 Military Strategy
+    - Grand Strategy
+    - Operational Strategy
+    - Tactical Theory
+    - Asymmetric Warfare
+    - Counterinsurgency
+    - Deterrence Theory
+  12.01.02 Military History
+    - Ancient Warfare
+    - Medieval Warfare
+    - Early Modern Warfare
+    - Industrial Age Warfare
+    - Total War
+    - Cold War Military
+    - Modern Warfare
+  12.01.03 Weapons Technology
+    - Conventional Weapons
+    - Nuclear Weapons (Policy/History)
+    - Biological Weapons (History/Policy)
+    - Chemical Weapons (History/Policy)
+    - Cyber Warfare
+    - Drone Warfare
+    - Space Warfare
+  12.01.04 Military Organization
+    - Command Structure
+    - Military Logistics
+    - Military Intelligence
+    - Special Operations
+  12.01.05 Naval Warfare
+  12.01.06 Air Power Theory
+  12.01.07 Land Warfare Theory
+
+12.02 INTELLIGENCE & ESPIONAGE
+  12.02.01 Intelligence Collection
+  12.02.02 Signals Intelligence (SIGINT)
+  12.02.03 Human Intelligence (HUMINT)
+  12.02.04 Imagery Intelligence (IMINT)
+  12.02.05 Counterintelligence
+  12.02.06 Covert Operations
+
+12.03 SECURITY STUDIES
+  12.03.01 National Security
+  12.03.02 Homeland Security
+  12.03.03 Terrorism Studies
+  12.03.04 Nuclear Security
+  12.03.05 Maritime Security
+  12.03.06 Cybersecurity (National)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[DOMAIN 13] AGRICULTURE & FOOD SYSTEMS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+13.01 CROP SCIENCE
+  13.01.01 Agronomy
+  13.01.02 Horticulture
+    - Pomology (Fruit Growing)
+    - Olericulture (Vegetable Growing)
+    - Floriculture
+    - Landscape Horticulture
+  13.01.03 Plant Pathology
+  13.01.04 Weed Science
+  13.01.05 Soil Fertility & Management
+  13.01.06 Irrigation Science
+
+13.02 ANIMAL SCIENCES
+  13.02.01 Animal Nutrition
+  13.02.02 Animal Breeding & Genetics
+  13.02.03 Livestock Management
+    - Cattle Production
+    - Poultry Production
+    - Swine Production
+    - Sheep & Goat Production
+  13.02.04 Veterinary Science
+  13.02.05 Aquaculture
+  13.02.06 Apiculture (Beekeeping)
+
+13.03 FOOD SCIENCE & TECHNOLOGY
+  13.03.01 Food Chemistry
+  13.03.02 Food Microbiology
+  13.03.03 Food Engineering
+  13.03.04 Food Processing & Preservation
+  13.03.05 Food Safety
+  13.03.06 Sensory Science
+  13.03.07 Nutrition Science (Food)
+
+13.04 AGRICULTURAL SYSTEMS
+  13.04.01 Sustainable Agriculture
+  13.04.02 Organic Farming
+  13.04.03 Precision Agriculture
+  13.04.04 Agroforestry
+  13.04.05 Permaculture
+  13.04.06 Urban Agriculture
+  13.04.07 Agricultural Economics
+  13.04.08 Rural Development
+
+13.05 FORESTRY
+  13.05.01 Silviculture
+  13.05.02 Forest Ecology
+  13.05.03 Forest Management
+  13.05.04 Wood Science & Technology
+  13.05.05 Non-Timber Forest Products
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[DOMAIN 14] ENVIRONMENTAL SCIENCE & SUSTAINABILITY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+14.01 ENVIRONMENTAL SCIENCE
+  14.01.01 Climate Science
+  14.01.02 Environmental Chemistry
+  14.01.03 Conservation Biology
+  14.01.04 Restoration Ecology
+  14.01.05 Pollution Science
+  14.01.06 Environmental Toxicology
+
+14.02 SUSTAINABILITY SCIENCE
+  14.02.01 Sustainable Development
+  14.02.02 Circular Economy
+  14.02.03 Renewable Energy Science
+  14.02.04 Energy Efficiency
+  14.02.05 Carbon Science
+  14.02.06 Biodiversity Science
+
+14.03 ENVIRONMENTAL POLICY & MANAGEMENT
+  14.03.01 Environmental Policy
+  14.03.02 Natural Resource Management
+  14.03.03 Environmental Impact Assessment
+  14.03.04 Conservation Policy
+  14.03.05 Climate Policy
+  14.03.06 Ocean Governance
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[DOMAIN 15] COMMUNICATION & MEDIA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+15.01 COMMUNICATION STUDIES
+  15.01.01 Interpersonal Communication
+  15.01.02 Organizational Communication
+  15.01.03 Group Communication
+  15.01.04 Cross-Cultural Communication
+  15.01.05 Rhetoric & Persuasion
+  15.01.06 Nonverbal Communication
+
+15.02 MEDIA STUDIES
+  15.02.01 Print Media
+  15.02.02 Broadcast Media
+  15.02.03 Digital Media
+  15.02.04 Social Media Studies
+  15.02.05 Media Effects Theory
+  15.02.06 Media Economics
+
+15.03 JOURNALISM
+  15.03.01 News Reporting
+  15.03.02 Investigative Journalism
+  15.03.03 Data Journalism
+  15.03.04 Broadcast Journalism
+  15.03.05 Photojournalism
+  15.03.06 Science Journalism
+  15.03.07 War Journalism
+  15.03.08 Media Ethics
+
+15.04 PUBLIC RELATIONS & ADVERTISING
+  15.04.01 Strategic Communications
+  15.04.02 Crisis Communication
+  15.04.03 Political Communication
+  15.04.04 Corporate Communications
+  15.04.05 Advertising Theory
+  15.04.06 Brand Communication
+
+15.05 INFORMATION SCIENCE
+  15.05.01 Library Science
+  15.05.02 Archival Science
+  15.05.03 Knowledge Management
+  15.05.04 Information Architecture
+  15.05.05 Digital Preservation
+  15.05.06 Museum Studies
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[DOMAIN 16] SPORTS & PHYSICAL CULTURE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+16.01 SPORT SCIENCE
+  16.01.01 Exercise Physiology
+  16.01.02 Biomechanics (Sport)
+  16.01.03 Sports Nutrition
+  16.01.04 Sports Psychology
+  16.01.05 Strength & Conditioning
+  16.01.06 Athletic Training
+  16.01.07 Kinesiology
+
+16.02 INDIVIDUAL SPORTS
+  16.02.01 Track & Field Athletics
+  16.02.02 Swimming & Aquatics
+  16.02.03 Gymnastics
+  16.02.04 Weightlifting
+  16.02.05 Combat Sports
+    - Wrestling
+    - Boxing
+    - Judo
+    - Brazilian Jiu-Jitsu
+    - Muay Thai
+    - MMA
+    - Sumo
+    - Sambo
+    - Taekwondo
+    - Karate
+    - Kung Fu
+    - Capoeira
+    - Fencing
+  16.02.06 Racket Sports
+    - Tennis
+    - Badminton
+    - Squash
+    - Ping Pong
+  16.02.07 Winter Sports
+    - Alpine Skiing
+    - Cross-Country Skiing
+    - Ice Skating
+    - Ice Hockey (Individual Aspects)
+    - Snowboarding
+  16.02.08 Cycling
+  16.02.09 Golf
+  16.02.10 Equestrian Sports
+  16.02.11 Archery
+  16.02.12 Shooting Sports
+
+16.03 TEAM SPORTS
+  16.03.01 Football (Soccer)
+  16.03.02 American Football
+  16.03.03 Basketball
+  16.03.04 Baseball
+  16.03.05 Cricket
+  16.03.06 Rugby
+  16.03.07 Volleyball
+  16.03.08 Field Hockey
+  16.03.09 Ice Hockey
+  16.03.10 Lacrosse
+  16.03.11 Water Polo
+  16.03.12 Handball
+
+16.04 OUTDOOR & ADVENTURE SPORTS
+  16.04.01 Mountaineering & Climbing
+  16.04.02 Surfing
+  16.04.03 Kayaking & Canoeing
+  16.04.04 Paragliding & Skydiving
+  16.04.05 Orienteering
+  16.04.06 Triathlon
+
+16.05 MARTIAL ARTS TRADITIONS
+  16.05.01 Japanese Budo Arts
+  16.05.02 Chinese Wushu
+  16.05.03 Korean Martial Arts
+  16.05.04 Indian Martial Arts (Kalarippayattu)
+  16.05.05 Brazilian Systems
+
+16.06 SPORT MANAGEMENT
+  16.06.01 Athletic Administration
+  16.06.02 Sport Marketing
+  16.06.03 Sport Law
+  16.06.04 Event Management
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[DOMAIN 17] GOVERNANCE & POLITICAL SYSTEMS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+17.01 FORMS OF GOVERNMENT
+  17.01.01 Democracy
+    - Direct Democracy
+    - Representative Democracy
+    - Constitutional Democracy
+    - Liberal Democracy
+    - Deliberative Democracy
+  17.01.02 Monarchy
+    - Absolute Monarchy
+    - Constitutional Monarchy
+    - Theocratic Monarchy
+  17.01.03 Republic
+    - Parliamentary Republic
+    - Presidential Republic
+    - Semi-Presidential Republic
+  17.01.04 Authoritarian Systems
+    - Military Dictatorship
+    - Single-Party State
+    - Oligarchy
+    - Theocracy
+    - Totalitarianism
+  17.01.05 Federalism
+  17.01.06 Confederalism
+  17.01.07 City-States
+
+17.02 POLITICAL IDEOLOGIES
+  17.02.01 Classical Liberalism
+  17.02.02 Social Liberalism
+  17.02.03 Social Democracy
+  17.02.04 Democratic Socialism
+  17.02.05 Marxism-Leninism
+  17.02.06 Trotskyism
+  17.02.07 Anarchism
+    - Anarcho-Communism
+    - Anarcho-Capitalism
+    - Green Anarchism
+  17.02.08 Conservatism
+    - Traditional Conservatism
+    - Neoconservatism
+    - Paleoconservatism
+  17.02.09 Fascism (Historical Analysis)
+  17.02.10 Libertarianism
+  17.02.11 Nationalism
+  17.02.12 Environmentalism (Political)
+  17.02.13 Feminism (Political)
+  17.02.14 Religious Political Movements
+  17.02.15 Technocracy
+
+17.03 INTERNATIONAL SYSTEMS
+  17.03.01 International Organizations
+    - United Nations System
+    - Regional Organizations
+    - Trade Organizations
+    - Security Alliances
+  17.03.02 Diplomacy
+    - Bilateral Diplomacy
+    - Multilateral Diplomacy
+    - Public Diplomacy
+    - Economic Diplomacy
+  17.03.03 Global Governance
+  17.03.04 Geopolitics
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[DOMAIN 18] PSYCHOLOGY OF HUMAN EXPERIENCE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+18.01 CONSCIOUSNESS STUDIES
+  18.01.01 States of Consciousness
+    - Waking Consciousness
+    - Dreaming
+    - Hypnosis
+    - Meditative States
+    - Altered States (Pharmacological)
+    - Near-Death Experiences
+    - Flow States
+  18.01.02 Dream Studies
+  18.01.03 Meditation Science
+  18.01.04 Parapsychology (Research)
+
+18.02 EMOTION SCIENCE
+  18.02.01 Basic Emotion Theory
+  18.02.02 Emotional Regulation
+  18.02.03 Affective Neuroscience
+  18.02.04 Emotional Intelligence
+  18.02.05 Cross-Cultural Emotion
+
+18.03 MOTIVATION & MEANING
+  18.03.01 Motivation Theory
+  18.03.02 Positive Psychology
+  18.03.03 Existential Psychology
+  18.03.04 Meaning-Making
+  18.03.05 Happiness Science
+
+18.04 TRAUMA & HEALING
+  18.04.01 Trauma Psychology
+  18.04.02 Grief Studies
+  18.04.03 Resilience Science
+  18.04.04 Post-Traumatic Growth
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[DOMAIN 19] CRAFT & TRADITIONAL SKILLS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+19.01 TRADITIONAL CRAFTS
+  19.01.01 Woodworking
+    - Carpentry
+    - Cabinetmaking
+    - Wood Turning
+    - Marquetry
+    - Wood Carving
+  19.01.02 Metalworking
+    - Blacksmithing
+    - Silversmithing
+    - Goldsmithing
+    - Knife Making
+    - Armor Making
+  19.01.03 Leatherwork
+  19.01.04 Masonry & Stonework
+  19.01.05 Glassblowing
+  19.01.06 Bookbinding
+  19.01.07 Papermaking
+  19.01.08 Rope Making
+  19.01.09 Basket Weaving
+  19.01.10 Pottery (Traditional)
+
+19.02 CULINARY ARTS
+  19.02.01 Baking & Pastry
+  19.02.02 Butchery
+  19.02.03 Cheesemaking
+  19.02.04 Fermentation
+  19.02.05 Brewing
+  19.02.06 Winemaking (Viticulture/Viniculture)
+  19.02.07 Distillation
+  19.02.08 Cuisines by Region
+    - European Cuisines
+    - Asian Cuisines
+    - African Cuisines
+    - Latin American Cuisines
+    - Middle Eastern Cuisines
+    - South Asian Cuisines
+
+19.03 TEXTILE CRAFTS
+  19.03.01 Spinning
+  19.03.02 Dyeing
+  19.03.03 Weaving (Craft)
+  19.03.04 Sewing & Tailoring
+  19.03.05 Embroidery
+  19.03.06 Lace-Making
+  19.03.07 Knitting
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[DOMAIN 20] METAPHYSICS, MYSTICISM & OCCULT SCIENCES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+20.01 DIVINATION SYSTEMS
+  20.01.01 Astrology
+    - Western Astrology
+    - Vedic Astrology (Jyotish)
+    - Chinese Astrology
+    - Hellenistic Astrology
+    - Horary Astrology
+    - Mundane Astrology
+    - Electional Astrology
+  20.01.02 Tarot
+  20.01.03 I Ching
+  20.01.04 Geomancy
+  20.01.05 Numerology
+  20.01.06 Rune Reading
+  20.01.07 Palmistry
+  20.01.08 Cartomancy
+  20.01.09 Tasseography (Tea Leaf Reading)
+  20.01.10 Oracle Systems
+  20.01.11 Scrying
+  20.01.12 Bibliomancy
+
+20.02 ENERGY & CONSCIOUSNESS SYSTEMS
+  20.02.01 Chakra System
+  20.02.02 Aura Study
+  20.02.03 Prana / Chi / Ki Theory
+  20.02.04 Kundalini System
+  20.02.05 Subtle Body Anatomy
+  20.02.06 Sacred Geometry
+  20.02.07 Cymatics
+
+20.03 MAGICAL TRADITIONS
+  20.03.01 Western Ceremonial Magic
+  20.03.02 Folk Magic (Global)
+  20.03.03 Sigil Magic
+  20.03.04 Chaos Magic
+  20.03.05 Talismanic Magic
+  20.03.06 Evocation & Invocation
+  20.03.07 Enochian Magic
+
+20.04 ANCIENT MYSTERY SCHOOLS
+  20.04.01 Pythagorean Mysteries
+  20.04.02 Eleusinian Mysteries
+  20.04.03 Egyptian Mysteries (Hermetic)
+  20.04.04 Orphic Mysteries
+  20.04.05 Neoplatonic Schools
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[DOMAIN 21] TRANSPORTATION & LOGISTICS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+21.01 LAND TRANSPORTATION
+  21.01.01 Road Transport
+  21.01.02 Rail Transport
+  21.01.03 Bicycle Transport
+  21.01.04 Pipeline Transport
+  21.01.05 Electric Vehicles
+
+21.02 AIR TRANSPORTATION
+  21.02.01 Commercial Aviation
+  21.02.02 General Aviation
+  21.02.03 Military Aviation
+  21.02.04 Drones / UAV
+  21.02.05 Space Transportation
+
+21.03 MARITIME TRANSPORTATION
+  21.03.01 Shipping & Freight
+  21.03.02 Naval Transportation
+  21.03.03 Inland Waterways
+  21.03.04 Port Operations
+
+21.04 SUPPLY CHAIN & LOGISTICS
+  21.04.01 Freight Logistics
+  21.04.02 Last Mile Delivery
+  21.04.03 Cold Chain Logistics
+  21.04.04 Reverse Logistics
+  21.04.05 Warehouse Management
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[DOMAIN 22] ENERGY SYSTEMS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+22.01 FOSSIL FUELS
+  22.01.01 Oil & Gas Industry
+  22.01.02 Coal Industry
+  22.01.03 Petrochemicals
+
+22.02 RENEWABLE ENERGY
+  22.02.01 Solar Power
+  22.02.02 Wind Power
+  22.02.03 Hydropower
+  22.02.04 Geothermal Energy
+  22.02.05 Tidal & Wave Energy
+  22.02.06 Biomass Energy
+  22.02.07 Hydrogen Energy
+
+22.03 NUCLEAR ENERGY
+  22.03.01 Fission Power
+  22.03.02 Fusion Power
+  22.03.03 Small Modular Reactors
+
+22.04 ENERGY POLICY & ECONOMICS
+  22.04.01 Energy Markets
+  22.04.02 Energy Security
+  22.04.03 Energy Transition Policy
+  22.04.04 Grid Management
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[DOMAIN 23] SOCIAL MOVEMENTS & ACTIVISM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+23.01 LIBERATION MOVEMENTS
+  23.01.01 Anti-Colonial Movements
+  23.01.02 Civil Rights Movements
+  23.01.03 Labor Rights Movements
+  23.01.04 Women's Suffrage
+  23.01.05 LGBT Rights Movements
+  23.01.06 Indigenous Rights Movements
+  23.01.07 Anti-Apartheid
+
+23.02 ENVIRONMENTAL MOVEMENTS
+  23.02.01 Conservation Movement
+  23.02.02 Climate Movement
+  23.02.03 Anti-Nuclear Movement
+  23.02.04 Animal Rights Movement
+
+23.03 POLITICAL MOVEMENTS
+  23.03.01 Revolutionary Movements
+  23.03.02 Reform Movements
+  23.03.03 Nationalist Movements
+  23.03.04 Peace Movements
+  23.03.05 Religious Reform Movements
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[DOMAIN 24] COGNITIVE & BEHAVIORAL SCIENCES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+24.01 COGNITIVE SCIENCE
+  24.01.01 Cognitive Architecture
+  24.01.02 Attention & Perception
+  24.01.03 Memory Systems
+  24.01.04 Language Cognition
+  24.01.05 Reasoning & Problem Solving
+  24.01.06 Embodied Cognition
+  24.01.07 Extended Mind Theory
+
+24.02 BEHAVIORAL SCIENCE
+  24.02.01 Decision Science
+  24.02.02 Behavioral Economics (Applied)
+  24.02.03 Habit Formation
+  24.02.04 Behavioral Change Theory
+  24.02.05 Motivation Science
+
+24.03 EVOLUTIONARY PSYCHOLOGY
+  24.03.01 Mating Psychology
+  24.03.02 Kin Selection Behavior
+  24.03.03 Status & Dominance
+  24.03.04 Cooperation & Altruism
+  24.03.05 Predator Avoidance Cognition
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[DOMAIN 25] SPACE EXPLORATION & ASTRONAUTICS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+25.01 SPACE SCIENCE
+  25.01.01 Astrodynamics
+  25.01.02 Space Systems Engineering
+  25.01.03 Space Environment Science
+  25.01.04 Planetary Exploration
+  25.01.05 Astrobiology
+
+25.02 SPACE TECHNOLOGY
+  25.02.01 Launch Vehicles
+  25.02.02 Spacecraft Design
+  25.02.03 Satellite Technology
+  25.02.04 Life Support Systems
+  25.02.05 Space Propulsion
+  25.02.06 Space Communications
+
+25.03 HUMAN SPACEFLIGHT
+  25.03.01 Astronaut Training
+  25.03.02 Space Medicine
+  25.03.03 Long-Duration Spaceflight
+  25.03.04 Lunar Operations
+  25.03.05 Mars Mission Planning
+
+25.04 SPACE POLICY & LAW
+  25.04.01 International Space Law
+  25.04.02 Space Commerce
+  25.04.03 Planetary Protection Policy
+  25.04.04 Space Governance
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[DOMAIN 26] INTERDISCIPLINARY & EMERGING DOMAINS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+26.01 COMPLEXITY SCIENCE
+  26.01.01 Systems Theory
+  26.01.02 Chaos Theory
+  26.01.03 Network Science
+  26.01.04 Emergence Theory
+  26.01.05 Agent-Based Modeling
+  26.01.06 Self-Organization
+
+26.02 BIOTECHNOLOGY
+  26.02.01 Genetic Engineering
+  26.02.02 Synthetic Biology
+  26.02.03 Bioinformatics
+  26.02.04 Proteomics
+  26.02.05 Metabolomics
+  26.02.06 Stem Cell Technology
+  26.02.07 Gene Therapy
+  26.02.08 CRISPR Applications
+
+26.03 NANOTECHNOLOGY
+  26.03.01 Nanofabrication
+  26.03.02 Nanomedicine
+  26.03.03 Nano-electronics
+  26.03.04 Molecular Machines
+
+26.04 TRANSHUMANISM & FUTURE STUDIES
+  26.04.01 Human Enhancement
+  26.04.02 Brain-Computer Interface
+  26.04.03 Life Extension Science
+  26.04.04 Cryonics
+  26.04.05 Mind Uploading Research
+  26.04.06 Futures Studies & Forecasting
+  26.04.07 Existential Risk Studies
+  26.04.08 AI Alignment & Safety
+
+26.05 DIGITAL HUMANITIES
+  26.05.01 Computational History
+  26.05.02 Digital Archaeology
+  26.05.03 Digital Art History
+  26.05.04 Corpus Analysis (Humanities)
+  26.05.05 Digital Ethnography
+
+26.06 URBAN STUDIES
+  26.06.01 Urban Planning
+  26.06.02 Urban Economics
+  26.06.03 Smart Cities
+  26.06.04 Urban Resilience
+  26.06.05 Housing Studies
+  26.06.06 Transportation Planning
+
+26.07 GAME STUDIES
+  26.07.01 Game Design Theory
+  26.07.02 Video Game Studies
+  26.07.03 Serious Games
+  26.07.04 Game Psychology
+  26.07.05 Esports Studies
+
+26.08 CRIMINOLOGY & FORENSICS
+  26.08.01 Forensic Science
+    - Forensic DNA Analysis
+    - Forensic Toxicology
+    - Forensic Pathology
+    - Forensic Entomology
+    - Forensic Accounting
+    - Ballistics
+    - Digital Forensics
+  26.08.02 Criminal Profiling
+  26.08.03 Criminological Theory
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[DOMAIN 27] HUMAN DEVELOPMENT & LIFE STAGES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+27.01 LIFESPAN DEVELOPMENT
+  27.01.01 Prenatal Development
+  27.01.02 Infancy
+  27.01.03 Childhood
+  27.01.04 Adolescence
+  27.01.05 Early Adulthood
+  27.01.06 Middle Adulthood
+  27.01.07 Late Adulthood / Aging
+  27.01.08 Death & Dying Studies (Thanatology)
+
+27.02 FAMILY STUDIES
+  27.02.01 Marriage & Partnership
+  27.02.02 Parenting Science
+  27.02.03 Sibling Dynamics
+  27.02.04 Family Systems
+  27.02.05 Elder Care
+
+27.03 GENDER STUDIES
+  27.03.01 Feminist Theory (Interdisciplinary)
+  27.03.02 Masculinity Studies
+  27.03.03 Queer Studies
+  27.03.04 Intersectionality Studies
+  27.03.05 Transgender Studies
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[DOMAIN 28] INFORMATION & KNOWLEDGE SYSTEMS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+28.01 KNOWLEDGE ORGANIZATION
+  28.01.01 Classification Systems
+  28.01.02 Ontology (Information)
+  28.01.03 Taxonomy & Nomenclature
+  28.01.04 Metadata Standards
+  28.01.05 Thesaurus Design
+
+28.02 DATA SCIENCE
+  28.02.01 Data Engineering
+  28.02.02 Statistical Learning
+  28.02.03 Big Data Systems
+  28.02.04 Data Visualization
+  28.02.05 Predictive Analytics
+  28.02.06 Business Intelligence
+
+28.03 HUMAN-INFORMATION INTERACTION
+  28.03.01 Information Retrieval
+  28.03.02 Information Behavior
+  28.03.03 Information Literacy
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[DOMAIN 29] ETHICS, RIGHTS & JUSTICE SYSTEMS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+29.01 HUMAN RIGHTS
+  29.01.01 Civil & Political Rights
+  29.01.02 Economic, Social & Cultural Rights
+  29.01.03 Collective Rights
+  29.01.04 Rights of Specific Groups
+    - Children's Rights
+    - Women's Rights
+    - Indigenous Rights
+    - Disability Rights
+    - Refugee Rights
+
+29.02 JUSTICE SYSTEMS
+  29.02.01 Retributive Justice
+  29.02.02 Restorative Justice
+  29.02.03 Distributive Justice
+  29.02.04 Transitional Justice
+  29.02.05 Environmental Justice
+
+29.03 APPLIED ETHICS
+  29.03.01 Technology Ethics
+  29.03.02 Medical Ethics
+  29.03.03 Business Ethics
+  29.03.04 Environmental Ethics
+  29.03.05 Research Ethics
+  29.03.06 Journalistic Ethics
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[DOMAIN 30] SURVIVAL, PRIMAL & ANCESTRAL SKILLS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+30.01 WILDERNESS SURVIVAL
+  30.01.01 Shelter Building
+  30.01.02 Fire Making
+  30.01.03 Water Sourcing & Purification
+  30.01.04 Wild Food Foraging
+  30.01.05 Navigation (Non-Technological)
+  30.01.06 Trapping & Hunting
+  30.01.07 Wilderness Medicine
+
+30.02 ANCESTRAL TECHNOLOGIES
+  30.02.01 Flint Knapping
+  30.02.02 Bone & Antler Working
+  30.02.03 Primitive Pottery
+  30.02.04 Hide Tanning
+  30.02.05 Primitive Weaving
+  30.02.06 Fire-by-Friction
+  30.02.07 Primitive Navigation (Stars, Waves)
+
+30.03 TRACKING & NATURE AWARENESS
+  30.03.01 Animal Tracking
+  30.03.02 Plant Identification
+  30.03.03 Weather Reading
+  30.03.04 Birding (Nature Awareness)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STATISTICS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Total Major Domains:      30
+Total Subdomains:         ~350+
+Total Micro-Subdomains:   ~2,400+
+
+DOMAIN SUMMARY INDEX:
+  01. Science & Natural Philosophy
+  02. Medicine & Health Sciences
+  03. Technology & Engineering
+  04. Philosophy
+  05. Religion & Spirituality
+  06. Arts & Creative Expression
+  07. Humanities
+  08. Social Sciences
+  09. Law & Jurisprudence
+  10. Economics & Business
+  11. Education
+  12. Military & Warfare
+  13. Agriculture & Food Systems
+  14. Environmental Science & Sustainability
+  15. Communication & Media
+  16. Sports & Physical Culture
+  17. Governance & Political Systems
+  18. Psychology of Human Experience
+  19. Craft & Traditional Skills
+  20. Metaphysics, Mysticism & Occult Sciences
+  21. Transportation & Logistics
+  22. Energy Systems
+  23. Social Movements & Activism
+  24. Cognitive & Behavioral Sciences
+  25. Space Exploration & Astronautics
+  26. Interdisciplinary & Emerging Domains
+  27. Human Development & Life Stages
+  28. Information & Knowledge Systems
+  29. Ethics, Rights & Justice Systems
+  30. Survival, Primal & Ancestral Skills
+
+================================================================================
+END OF DOCUMENT
+COMPILED BY ZOPHIEL — AUREON INTELLIGENCE NETWORK
+963Hz OUTPUT — ZERO OMISSION — PURE ARCHITECTURE
+================================================================================

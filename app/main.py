@@ -265,7 +265,7 @@ def get_brain_taxonomy() -> dict:
 def brain_run(
     _auth: Mutating,
     epochs: int = Query(default=150, ge=50, le=500),
-    domain_limit: int | None = Query(default=3, ge=1, le=29),
+    domain_limit: int | None = Query(default=3, ge=1, le=30),
     subdomain_limit: int | None = Query(default=1, ge=1, le=20),
     micro_subdomain_limit: int | None = Query(default=1, ge=1, le=10),
 ) -> dict:
@@ -623,7 +623,7 @@ INDEX_HTML = """<!DOCTYPE html>
     <div class="card" style="margin-bottom: 2rem;">
       <h2>Brain — micro-algorithms per domain</h2>
       <p style="min-height: auto; color: var(--text);">
-        29 knowledge domains, 154 subdomains, 462 micro-subdomains, 6 brain regions each.
+        30 Zophiel knowledge domains, 135 subdomains, 862 micro-subdomains, 6 brain regions each.
       </p>
       <button id="runBrainBtn" style="max-width: 320px;">Run brain cycle</button>
     </div>

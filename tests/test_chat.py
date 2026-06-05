@@ -5,6 +5,7 @@ from __future__ import annotations
 from fastapi.testclient import TestClient
 
 from app.chat_service import chat, estimate_learning_timeline
+from brain.domains.taxonomy import total_micro_subdomains
 from app.main import app
 
 client = TestClient(app)
@@ -23,7 +24,7 @@ def test_chat_grades_timeline():
 
 
 def test_estimate_timeline():
-    t = estimate_learning_timeline(interval_sec=3600, micro_subdomain_count=462)
+    t = estimate_learning_timeline(interval_sec=3600, micro_subdomain_count=total_micro_subdomains())
     assert t["grade_count"] == 7
     assert "one_micro_subdomain_all_grades" in t["estimates"]
 

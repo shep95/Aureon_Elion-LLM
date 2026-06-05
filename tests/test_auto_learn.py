@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-import os
-
 from app.auto_learn import AutoLearnConfig, AutoLearnScheduler, _env_bool, _env_limit
 from brain.cortex import iter_training_targets
+from brain.domains.taxonomy import total_micro_subdomains
 
 
 def test_env_bool():
@@ -14,12 +13,12 @@ def test_env_bool():
 
 
 def test_env_limit_all():
-    assert _env_limit("MISSING", 5, maximum=29) == 5
+    assert _env_limit("MISSING", 5, maximum=30) == 5
 
 
 def test_env_limit_zero_means_all(monkeypatch):
     monkeypatch.setenv("AUREON_AUTO_LEARN_DOMAIN_LIMIT", "0")
-    assert _env_limit("AUREON_AUTO_LEARN_DOMAIN_LIMIT", 5, maximum=29) is None
+    assert _env_limit("AUREON_AUTO_LEARN_DOMAIN_LIMIT", 5, maximum=30) is None
 
 
 def test_auto_learn_config_defaults_off_local(monkeypatch):
@@ -36,9 +35,9 @@ def test_auto_learn_config_railway_default(monkeypatch):
     monkeypatch.delenv("AUREON_AUTO_LEARN_ALL", raising=False)
     cfg = AutoLearnConfig.from_env()
     assert cfg.enabled is True
-    assert cfg.domain_limit == 29
-    assert cfg.subdomain_limit == 7
-    assert cfg.micro_limit == 3
+    assert cfg.domain_limit == 30
+    assert cfg.subdomain_limit == 8
+    assert cfg.micro_limit == 17
 
 
 def test_auto_learn_config_train_all(monkeypatch):
@@ -66,7 +65,7 @@ def test_iter_training_targets_full_taxonomy():
         subdomain_limit=None,
         micro_subdomain_limit=None,
     )
-    assert len(targets) == 462
+    assert len(targets) == total_micro_subdomains()
 
 
 def test_iter_training_targets_single_micro():

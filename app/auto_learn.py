@@ -61,9 +61,9 @@ class AutoLearnConfig:
     epochs: int = 150
     max_grades_per_cycle: int = 1
     train_all: bool = False
-    domain_limit: int | None = 29
-    subdomain_limit: int | None = 7
-    micro_limit: int | None = 3
+    domain_limit: int | None = 30
+    subdomain_limit: int | None = 8
+    micro_limit: int | None = 17
 
     @classmethod
     def from_env(cls) -> AutoLearnConfig:
@@ -75,9 +75,9 @@ class AutoLearnConfig:
             limits = {"domain_limit": None, "subdomain_limit": None, "micro_limit": None}
         else:
             limits = {
-                "domain_limit": _env_limit("AUREON_AUTO_LEARN_DOMAIN_LIMIT", 29, maximum=29),
-                "subdomain_limit": _env_limit("AUREON_AUTO_LEARN_SUBDOMAIN_LIMIT", 7, maximum=20),
-                "micro_limit": _env_limit("AUREON_AUTO_LEARN_MICRO_LIMIT", 3, maximum=10),
+                "domain_limit": _env_limit("AUREON_AUTO_LEARN_DOMAIN_LIMIT", 30, maximum=30),
+                "subdomain_limit": _env_limit("AUREON_AUTO_LEARN_SUBDOMAIN_LIMIT", 8, maximum=20),
+                "micro_limit": _env_limit("AUREON_AUTO_LEARN_MICRO_LIMIT", 17, maximum=20),
             }
         return cls(
             enabled=enabled,
@@ -193,7 +193,7 @@ class AutoLearnScheduler:
             time.sleep(5)
 
     def _domain_batch(self) -> list[str] | None:
-        """When domain_limit < 29, rotate through domains across cycles."""
+        """When domain_limit < full corpus, rotate through domains across cycles."""
         all_domains = list(KNOWLEDGE_TAXONOMY.keys())
         if self.config.domain_limit is None:
             return None

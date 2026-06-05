@@ -8,6 +8,7 @@ import numpy as np
 
 from app.auto_learn import get_auto_learn_scheduler
 from brain.cortex import brain_status
+from brain.domains.taxonomy import total_micro_subdomains
 from brain.grades import GRADE_CURRICULUM, curriculum_public, epochs_for_grade, get_grade
 from brain.graduation import current_grade, progress_report
 from db.models import KnowledgeDomain, KnowledgeMicroSubdomain, KnowledgeSubdomain
@@ -21,9 +22,11 @@ def estimate_learning_timeline(
     *,
     interval_sec: int = 3600,
     max_grades_per_cycle: int = 1,
-    micro_subdomain_count: int = 462,
+    micro_subdomain_count: int | None = None,
 ) -> dict[str, Any]:
     """Wall-clock estimates for grade mastery (auto-learn defaults)."""
+    if micro_subdomain_count is None:
+        micro_subdomain_count = total_micro_subdomains()
     grades = []
     for grade in GRADE_CURRICULUM:
         grades.append(
@@ -75,7 +78,7 @@ def learning_snapshot() -> dict[str, Any]:
     timeline = estimate_learning_timeline(
         interval_sec=status.get("config", {}).get("interval_sec", 3600),
         max_grades_per_cycle=status.get("config", {}).get("max_grades_per_cycle", 1),
-        micro_subdomain_count=brain.get("micro_subdomains", 462),
+        micro_subdomain_count=brain.get("micro_subdomains", total_micro_subdomains()),
     )
     return {
         "auto_learn": status,

@@ -5,7 +5,7 @@ from __future__ import annotations
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from brain.domains.taxonomy import KNOWLEDGE_TAXONOMY
+from brain.domains.taxonomy import KNOWLEDGE_TAXONOMY, lookup_names
 from brain.graduation import seed_grade_progress
 from db.models import (
     KnowledgeDomain,
@@ -26,10 +26,11 @@ def seed_knowledge_taxonomy(session: Session) -> dict[str, int]:
             select(KnowledgeDomain).where(KnowledgeDomain.slug == domain_slug)
         )
         if not domain:
+            names = lookup_names(domain_slug)
             domain = KnowledgeDomain(
                 slug=domain_slug,
-                name=domain_slug.replace("_", " ").title(),
-                description=f"Knowledge domain: {domain_slug}",
+                name=names.get("domain", domain_slug.replace("_", " ").title()),
+                description=f"Knowledge domain: {names.get('domain', domain_slug)}",
             )
             session.add(domain)
             session.flush()
@@ -43,10 +44,11 @@ def seed_knowledge_taxonomy(session: Session) -> dict[str, int]:
                 )
             )
             if not subdomain:
+                names = lookup_names(domain_slug, subdomain=sub_slug)
                 subdomain = KnowledgeSubdomain(
                     domain_id=domain.id,
                     slug=sub_slug,
-                    name=sub_slug.replace("_", " ").title(),
+                    name=names.get("subdomain", sub_slug.replace("_", " ").title()),
                 )
                 session.add(subdomain)
                 session.flush()
@@ -60,11 +62,12 @@ def seed_knowledge_taxonomy(session: Session) -> dict[str, int]:
                     )
                 )
                 if not micro:
+                    names = lookup_names(domain_slug, subdomain=sub_slug, micro=micro_slug)
                     micro = KnowledgeMicroSubdomain(
                         domain_id=domain.id,
                         subdomain_id=subdomain.id,
                         slug=micro_slug,
-                        name=micro_slug.replace("_", " ").title(),
+                        name=names.get("micro_subdomain", micro_slug.replace("_", " ").title()),
                     )
                     session.add(micro)
                     session.flush()
