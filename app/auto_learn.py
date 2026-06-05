@@ -54,11 +54,9 @@ class AutoLearnConfig:
 
     @classmethod
     def from_env(cls) -> AutoLearnConfig:
-        on_railway = bool(
-            os.environ.get("RAILWAY_ENVIRONMENT", "").strip()
-            or os.environ.get("RAILWAY_SERVICE_ID", "").strip()
-        )
-        enabled = _env_bool("AUREON_AUTO_LEARN", default=on_railway)
+        from app.startup import is_railway
+
+        enabled = _env_bool("AUREON_AUTO_LEARN", default=is_railway())
         return cls(
             enabled=enabled,
             on_startup=_env_bool("AUREON_AUTO_LEARN_ON_STARTUP", default=True),

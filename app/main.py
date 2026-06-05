@@ -46,32 +46,11 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     from db.session import init_db
+    from app.startup import start_deferred_startup
 
     logging.basicConfig(level=logging.INFO)
     init_db()
-    try:
-        bootstrap_brain()
-    except Exception:
-        logger.exception("Bootstrap failed on startup")
-    if not api_key_required():
-        logger.warning(
-            "AUREON_API_KEY is not set — mutating endpoints are unauthenticated. "
-            "Set AUREON_API_KEY on Railway for production."
-        )
-    try:
-        get_organism().pulse()
-    except Exception:
-        logger.exception("Initial organism pulse failed")
-    try:
-        from sklearn.datasets import fetch_olivetti_faces
-
-        fetch_olivetti_faces()
-    except Exception:
-        pass
-    try:
-        start_auto_learn()
-    except Exception:
-        logger.exception("Auto-learn scheduler failed to start")
+    start_deferred_startup()
     yield
     try:
         stop_auto_learn()
@@ -92,8 +71,26 @@ Mutating = Annotated[None, Depends(require_mutating_access)]
 
 
 @app.get("/health")
-def health() -> dict[str, str]:
-    return {"status": "ok"}
+def health() -> dict[str, str | bool]:
+    from app.startup import get_startup_state
+
+    state = get_startup_state()
+    return {
+        "status": "ok",
+        "ready": state.ready,
+        "bootstrap_done": state.bootstrap_done,
+        "auto_learn": state.auto_learn_started,
+    }
+
+
+@app.get("/health/ready")
+def health_ready() -> dict:
+    from app.startup import get_startup_state
+
+    state = get_startup_state()
+    if not state.ready:
+        raise HTTPException(status_code=503, detail="Startup in progress")
+    return {"status": "ready", "details": state.details}
 
 
 @app.get("/organism/vitals")

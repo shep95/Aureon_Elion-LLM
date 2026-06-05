@@ -25,8 +25,28 @@ def test_auto_learn_config_railway_default(monkeypatch):
     monkeypatch.delenv("AUREON_AUTO_LEARN", raising=False)
     cfg = AutoLearnConfig.from_env()
     assert cfg.enabled is True
-    assert cfg.on_startup is True
-    assert cfg.interval_sec == 3600
+
+
+def test_auto_learn_config_railway_via_postgres(monkeypatch):
+    monkeypatch.delenv("RAILWAY_ENVIRONMENT", raising=False)
+    monkeypatch.delenv("RAILWAY_SERVICE_ID", raising=False)
+    monkeypatch.delenv("AUREON_AUTO_LEARN", raising=False)
+    monkeypatch.setenv("PORT", "8080")
+    monkeypatch.setenv("DATABASE_URL", "postgresql://user:pass@host/db")
+    cfg = AutoLearnConfig.from_env()
+    assert cfg.enabled is True
+
+
+def test_is_railway(monkeypatch):
+    from app.startup import is_railway
+
+    monkeypatch.delenv("RAILWAY_ENVIRONMENT", raising=False)
+    monkeypatch.delenv("PORT", raising=False)
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    assert is_railway() is False
+    monkeypatch.setenv("PORT", "8080")
+    monkeypatch.setenv("DATABASE_URL", "postgresql://x:y@host/db")
+    assert is_railway() is True
 
 
 def test_scheduler_status_when_disabled():

@@ -94,7 +94,11 @@ def test_mutating_endpoints_require_api_key_when_set(monkeypatch):
 
 
 def test_health_is_public():
-    assert client.get("/health").status_code == 200
+    response = client.get("/health")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "ok"
+    assert "ready" in body
 
 
 def test_invalid_domain_slug_rejected():
