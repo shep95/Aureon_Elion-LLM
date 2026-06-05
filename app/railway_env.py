@@ -75,9 +75,28 @@ def _resolve_postgres_url() -> str | None:
     return f"postgresql://{user}:{password}@{host}:{port}/{database}"
 
 
+def sync_env_secrets_to_file(data_dir: Path | None = None) -> Path | None:
+    """Mirror Railway Variables into the volume secrets file for vault_marrow binding."""
+    api_key = os.environ.get("AUREON_API_KEY", "").strip()
+    audit_key = os.environ.get("AUREON_AUDIT_CHAIN_KEY", "").strip()
+    if not api_key and not audit_key:
+        return None
+
+    directory = data_dir or _data_dir()
+    secrets_file = _secrets_path(directory)
+    values: dict[str, str] = {}
+    if api_key:
+        values["AUREON_API_KEY"] = api_key
+    if audit_key:
+        values["AUREON_AUDIT_CHAIN_KEY"] = audit_key
+    _persist_secrets(secrets_file, values)
+    return secrets_file
+
+
 def _ensure_api_key(data_dir: Path, report: dict[str, Any]) -> None:
     if os.environ.get("AUREON_API_KEY", "").strip():
         report["api_key"] = "env"
+        sync_env_secrets_to_file(data_dir)
         return
 
     secrets_file = _secrets_path(data_dir)
@@ -101,6 +120,7 @@ def _ensure_api_key(data_dir: Path, report: dict[str, Any]) -> None:
 def _ensure_audit_chain_key(data_dir: Path, report: dict[str, Any]) -> None:
     if os.environ.get("AUREON_AUDIT_CHAIN_KEY", "").strip():
         report["audit_chain_key"] = "env"
+        sync_env_secrets_to_file(data_dir)
         return
 
     secrets_file = _secrets_path(data_dir)

@@ -133,6 +133,8 @@ def _deferred_startup() -> None:
         log_ai_activity("startup_bootstrap_complete", stats=stats)
         logger.info("Brain bootstrap complete: %s", stats)
 
+        _bind_vault_fingerprint()
+
         from app.organism import get_organism
 
         get_organism().pulse()
@@ -161,8 +163,6 @@ def _deferred_startup() -> None:
                     if isinstance(o, dict)
                 },
             }
-
-        _bind_vault_fingerprint()
 
         with _lock:
             from app.railway_env import get_railway_bootstrap_report
