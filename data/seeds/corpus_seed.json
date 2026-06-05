@@ -1,0 +1,68 @@
+{
+  "documents": [
+    {
+      "doc_id": "seed_math_001",
+      "title": "Linear Algebra — Matrix Multiplication",
+      "text": "Matrix multiplication combines rows and columns through dot products. For matrices A and B, the entry in row i and column j of the product AB equals the dot product of row i of A with column j of B. This operation is associative but not commutative. Applications include computer graphics transforms, solving systems of linear equations, and neural network forward passes where weight matrices transform input vectors.",
+      "url": "seed://math/linear-algebra",
+      "language": "en",
+      "metadata": {"domain": "mathematics", "source_type": "primary"}
+    },
+    {
+      "doc_id": "seed_cs_001",
+      "title": "Backpropagation in Neural Networks",
+      "text": "Backpropagation computes gradients of a loss function with respect to network weights by applying the chain rule from the output layer backward. Each layer propagates error signals to update weights via gradient descent. Supervised learning requires labeled input-output pairs. The process discovers how much each feature contributes without hand-written rules. This is the core mechanism behind deep learning systems.",
+      "url": "seed://cs/backpropagation",
+      "language": "en",
+      "metadata": {"domain": "computer_science", "source_type": "primary"}
+    },
+    {
+      "doc_id": "seed_physics_001",
+      "title": "Newton's Laws of Motion",
+      "text": "Newton's first law states that an object remains at rest or in uniform motion unless acted upon by a net external force. The second law relates force, mass, and acceleration: F equals m times a. The third law states that every action has an equal and opposite reaction. These principles form the foundation of classical mechanics and enable prediction of planetary orbits and engineering structures.",
+      "url": "seed://physics/newton",
+      "language": "en",
+      "metadata": {"domain": "physics", "source_type": "primary"}
+    },
+    {
+      "doc_id": "seed_history_001",
+      "title": "The Scientific Revolution",
+      "text": "The Scientific Revolution of the sixteenth and seventeenth centuries shifted European inquiry from authority-based reasoning to empirical observation and mathematical modeling. Figures such as Galileo, Kepler, and Newton established methods requiring reproducible experiments and peer scrutiny. Institutions like the Royal Society formalized peer review. This transformation accelerated technological progress and changed how knowledge was validated across domains.",
+      "url": "seed://history/scientific-revolution",
+      "language": "en",
+      "metadata": {"domain": "history", "source_type": "secondary"}
+    },
+    {
+      "doc_id": "seed_sanskrit_001",
+      "title": "Sanskrit Grammar — Panini's System",
+      "text": "Panini's Ashtadhyayi describes Sanskrit morphology through precise metarules and recursive substitutions. The text treats linguistic structure as a formal generative system predating modern computational grammars. Sanskrit encodes compound formation, sandhi rules, and phonological transformations with explicit constraints. Studying these structures reveals alternative frameworks for representing knowledge and reasoning about language that differ from Indo-European grammatical traditions.",
+      "url": "seed://sanskrit/panini",
+      "language": "sa",
+      "metadata": {"domain": "linguistics", "source_type": "primary", "multilingual": true}
+    },
+    {
+      "doc_id": "seed_engineering_001",
+      "title": "Control Systems and Feedback Loops",
+      "text": "Feedback control systems measure output, compare it to a setpoint, and adjust inputs to minimize error. Proportional-integral-derivative controllers combine present error, accumulated error, and rate of change. Stability analysis uses transfer functions and pole placement. These principles apply to thermostats, aircraft autopilots, and automated ML pipelines where evaluation metrics trigger retraining or rollback when performance degrades.",
+      "url": "seed://engineering/control-systems",
+      "language": "en",
+      "metadata": {"domain": "engineering", "source_type": "primary"}
+    },
+    {
+      "doc_id": "seed_code_001",
+      "title": "Algorithmic Complexity — Big-O Notation",
+      "text": "Big-O notation describes upper bounds on algorithm growth rates as input size increases. Constant time O(1) operations do not scale with input. Linear O(n) algorithms scan input once. Quadratic O(n squared) nested loops become impractical at scale. Space-time tradeoffs appear in hash tables and caching. Choosing appropriate data structures prevents performance bottlenecks in production systems processing millions of records.",
+      "url": "seed://code/complexity",
+      "language": "en",
+      "metadata": {"domain": "computer_science", "source_type": "primary"}
+    },
+    {
+      "doc_id": "seed_biology_001",
+      "title": "DNA Replication and Base Pairing",
+      "text": "DNA replication is semiconservative: each strand serves as a template for a new complementary strand. Adenine pairs with thymine and guanine pairs with cytosine through hydrogen bonds. DNA polymerase adds nucleotides in the five-prime to three-prime direction. Proofreading mechanisms reduce error rates. Understanding replication enables genetic engineering, forensic analysis, and evolutionary studies comparing sequences across species.",
+      "url": "seed://biology/dna",
+      "language": "en",
+      "metadata": {"domain": "biology", "source_type": "primary"}
+    }
+  ]
+}

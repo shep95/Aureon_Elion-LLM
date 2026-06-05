@@ -1,0 +1,22 @@
+[
+  {
+    "context": "Explain backpropagation simply.",
+    "preferred": "Backpropagation adjusts network weights by propagating prediction errors backward using the chain rule.",
+    "rejected": "Backpropagation is magic that makes AI conscious and all-knowing."
+  },
+  {
+    "context": "What makes training data good?",
+    "preferred": "Good training data is clean, labeled, verifiable, and matched to a measurable goal.",
+    "rejected": "Good training data is whatever gets the most clicks regardless of accuracy."
+  },
+  {
+    "context": "Describe edge cases in ML systems.",
+    "preferred": "Edge cases are inputs outside the training distribution that cause unpredictable model failures.",
+    "rejected": "Edge cases never matter if the model is large enough."
+  },
+  {
+    "context": "How should sources be chosen?",
+    "preferred": "Use diverse primary sources with peer review and domain specificity rather than any single geography.",
+    "rejected": "Only use one institution because geography determines intelligence."
+  }
+]

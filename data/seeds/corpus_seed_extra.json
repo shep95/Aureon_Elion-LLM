@@ -1,0 +1,68 @@
+{
+  "documents": [
+    {
+      "doc_id": "seed_math_002",
+      "title": "Calculus — Derivatives and Rates of Change",
+      "text": "The derivative measures instantaneous rate of change of a function. For position over time, the derivative gives velocity. Matrix notation appears in multivariable calculus gradients. The chain rule connects composite functions and is essential for optimization algorithms used in machine learning training loops.",
+      "url": "seed://math/calculus",
+      "language": "en",
+      "metadata": {"domain": "mathematics", "source_type": "primary"}
+    },
+    {
+      "doc_id": "seed_cs_002",
+      "title": "Supervised Learning Pipelines",
+      "text": "Automated training pipelines collect clean data, apply teacher-model labeling, run scheduled retraining, evaluate against benchmarks, and promote models only when scores improve. Backpropagation discovers weights for neural networks. Measurable goals and defined parameters are required constraints for reliable systems.",
+      "url": "seed://cs/pipelines",
+      "language": "en",
+      "metadata": {"domain": "computer_science", "source_type": "primary"}
+    },
+    {
+      "doc_id": "seed_physics_002",
+      "title": "Force Mass and Acceleration",
+      "text": "Newton's second law states force equals mass times acceleration. This relationship predicts motion of objects under known forces. Engineering systems from bridges to rockets rely on classical mechanics. Force mass acceleration analysis appears throughout physics education and applied engineering design.",
+      "url": "seed://physics/fma",
+      "language": "en",
+      "metadata": {"domain": "physics", "source_type": "primary"}
+    },
+    {
+      "doc_id": "seed_biology_002",
+      "title": "Mammals and Respiration",
+      "text": "All mammals breathe air through lungs. Whales are mammals that surface to breathe despite living in oceans. Respiration exchanges oxygen and carbon dioxide at the cellular level. Biology classification uses shared characteristics such as mammary glands and air-breathing metabolism to group species.",
+      "url": "seed://biology/mammals",
+      "language": "en",
+      "metadata": {"domain": "biology", "source_type": "primary"}
+    },
+    {
+      "doc_id": "seed_history_002",
+      "title": "Empirical Methods and Peer Review",
+      "text": "Modern science depends on empirical observation and peer scrutiny of results. Institutions require reproducible experiments before accepting claims. The Scientific Revolution replaced pure authority with evidence-based inquiry. Historical analysis tracks how validation methods evolved across centuries.",
+      "url": "seed://history/empirical",
+      "language": "en",
+      "metadata": {"domain": "history", "source_type": "primary"}
+    },
+    {
+      "doc_id": "seed_linguistics_002",
+      "title": "Sanskrit Grammar and Metarules",
+      "text": "Panini's Sanskrit grammar uses explicit metarules and substitution classes. Linguistic analysis of Sanskrit reveals structured morphology unlike many Western grammars. Grammar rules encode phonological transformations with precise constraints studied by historians of linguistics and computer science alike.",
+      "url": "seed://linguistics/sanskrit",
+      "language": "en",
+      "metadata": {"domain": "linguistics", "source_type": "primary"}
+    },
+    {
+      "doc_id": "seed_engineering_002",
+      "title": "Feedback Control in Production Systems",
+      "text": "Engineering feedback loops measure output error and adjust system inputs. Control theory stabilizes aircraft, factories, and automated pipelines. Signal processing and circuit design apply similar principles. Reliable engineering demands measurable goals and testable performance benchmarks.",
+      "url": "seed://engineering/feedback",
+      "language": "en",
+      "metadata": {"domain": "engineering", "source_type": "primary"}
+    },
+    {
+      "doc_id": "seed_research_001",
+      "title": "Machine Learning Research Methods",
+      "text": "Research papers describe methods, experiments, and reproducible results. Abstract summaries introduce study goals before detailed analysis. Peer-reviewed research in computer science advances neural network training, evaluation benchmarks, and dataset curation standards used across the field.",
+      "url": "seed://research/ml-methods",
+      "language": "en",
+      "metadata": {"domain": "research", "source_type": "primary"}
+    }
+  ]
+}
