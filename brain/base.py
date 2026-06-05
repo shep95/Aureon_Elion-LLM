@@ -52,6 +52,19 @@ class MicroAgentBase(ABC):
     def run(self, session: Session, ctx: AgentContext) -> AgentResult: ...
 
     def execute(self, session: Session, agent: MicroAgent, ctx: AgentContext) -> AgentResult:
+        from app.activity_log import log_region_complete, log_region_start
+
+        source = str(ctx.extra.get("source", "internal"))
+        log_region_start(
+            self.region,
+            domain=ctx.domain_slug,
+            subdomain=ctx.subdomain_slug,
+            micro_subdomain=ctx.micro_subdomain_slug,
+            grade=ctx.grade_slug,
+            agent_id=agent.id,
+            source=source,
+        )
+
         run = AgentRun(agent_id=agent.id, status="running")
         session.add(run)
         agent.status = "running"
@@ -79,10 +92,31 @@ class MicroAgentBase(ABC):
                     },
                 )
             )
+            log_region_complete(
+                self.region,
+                domain=ctx.domain_slug,
+                subdomain=ctx.subdomain_slug,
+                micro_subdomain=ctx.micro_subdomain_slug,
+                grade=ctx.grade_slug,
+                status=result.status,
+                metrics=result.metrics,
+                error=result.error,
+                source=source,
+            )
             return result
         except Exception as exc:
             run.status = "failed"
             run.error = str(exc)
             run.finished_at = datetime.now(timezone.utc)
             agent.status = "error"
+            log_region_complete(
+                self.region,
+                domain=ctx.domain_slug,
+                subdomain=ctx.subdomain_slug,
+                micro_subdomain=ctx.micro_subdomain_slug,
+                grade=ctx.grade_slug,
+                status="failed",
+                error=str(exc),
+                source=source,
+            )
             return AgentResult(region=self.region, status="failed", error=str(exc))

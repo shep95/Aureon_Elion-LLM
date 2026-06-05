@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import datetime, timezone
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 from sqlalchemy import func, select
 
@@ -45,9 +48,14 @@ REGION_ORDER = (
 
 def bootstrap_brain() -> dict[str, int]:
     """Create tables and seed domains, subdomains, micro-subdomains, and micro-agents."""
+    from app.activity_log import log_ai_activity
+
+    log_ai_activity("bootstrap_start")
     init_db()
     with get_session() as session:
-        return seed_knowledge_taxonomy(session)
+        stats = seed_knowledge_taxonomy(session)
+    log_ai_activity("bootstrap_complete", stats=stats)
+    return stats
 
 
 def _run_region_cycle(
@@ -88,8 +96,12 @@ def run_grade_cycle(
     micro_subdomain_slug: str,
     grade_slug: str | None = None,
     epochs: int = 200,
+    *,
+    source: str = "internal",
 ) -> dict[str, Any]:
     """Run the 6 brain regions at a specific academic grade level."""
+    from app.activity_log import log_ai_activity
+
     bootstrap_brain()
 
     with get_session() as session:
@@ -137,6 +149,17 @@ def run_grade_cycle(
         mark_grade_in_progress(session, micro.id, grade_slug)
         session.commit()
 
+        log_ai_activity(
+            "grade_cycle_start",
+            source=source,
+            epochs=epochs,
+            domain=domain_slug,
+            subdomain=subdomain_slug,
+            micro_subdomain=micro_subdomain_slug,
+            grade=grade_slug,
+            path=f"{domain_slug}.{subdomain_slug}.{micro_subdomain_slug}",
+        )
+
         ctx = AgentContext(
             domain_slug=domain_slug,
             subdomain_slug=subdomain_slug,
@@ -147,6 +170,7 @@ def run_grade_cycle(
             epochs=epochs,
             grade_slug=grade.slug,
             grade=grade,
+            extra={"source": source},
         )
         results = _run_region_cycle(session, domain, subdomain, micro, ctx)
 
@@ -164,7 +188,7 @@ def run_grade_cycle(
         report = progress_report(session, micro.id)
         session.commit()
 
-    return {
+    outcome = {
         "domain": domain_slug,
         "subdomain": subdomain_slug,
         "micro_subdomain": micro_subdomain_slug,
@@ -175,6 +199,19 @@ def run_grade_cycle(
         "progress": report,
         "completed_at": datetime.now(timezone.utc).isoformat(),
     }
+    log_ai_activity(
+        "grade_cycle_complete",
+        source=source,
+        status="graduated" if graduation.get("passed") else "attempted",
+        domain=domain_slug,
+        subdomain=subdomain_slug,
+        micro_subdomain=micro_subdomain_slug,
+        grade=grade_slug,
+        path=f"{domain_slug}.{subdomain_slug}.{micro_subdomain_slug}",
+        graduation=graduation,
+        regions_summary=[{"region": r["region"], "status": r["status"]} for r in results],
+    )
+    return outcome
 
 
 def run_graduation_ladder(
@@ -183,32 +220,58 @@ def run_graduation_ladder(
     micro_subdomain_slug: str,
     epochs: int = 200,
     max_grades: int | None = None,
+    *,
+    source: str = "internal",
 ) -> dict[str, Any]:
     """Advance through grade levels until failure or doctorate graduation."""
+    from app.activity_log import clear_cycle_id, log_ai_activity, new_cycle_id
+
     bootstrap_brain()
+    cycle_id = new_cycle_id("ladder")
+    path = f"{domain_slug}.{subdomain_slug}.{micro_subdomain_slug}"
+    log_ai_activity(
+        "graduation_ladder_start",
+        cycle_id=cycle_id,
+        source=source,
+        path=path,
+        max_grades=max_grades,
+        epochs=epochs,
+    )
     ladder: list[dict] = []
     steps = 0
 
-    while True:
-        if max_grades is not None and steps >= max_grades:
-            break
-        step = run_grade_cycle(
-            domain_slug,
-            subdomain_slug,
-            micro_subdomain_slug,
-            grade_slug=None,
-            epochs=epochs,
-        )
-        ladder.append(step)
-        steps += 1
+    try:
+        while True:
+            if max_grades is not None and steps >= max_grades:
+                break
+            step = run_grade_cycle(
+                domain_slug,
+                subdomain_slug,
+                micro_subdomain_slug,
+                grade_slug=None,
+                epochs=epochs,
+                source=source,
+            )
+            ladder.append(step)
+            steps += 1
 
-        if step.get("error") or step.get("fully_graduated"):
-            break
-        graduation = step.get("graduation", {})
-        if not graduation.get("passed"):
-            break
-        if graduation.get("fully_graduated"):
-            break
+            if step.get("error") or step.get("fully_graduated"):
+                break
+            graduation = step.get("graduation", {})
+            if not graduation.get("passed"):
+                break
+            if graduation.get("fully_graduated"):
+                break
+    finally:
+        log_ai_activity(
+            "graduation_ladder_complete",
+            cycle_id=cycle_id,
+            source=source,
+            path=path,
+            steps_completed=steps,
+            last_graduation=ladder[-1].get("graduation") if ladder else {},
+        )
+        clear_cycle_id()
 
     return {
         "domain": domain_slug,
@@ -301,6 +364,8 @@ def run_full_brain(
     domain_limit: int | None = None,
     subdomain_limit: int | None = 1,
     micro_subdomain_limit: int | None = 1,
+    *,
+    source: str = "internal",
 ) -> dict[str, Any]:
     """
     Train across human knowledge domains → subdomains → micro-subdomains.
@@ -311,6 +376,18 @@ def run_full_brain(
     """
     bootstrap_brain()
     started = datetime.now(timezone.utc).isoformat()
+    from app.activity_log import clear_cycle_id, log_ai_activity, new_cycle_id
+
+    cycle_id = new_cycle_id("full")
+    log_ai_activity(
+        "full_brain_start",
+        cycle_id=cycle_id,
+        source=source,
+        domain_limit=domain_limit,
+        subdomain_limit=subdomain_limit,
+        micro_subdomain_limit=micro_subdomain_limit,
+        epochs=epochs,
+    )
     domains = list(KNOWLEDGE_TAXONOMY.keys())
     if domain_limit:
         domains = domains[:domain_limit]
@@ -338,7 +415,7 @@ def run_full_brain(
         doc_count = session.scalar(select(func.count()).select_from(Document)) or 0
         agent_count = session.scalar(select(func.count()).select_from(MicroAgent)) or 0
 
-    return {
+    result = {
         "architecture": "domain_subdomain_micro_subdomain_micro_agents",
         "regions": [r[0] for r in REGION_ORDER],
         "total_domains": len(KNOWLEDGE_TAXONOMY),
@@ -352,6 +429,16 @@ def run_full_brain(
         "finished_at": datetime.now(timezone.utc).isoformat(),
         "domain_results": domain_results,
     }
+    log_ai_activity(
+        "full_brain_complete",
+        cycle_id=cycle_id,
+        source=source,
+        domains_processed=len(domains),
+        micro_subdomain_cycles_executed=total_cycles,
+        documents_in_db=doc_count,
+    )
+    clear_cycle_id()
+    return result
 
 
 def brain_status() -> dict[str, Any]:

@@ -177,12 +177,17 @@ class AutoLearnScheduler:
         return domain, sub, micro
 
     def _run_one_cycle(self) -> None:
+        from app.activity_log import clear_cycle_id, log_ai_activity, new_cycle_id
+
         target = self._next_target()
         if not target:
             self.state.last_error = "no micro-subdomains in taxonomy"
+            log_ai_activity("auto_learn_skipped", reason="no micro-subdomains in taxonomy")
             return
 
         domain_slug, subdomain_slug, micro_slug = target
+        cycle_id = new_cycle_id("auto")
+        path = f"{domain_slug}.{subdomain_slug}.{micro_slug}"
         self.state.current_target = {
             "domain": domain_slug,
             "subdomain": subdomain_slug,
@@ -195,6 +200,12 @@ class AutoLearnScheduler:
             if not organism.is_vital():
                 self.state.last_error = "organism lockdown — auto-learn paused"
                 logger.warning("Auto-learn skipped: organism not vital")
+                log_ai_activity(
+                    "auto_learn_skipped",
+                    cycle_id=cycle_id,
+                    path=path,
+                    reason="organism lockdown",
+                )
                 return
 
             bootstrap_brain()
@@ -205,6 +216,7 @@ class AutoLearnScheduler:
                 )
                 if not domain:
                     self.state.last_error = f"unknown domain: {domain_slug}"
+                    log_ai_activity("auto_learn_skipped", cycle_id=cycle_id, path=path, reason=self.state.last_error)
                     return
                 subdomain = session.scalar(
                     select(KnowledgeSubdomain).where(
@@ -214,6 +226,7 @@ class AutoLearnScheduler:
                 )
                 if not subdomain:
                     self.state.last_error = f"unknown subdomain: {subdomain_slug}"
+                    log_ai_activity("auto_learn_skipped", cycle_id=cycle_id, path=path, reason=self.state.last_error)
                     return
                 micro = session.scalar(
                     select(KnowledgeMicroSubdomain).where(
@@ -223,16 +236,24 @@ class AutoLearnScheduler:
                 )
                 if not micro:
                     self.state.last_error = f"unknown micro_subdomain: {micro_slug}"
+                    log_ai_activity("auto_learn_skipped", cycle_id=cycle_id, path=path, reason=self.state.last_error)
                     return
                 grade_row = current_grade(session, micro.id)
                 grade_slug = grade_row.grade_slug if grade_row else "graduated"
 
+            log_ai_activity(
+                "auto_learn_cycle_start",
+                cycle_id=cycle_id,
+                source="auto_learn",
+                path=path,
+                cycle_number=self.state.cycles_completed + 1,
+                grade=grade_slug,
+                epochs=self.config.epochs,
+            )
             logger.info(
-                "Auto-learn cycle #%s — %s.%s.%s @ grade %s",
+                "Auto-learn cycle #%s — %s @ grade %s",
                 self.state.cycles_completed + 1,
-                domain_slug,
-                subdomain_slug,
-                micro_slug,
+                path,
                 grade_slug,
             )
 
@@ -243,6 +264,7 @@ class AutoLearnScheduler:
                     micro_slug,
                     epochs=self.config.epochs,
                     max_grades=self.config.max_grades_per_cycle,
+                    source="auto_learn",
                 )
 
             self.state.cycles_completed += 1
@@ -257,14 +279,36 @@ class AutoLearnScheduler:
                 "steps": result.get("steps_completed", 0),
             }
             self.state.last_error = None
+            log_ai_activity(
+                "auto_learn_cycle_complete",
+                cycle_id=cycle_id,
+                source="auto_learn",
+                path=path,
+                cycle_number=self.state.cycles_completed,
+                result=self.state.last_result,
+            )
             logger.info("Auto-learn cycle complete: %s", self.state.last_result)
 
         except HTTPException as exc:
             self.state.last_error = f"training busy: {exc.detail}"
             logger.warning("Auto-learn skipped — %s", exc.detail)
+            log_ai_activity(
+                "auto_learn_skipped",
+                cycle_id=cycle_id,
+                path=path,
+                reason=str(exc.detail),
+            )
         except Exception as exc:
             self.state.last_error = str(exc)[:500]
             logger.exception("Auto-learn cycle failed")
+            log_ai_activity(
+                "auto_learn_failed",
+                cycle_id=cycle_id,
+                path=path,
+                error=str(exc)[:500],
+            )
+        finally:
+            clear_cycle_id()
 
 
 _scheduler: AutoLearnScheduler | None = None

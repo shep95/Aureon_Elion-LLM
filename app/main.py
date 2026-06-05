@@ -45,10 +45,12 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    from app.activity_log import configure_logging
     from db.session import init_db
     from app.startup import start_deferred_startup
 
-    logging.basicConfig(level=logging.INFO)
+    configure_logging()
+    logging.basicConfig(level=logging.INFO, force=True)
     init_db()
     start_deferred_startup()
     yield
@@ -183,6 +185,7 @@ def brain_run(
                 domain_limit=clamp_domain_limit(domain_limit),
                 subdomain_limit=clamp_subdomain_limit(subdomain_limit),
                 micro_subdomain_limit=clamp_micro_subdomain_limit(micro_subdomain_limit),
+                source="api",
             )
     except HTTPException:
         raise
@@ -295,6 +298,7 @@ def brain_run_grade(
                 micro_subdomain_slug,
                 grade_slug=grade_slug,
                 epochs=epochs,
+                source="api",
             )
     except HTTPException:
         raise
@@ -328,6 +332,7 @@ def brain_run_graduation_ladder(
                 micro_subdomain_slug,
                 epochs=epochs,
                 max_grades=max_grades,
+                source="api",
             )
     except HTTPException:
         raise

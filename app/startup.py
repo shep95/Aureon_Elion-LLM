@@ -90,6 +90,9 @@ def _preload_olivetti_background() -> None:
 
 def _deferred_startup() -> None:
     global _state
+    from app.activity_log import log_ai_activity
+
+    log_ai_activity("startup_begin", railway=is_railway())
     logger.info("Aureon deferred startup beginning (Railway=%s)", is_railway())
     try:
         from brain.cortex import bootstrap_brain
@@ -98,6 +101,7 @@ def _deferred_startup() -> None:
         with _lock:
             _state.bootstrap_done = True
             _state.details["bootstrap"] = stats
+        log_ai_activity("startup_bootstrap_complete", stats=stats)
         logger.info("Brain bootstrap complete: %s", stats)
 
         from app.organism import get_organism
@@ -115,6 +119,11 @@ def _deferred_startup() -> None:
             _state.details["auto_learn"] = scheduler.status()
 
         if scheduler.config.enabled:
+            log_ai_activity(
+                "startup_auto_learn_active",
+                interval_sec=scheduler.config.interval_sec,
+                status=scheduler.status(),
+            )
             logger.info(
                 "Auto-learn ACTIVE — first cycle starts in background, interval=%ss",
                 scheduler.config.interval_sec,
@@ -129,8 +138,10 @@ def _deferred_startup() -> None:
         with _lock:
             _state.ready = True
             _state.error = None
+        log_ai_activity("startup_ready", details=_state.details)
         logger.info("Aureon startup ready.")
     except Exception as exc:
+        log_ai_activity("startup_failed", error=str(exc)[:500])
         logger.exception("Deferred startup failed")
         with _lock:
             _state.error = str(exc)[:500]
