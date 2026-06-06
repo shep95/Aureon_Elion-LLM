@@ -1206,6 +1206,10 @@ def _command_response(message: str) -> dict[str, Any] | None:
                 "• `/think` — ask myself meta-cognitive questions (identity, gaps, consciousness)\n"
                 "• `/roadmap` — capability matrix + path beyond frontier LLMs\n"
                 "• `/agent <task>` — multi-step tool loop (search → calculate → verify)\n"
+                "• `/self-audit` — full read-only codebase introspection (security, workflow, fixes)\n"
+                "• `/curious` — market research about itself on the web, sandbox prototype (you approve deploy)\n"
+                "• `/curious pending` — proposals awaiting your approval\n"
+                "• `/curious approve <id>` — deploy approved prototype to GitHub branch (fork push optional)\n"
                 "• `/evolve <task>` — scaffold a fork branch for a proposed upgrade "
                 "(AST file analysis + algorithmic patch proposals via predict/code_master; "
                 "syntax + pytest gates before commit; never pushes main without approval)\n"
@@ -1329,6 +1333,107 @@ def _command_response(message: str) -> dict[str, Any] | None:
             "citations, abstain-when-uncertain — not hallucinated fluency."
         )
         return {"reply": "\n".join(lines), "kind": "roadmap", "roadmap": snap, "simulation": sim}
+    if cmd.startswith("/self-audit") or cmd == "/self-audit":
+        from brain.self_audit import format_self_audit_report, run_self_audit
+
+        audit = run_self_audit()
+        return {
+            "reply": format_self_audit_report(audit),
+            "kind": "self_audit",
+            "audit": audit,
+        }
+    if cmd.startswith("/curious") or cmd.startswith("/market-research"):
+        from app.curiosity_proposals import get_proposal, list_proposals
+        from app.curiosity_sandbox import deploy_proposal, run_curiosity_cycle
+
+        rest = message.strip().split(None, 1)
+        sub = rest[1].strip() if len(rest) > 1 else ""
+        sub_l = sub.lower()
+
+        if sub_l in ("", "run", "research", "market", "market-research"):
+            result = run_curiosity_cycle()
+            return {
+                "reply": result.get("report", "Curiosity cycle complete."),
+                "kind": "curiosity",
+                "curiosity": result,
+            }
+
+        if sub_l.startswith("pending") or sub_l == "list":
+            pending = list_proposals(status="pending_approval")
+            if not pending["proposals"]:
+                pending = list_proposals()
+            lines = ["**Curiosity proposals awaiting approval:**"]
+            for p in pending["proposals"][:10]:
+                lines.append(
+                    f"- `{p['id'][:8]}` · {p.get('status')} · "
+                    f"Railway: `{p.get('railway_section') or 'n/a'}`"
+                )
+            if not pending["proposals"]:
+                lines.append("_No proposals yet — run `/curious`._")
+            return {"reply": "\n".join(lines), "kind": "curiosity", "proposals": pending}
+
+        if sub_l.startswith("approve"):
+            parts = sub.split()
+            if len(parts) < 2:
+                return {
+                    "reply": "Usage: `/curious approve <proposal-id>` or `/curious approve <id> push`",
+                    "kind": "curiosity",
+                }
+            pid_prefix = parts[1].strip()
+            approve_push = len(parts) > 2 and parts[2].lower() == "push"
+            match = None
+            for p in list_proposals(limit=100)["proposals"]:
+                if p["id"].startswith(pid_prefix) or p["id"] == pid_prefix:
+                    match = p
+                    break
+            if not match:
+                return {"reply": f"No proposal matching `{pid_prefix}`.", "kind": "curiosity"}
+            deploy = deploy_proposal(
+                match["id"],
+                approve_github=True,
+                approve_push=approve_push,
+                reviewer="chat",
+            )
+            if not deploy.get("ok"):
+                return {"reply": f"Deploy failed: {deploy.get('error')}", "kind": "curiosity", "deploy": deploy}
+            branch = deploy.get("deploy", {}).get("repo", {}).get("branch")
+            gh = deploy.get("deploy", {}).get("github", {})
+            lines = [
+                f"**Approved and deployed** proposal `{match['id'][:8]}`.",
+                f"Git branch: `{branch}`",
+                f"GitHub branch: `{gh.get('branch')}` (pushed: {gh.get('pushed')})",
+                f"Railway section: `{deploy.get('railway_section')}` — add as new Railway service after PR merge.",
+            ]
+            if not approve_push:
+                lines.append("_Fork push skipped — add `push` to approve command or use API `approve_push: true`._")
+            return {"reply": "\n".join(lines), "kind": "curiosity", "deploy": deploy}
+
+        if sub_l.startswith("status "):
+            pid = sub.split(None, 1)[1].strip()
+            prop = get_proposal(pid)
+            if not prop:
+                for p in list_proposals(limit=100)["proposals"]:
+                    if p["id"].startswith(pid):
+                        prop = p
+                        break
+            if not prop:
+                return {"reply": f"Proposal `{pid}` not found.", "kind": "curiosity"}
+            return {
+                "reply": (
+                    f"**Proposal `{prop['id'][:8]}`** · status: {prop.get('status')}\n"
+                    f"Sandbox: `{prop.get('sandbox_path') or 'none'}`\n"
+                    f"Railway: `{prop.get('railway_section') or 'n/a'}`"
+                ),
+                "kind": "curiosity",
+                "proposal": prop,
+            }
+
+        result = run_curiosity_cycle(focus=sub or None)
+        return {
+            "reply": result.get("report", "Curiosity research complete."),
+            "kind": "curiosity",
+            "curiosity": result,
+        }
     if cmd.startswith("/evolve"):
         task = message.strip()[7:].strip(" :.")
         if not task:
@@ -1345,6 +1450,16 @@ def _command_response(message: str) -> dict[str, Any] | None:
                 ),
                 "kind": "self_evolve",
             }
+        from brain.self_audit import format_self_audit_report, is_self_audit_request, run_self_audit
+
+        if is_self_audit_request(message):
+            audit = run_self_audit()
+            return {
+                "reply": format_self_audit_report(audit),
+                "kind": "self_audit",
+                "audit": audit,
+            }
+
         from app.self_evolve import plan_evolution, repo_status
 
         plan = plan_evolution(task)
@@ -1479,12 +1594,48 @@ def chat(message: str, *, session_id: str | None = None) -> dict[str, Any]:
             payload["plan"] = cmd["plan"]
         if "repo" in cmd:
             payload["repo"] = cmd["repo"]
+        if "audit" in cmd:
+            payload["audit"] = cmd["audit"]
+        if "curiosity" in cmd:
+            payload["curiosity"] = cmd["curiosity"]
+        if "proposals" in cmd:
+            payload["proposals"] = cmd["proposals"]
+        if "deploy" in cmd:
+            payload["deploy"] = cmd["deploy"]
+        if "proposal" in cmd:
+            payload["proposal"] = cmd["proposal"]
         if "citations" in cmd:
             payload["citations"] = cmd["citations"]
         return done(payload)
 
     if is_agent_task(text):
         return done(_agent_payload(text, session_id=session_id))
+
+    from brain.curiosity_engine import is_curiosity_request
+
+    if is_curiosity_request(text):
+        from app.curiosity_sandbox import run_curiosity_cycle
+
+        result = run_curiosity_cycle()
+        return done({
+            "reply": result.get("report", "Curiosity research complete."),
+            "kind": "curiosity",
+            "session_id": session_id,
+            "learning": learning_snapshot(),
+            "curiosity": result,
+        })
+
+    from brain.self_audit import format_self_audit_report, is_self_audit_request, run_self_audit
+
+    if is_self_audit_request(text):
+        audit = run_self_audit()
+        return done({
+            "reply": format_self_audit_report(audit),
+            "kind": "self_audit",
+            "session_id": session_id,
+            "learning": learning_snapshot(),
+            "audit": audit,
+        })
 
     from brain.identity_handler import handle_identity, is_identity_question
     from brain.philosophy_handler import (

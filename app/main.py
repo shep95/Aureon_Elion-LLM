@@ -619,6 +619,70 @@ def api_self_evolve_history(_: Mutating, limit: int = Query(default=50, ge=1, le
     return {"history": get_history(limit=limit)}
 
 
+@app.post("/api/brain/self/audit")
+def api_self_audit(_: Mutating, body: dict[str, Any] | None = None) -> dict:
+    """Read-only full codebase self-audit — security, workflow, improvements, build plan."""
+    from brain.self_audit import format_self_audit_report, run_self_audit
+
+    max_files = 120
+    if body:
+        max_files = max(20, min(int(body.get("max_files", 120)), 300))
+    audit = run_self_audit(max_files=max_files)
+    return {"audit": audit, "report": format_self_audit_report(audit)}
+
+
+@app.post("/api/brain/curiosity/run")
+def api_curiosity_run(_: Mutating, body: dict[str, Any] | None = None) -> dict:
+    """Self-directed market research, sandbox prototype, pending human approval."""
+    from app.curiosity_sandbox import run_curiosity_cycle
+
+    focus = str((body or {}).get("focus", "")).strip() or None
+    auto_sandbox = bool((body or {}).get("auto_sandbox", True))
+    return run_curiosity_cycle(focus=focus, auto_sandbox=auto_sandbox)
+
+
+@app.get("/api/brain/curiosity/pending")
+def api_curiosity_pending(_: Mutating, limit: int = Query(default=20, ge=1, le=100)) -> dict:
+    from app.curiosity_proposals import list_proposals
+
+    return list_proposals(status="pending_approval", limit=limit)
+
+
+@app.get("/api/brain/curiosity/{proposal_id}")
+def api_curiosity_get(proposal_id: str, _: Mutating) -> dict:
+    from app.curiosity_proposals import get_proposal, list_proposals
+
+    proposal = get_proposal(proposal_id)
+    if not proposal:
+        for p in list_proposals(limit=200)["proposals"]:
+            if p["id"].startswith(proposal_id):
+                proposal = p
+                break
+    if not proposal:
+        raise HTTPException(status_code=404, detail="proposal not found")
+    return {"proposal": proposal}
+
+
+@app.post("/api/brain/curiosity/{proposal_id}/approve")
+def api_curiosity_approve(proposal_id: str, body: dict[str, Any], _: Mutating) -> dict:
+    """Human approval — optional deploy to git branch + GitHub + fork push."""
+    from app.curiosity_proposals import approve_proposal
+    from app.curiosity_sandbox import deploy_proposal
+
+    approved = bool(body.get("approve", True))
+    if not approved:
+        return approve_proposal(proposal_id, approved=False, reviewer="api")
+
+    if body.get("deploy", True):
+        return deploy_proposal(
+            proposal_id,
+            approve_github=bool(body.get("approve_github", True)),
+            approve_push=bool(body.get("approve_push", False)),
+            reviewer="api",
+        )
+    return approve_proposal(proposal_id, approved=True, reviewer="api")
+
+
 @app.get("/api/brain/inference/profile")
 def api_inference_profile(seq_len: int = Query(default=1024, ge=1, le=1_000_000)) -> dict:
     from src.efficient_inference import attention_window, inference_profile
