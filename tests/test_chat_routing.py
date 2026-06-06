@@ -22,6 +22,13 @@ def test_simple_nl_god_and_math():
     assert "mathematics" in math.lower() or "numbers" in math.lower()
 
 
+def test_arithmetic_routes_before_deep_concept():
+    result = chat("What is 2+2", session_id="arith-1")
+    assert result["reply"] == "4"
+    assert result.get("deterministic", {}).get("evaluator") == "deterministic_arithmetic"
+    assert result["kind"] == "chat"
+
+
 def test_is_code_question():
     assert is_code_question("write a python function to add two numbers")
     assert not is_code_question("what is the capital of france")

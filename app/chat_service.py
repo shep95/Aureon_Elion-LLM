@@ -322,6 +322,10 @@ def is_opinion_or_identity(text: str) -> bool:
 def is_deep_concept_question(text: str) -> bool:
     """Single-concept 'what is X' questions need RAG + full predict — not one-liners."""
     q = text.strip().lower().rstrip("?").strip()
+    from brain.deterministic_qa import is_arithmetic_question
+
+    if is_arithmetic_question(q):
+        return False
     factual_markers = (
         "capital of",
         "population of",
@@ -1297,6 +1301,11 @@ def chat(message: str, *, session_id: str | None = None) -> dict[str, Any]:
             "learning": learning_snapshot(),
         })
 
+    # Rule 0.5 — exact arithmetic before routing logic
+    deterministic = _deterministic_payload(text, session_id=session_id)
+    if deterministic:
+        return done(deterministic)
+
     cmd = _command_response(text)
     if cmd:
         payload = {
@@ -1393,10 +1402,6 @@ def chat(message: str, *, session_id: str | None = None) -> dict[str, Any]:
                 "simple_qa": True,
             }
         )
-
-    deterministic = _deterministic_payload(text, session_id=session_id)
-    if deterministic:
-        return done(deterministic)
 
     # Rule 4 — named entity before classifier
     if is_named_entity_question(text):
