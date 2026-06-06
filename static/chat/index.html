@@ -240,6 +240,18 @@
     }
     button.send:hover { transform: translateY(-1px); box-shadow: 0 8px 24px var(--glow); }
     button.send:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .file-btn {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 0 0.85rem;
+      color: var(--muted);
+      font-size: 0.78rem;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .file-btn:hover { border-color: var(--accent-2); color: var(--text); }
+    #fileInput { display: none; }
     .chips { display: flex; flex-wrap: wrap; gap: 0.4rem; padding: 0 1.25rem; }
     .chip {
       font-size: 0.72rem;
@@ -379,6 +391,8 @@
           <button type="button" class="chip" data-cmd="/help">Help</button>
         </div>
         <form class="composer" id="form">
+          <input type="file" id="fileInput" accept=".txt,.md,.pdf,.png,.jpg,.jpeg,.webp,.mp3,.wav,.json,.csv" />
+          <button type="button" class="file-btn" id="fileBtn" title="Upload PDF, image, audio, or text">Attach</button>
           <textarea id="input" rows="2" placeholder="Message Aureon — e.g. “What did you learn last cycle?” or ask about any topic…"></textarea>
           <button type="submit" class="send" id="sendBtn">Send</button>
         </form>
@@ -563,6 +577,32 @@
       }
     }
 
+    async function sendFile(file, question) {
+      saveConfig();
+      addMsg(`[file] ${file.name}${question ? " — " + question : ""}`, "user");
+      $("sendBtn").disabled = true;
+      try {
+        const form = new FormData();
+        form.append("file", file);
+        form.append("message", question || "");
+        form.append("session_id", sessionId);
+        form.append("persist", "true");
+        const r = await fetch(base() + "/api/chat/file", { method: "POST", body: form });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.detail || r.statusText);
+        addMsg(data.reply, "bot");
+        if (data.file) {
+          addMsg(`↳ ${data.file.modality} · ${(data.file.text_preview || "").slice(0, 120)}`, "system");
+          pushLog(`File routed: ${data.file.modality} · ${file.name}`);
+        }
+        refreshSidebar();
+      } catch (e) {
+        addMsg("File upload failed — check Railway URL and file size (max 10MB).", "system");
+      } finally {
+        $("sendBtn").disabled = false;
+      }
+    }
+
     async function sendMessage(text) {
       saveConfig();
       addMsg(text, "user");
@@ -608,6 +648,15 @@
     }
 
     $("apiKey").addEventListener("input", updateKeyBadge);
+    $("fileBtn").addEventListener("click", () => $("fileInput").click());
+    $("fileInput").addEventListener("change", () => {
+      const file = $("fileInput").files?.[0];
+      if (!file) return;
+      const question = $("input").value.trim();
+      $("input").value = "";
+      $("fileInput").value = "";
+      sendFile(file, question);
+    });
     $("form").addEventListener("submit", (e) => {
       e.preventDefault();
       const text = $("input").value.trim();

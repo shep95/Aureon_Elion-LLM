@@ -28,6 +28,7 @@ PUBLIC_PATHS = frozenset({
     "/security/status",
     "/chat",
     "/api/chat",
+    "/api/chat/file",
     "/api/chat/access",
     "/api/chat/learning",
     "/api/chat/timeline",

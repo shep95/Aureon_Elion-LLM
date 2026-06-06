@@ -72,6 +72,7 @@ class MultimodalCollector:
                 )
 
             text = " ".join(text_parts)
+            digest = hashlib.sha256(text.encode()).hexdigest()
             docs.append(
                 RawDocument(
                     doc_id=f"multimodal_{media.stem}_{uuid.uuid4().hex[:8]}",

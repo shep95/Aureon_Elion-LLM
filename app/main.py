@@ -9,7 +9,7 @@ from typing import Annotated, Any
 
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, HTTPException, Query, Request
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse
 
 from app.auto_learn import get_auto_learn_scheduler, start_auto_learn, stop_auto_learn
@@ -267,6 +267,40 @@ def api_chat(request: Request, body: dict[str, Any]) -> dict[str, Any]:
         raise HTTPException(status_code=500, detail=safe_error_message(exc)) from exc
 
 
+@app.post("/api/chat/file")
+async def api_chat_file(
+    request: Request,
+    file: UploadFile = File(...),
+    message: str = Form(default=""),
+    session_id: str | None = Form(default=None),
+    persist: bool = Form(default=True),
+) -> dict[str, Any]:
+    """Upload PDF/image/audio/text — route through Tier 3–4 processors, then chat on extracted context."""
+    from app.chat_rate_limit import get_chat_rate_limiter
+    from app.middleware import _client_ip
+    from brain.file_router import ingest_upload
+
+    if not get_chat_rate_limiter().try_acquire(_client_ip(request)):
+        raise HTTPException(status_code=429, detail="Chat rate limit exceeded — try again shortly")
+
+    data = await file.read()
+    filename = (file.filename or "upload.bin").replace("\\", "/").split("/")[-1]
+    try:
+        ingested = ingest_upload(filename, data, message=message, persist=persist)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    try:
+        chat_result = chat(ingested.text[:8000], session_id=session_id)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=safe_error_message(exc)) from exc
+
+    return {
+        **chat_result,
+        "file": ingested.to_dict(),
+    }
+
+
 @app.get("/api/concepts")
 def get_concepts() -> dict[str, Any]:
     return concepts()
@@ -518,6 +552,31 @@ def api_self_evolve_run(body: dict[str, Any], _: Mutating) -> dict:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
+@app.post("/api/brain/self/auto")
+def api_self_evolve_auto(body: dict[str, Any], _: Mutating) -> dict:
+    """Autonomous fork cycle — branch, patch, commit, push fork without human PR approval (main blocked)."""
+    from app.self_evolve_agent import run_autonomous_evolution
+
+    task = str(body.get("task", "")).strip()
+    if not task:
+        raise HTTPException(status_code=400, detail="task required")
+    try:
+        return run_autonomous_evolution(
+            task,
+            auto_push_fork=bool(body.get("auto_push_fork", True)),
+            max_files=int(body.get("max_files", 3)),
+        )
+    except (ValueError, RuntimeError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.get("/api/brain/self/history")
+def api_self_evolve_history(_: Mutating, limit: int = Query(default=50, ge=1, le=200)) -> dict:
+    from app.self_evolve_agent import get_history
+
+    return {"history": get_history(limit=limit)}
+
+
 @app.get("/api/brain/inference/profile")
 def api_inference_profile(seq_len: int = Query(default=1024, ge=1, le=1_000_000)) -> dict:
     from src.efficient_inference import attention_window, inference_profile
@@ -532,17 +591,29 @@ def api_inference_profile(seq_len: int = Query(default=1024, ge=1, le=1_000_000)
 @app.get("/api/brain/multimodal/status")
 def api_multimodal_status() -> dict:
     from brain.multimodal_collector import multimodal_status
+    from brain.multimodal_processors import tier_status
+    from brain.pgvector_store import status as pgvector_status
 
-    return multimodal_status()
+    return {
+        **multimodal_status(),
+        "tiers": tier_status(),
+        "pgvector": pgvector_status(),
+    }
 
 
 @app.post("/api/brain/multimodal/ingest")
 def api_multimodal_ingest(_: Mutating, limit: int = Query(default=10, ge=1, le=50)) -> dict:
-    """Collect multimodal sidecars from data/raw/multimodal into the brain collector path."""
+    """Collect multimodal sidecars from data/raw/multimodal and persist to documents + RAG."""
     from brain.multimodal_collector import MultimodalCollector
+    from brain.multimodal_persist import persist_multimodal_docs
 
     docs = MultimodalCollector().collect(limit=limit)
-    return {"collected": len(docs), "sources": [d.source for d in docs]}
+    stats = persist_multimodal_docs(docs)
+    return {
+        "collected": len(docs),
+        "persisted": stats,
+        "sources": [d.source for d in docs],
+    }
 
 
 @app.post("/api/chat/feedback")
