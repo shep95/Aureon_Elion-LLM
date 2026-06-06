@@ -4,6 +4,8 @@
 
 Aureon-LLM is not mystical “AI.” It is a production-oriented system built on **supervised learning**, **backpropagation**, and an industrial **5-step training pipeline** — wrapped in a **brain-inspired micro-agent architecture** where each region collects, verifies, labels, trains, evaluates, and rewards domain by domain.
 
+**Live app:** [https://aureonai.app/](https://aureonai.app/) — chat UI, learning status, and API.
+
 Deploy on [Railway](https://railway.app) with PostgreSQL (~**$45.00/month** to run and build). Run locally in minutes.
 
 ---
@@ -131,9 +133,11 @@ The **Aureon Files** collection is the primary intellectual brain of this algori
 | **Pipeline steps** | collect → label → train → evaluate → RLHF |
 | **Database** | PostgreSQL (Railway) or SQLite (local) |
 | **Web UI** | Chat at `/chat` · demos at `/` |
+| **Live app** | [aureonai.app](https://aureonai.app/) |
 
 **Repositories**
 
+- [houseofasher/Aureon-LLM](https://github.com/houseofasher/Aureon-LLM)
 - [ZorakCorp/Aureon-LLM](https://github.com/ZorakCorp/Aureon-LLM)
 - [shep95/Aureon_Elion-LLM](https://github.com/shep95/Aureon_Elion-LLM)
 
@@ -788,6 +792,8 @@ MIT — use, fork, and deploy freely. Attribution appreciated.
 <p align="center">
   <strong>Aureon-LLM</strong> · supervised learning · brain micro-agents · every human domain<br/>
   Funded &amp; backed by <strong>#HouseOfAsher</strong> · <strong>#ZophielIntelligenceAgency</strong> · <strong>ZorakCorp</strong><br/>
+  <a href="https://aureonai.app/">aureonai.app</a> ·
+  <a href="https://github.com/houseofasher/Aureon-LLM">houseofasher/Aureon-LLM</a> ·
   <a href="https://github.com/ZorakCorp/Aureon-LLM">ZorakCorp/Aureon-LLM</a> ·
   <a href="https://github.com/shep95/Aureon_Elion-LLM">shep95/Aureon_Elion-LLM</a>
 </p>
