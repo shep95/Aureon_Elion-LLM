@@ -109,15 +109,17 @@ def test_deep_concept_not_one_liner(monkeypatch):
     monkeypatch.setattr(
         "app.chat_service._handle_deep_concept",
         lambda text, **kw: {
-            "reply": "Consciousness is subjective experience arising from neural activity and self-modeling.",
+            "reply": "Entropy measures disorder and information content in thermodynamic systems.",
             "kind": "deep_concept",
             "session_id": kw.get("session_id"),
             "learning": {},
         },
     )
-    assert is_deep_concept_question("what is consciousness") is True
+    assert is_deep_concept_question("what is consciousness") is False
+    assert is_deep_concept_question("what is god") is False
+    assert is_deep_concept_question("what is entropy") is True
     assert is_deep_concept_question("how does backpropagation work") is False
-    result = chat("what is consciousness", session_id="deep-1")
+    result = chat("what is entropy", session_id="deep-1")
     assert result["kind"] == "deep_concept"
     assert len(result["reply"]) > 40
 

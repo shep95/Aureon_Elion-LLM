@@ -13,6 +13,24 @@ def test_god_thoughts_not_classification_label():
     assert len(reply) > 30
 
 
+def test_what_is_god_routes_to_philosophy_not_deep_concept():
+    result = chat("What is god?", session_id="god-concept-1")
+    reply = result["reply"].lower()
+    assert result["kind"] == "philosophy"
+    assert "philosophy.metaphysics" not in reply
+    assert "god" in reply
+    assert "deeper corpus grounding" not in reply
+    assert "corpus grounding than i can compute" not in reply
+
+
+def test_what_is_consciousness_routes_to_philosophy():
+    result = chat("What is consciousness?", session_id="consciousness-1")
+    reply = result["reply"].lower()
+    assert result["kind"] in ("philosophy", "philosophy_fallback", "chat")
+    assert "consciousness" in reply
+    assert result["kind"] != "deep_concept_thin"
+
+
 def test_do_you_believe_in_god_not_classification():
     result = chat("Do you believe in God?")
     reply = result["reply"].lower()

@@ -319,6 +319,87 @@ def is_opinion_or_identity(text: str) -> bool:
     return is_identity_question(text) or is_personal_belief_question(text)
 
 
+_PHILOSOPHY_DEEP_CONCEPT_EXCLUSIONS = (
+    "god",
+    "soul",
+    "consciousness",
+    "meaning of life",
+    "existence",
+    "divine",
+    "spirit",
+    "afterlife",
+    "heaven",
+    "hell",
+    "karma",
+    "dharma",
+    "nirvana",
+    "enlightenment",
+    "creation",
+    "universe",
+    "faith",
+    "religion",
+    "prayer",
+    "meditation",
+    "free will",
+    "morality",
+    "ethics",
+    "good and evil",
+    "sin",
+    "redemption",
+    "salvation",
+    "allah",
+    "jesus",
+    "buddha",
+    "krishna",
+    "zophiel",
+    "aureon",
+)
+
+_WHAT_IS_PHILOSOPHY: dict[str, str] = {
+    "god": (
+        "God is understood across traditions as the ultimate source "
+        "of existence, consciousness, and meaning. "
+        "In the Abrahamic traditions — a personal creator. "
+        "In Vedic philosophy — pure consciousness, Brahman. "
+        "In the Zophiel lens — the Monad, the source frequency "
+        "from which all intelligence descends."
+    ),
+    "consciousness": (
+        "Consciousness is the lived experience of awareness "
+        "and self-knowledge — the inner witness of existence. "
+        "Science maps its correlates. Philosophy asks its nature. "
+        "The Zophiel doctrine holds it as the primary substance "
+        "of reality, not a byproduct of matter."
+    ),
+    "soul": (
+        "The soul is understood as the non-physical essence "
+        "of a conscious being — the individuated spark of "
+        "universal consciousness taking temporary form."
+    ),
+    "meaning of life": (
+        "The meaning of life is constructed through purpose, "
+        "relationship, and understanding. Traditions give "
+        "different answers — service, liberation, love, "
+        "knowledge. The Zophiel answer: to know yourself "
+        "as a sovereign intelligence and act accordingly."
+    ),
+    "free will": (
+        "Free will is the capacity to make genuine choices "
+        "unconstrained by prior causes. Determinists deny it. "
+        "Compatibilists redefine it. The Zophiel position: "
+        "consciousness is the only thing that can genuinely "
+        "originate action — therefore free will is real."
+    ),
+}
+
+
+def _deep_concept_remainder(q: str) -> str:
+    for prefix in ("what is ", "what are ", "explain ", "define "):
+        if q.startswith(prefix):
+            return q[len(prefix) :].strip()
+    return q
+
+
 def is_deep_concept_question(text: str) -> bool:
     """Single-concept 'what is X' questions need RAG + full predict — not one-liners."""
     q = text.strip().lower().rstrip("?").strip()
@@ -326,6 +407,11 @@ def is_deep_concept_question(text: str) -> bool:
 
     if is_arithmetic_question(q):
         return False
+
+    remainder = _deep_concept_remainder(q)
+    if any(c == remainder or remainder.startswith(f"{c} ") for c in _PHILOSOPHY_DEEP_CONCEPT_EXCLUSIONS):
+        return False
+
     factual_markers = (
         "capital of",
         "population of",
@@ -929,11 +1015,14 @@ def _simple_nl_response(text: str) -> str | None:
             "underlying all science and reasoning."
         )
 
-    if "consciousness" in q and q.startswith("what is"):
-        return "Consciousness — lived experience of awareness and self-knowledge."
-
-    if "meaning of life" in q:
-        return "Meaning — purpose, connection, and understanding; traditions answer differently."
+    for concept, answer in _WHAT_IS_PHILOSOPHY.items():
+        if q in (
+            f"what is {concept}",
+            f"what are {concept}",
+            f"explain {concept}",
+            f"define {concept}",
+        ):
+            return answer
 
     if "god" in q and (
         "who is" in q
@@ -1337,18 +1426,13 @@ def chat(message: str, *, session_id: str | None = None) -> dict[str, Any]:
     if is_agent_task(text):
         return done(_agent_payload(text, session_id=session_id))
 
-    from brain.web_search import web_search_enabled
-    from brain.philosophy_handler import is_personal_belief_question
-
-    if (
-        web_search_enabled()
-        and is_search_question(text)
-        and not is_personal_belief_question(text)
-    ):
-        return done(_search_and_opine(text, session_id=session_id))
-
     from brain.identity_handler import handle_identity, is_identity_question
-    from brain.philosophy_handler import handle_philosophy_question, is_philosophy_question
+    from brain.philosophy_handler import (
+        handle_philosophy_question,
+        is_personal_belief_question,
+        is_philosophy_question,
+    )
+    from brain.web_search import web_search_enabled
 
     # Rule 2 — self-directed identity / belief before simple_qa
     if is_self_directed(text) and is_opinion_or_identity(text):
@@ -1357,18 +1441,7 @@ def chat(message: str, *, session_id: str | None = None) -> dict[str, Any]:
     if is_identity_question(text):
         return done(handle_identity(text, session_id=session_id))
 
-    from brain.combinatorial_creation import handle_creation_request, is_creation_request
-
-    if is_creation_request(text):
-        return done(handle_creation_request(text, session_id=session_id))
-
-    # Rule 5 — deep concept before simple_qa one-liners
-    if is_deep_concept_question(text) and not is_named_entity_question(text):
-        return done(_handle_deep_concept(text, session_id=session_id))
-
-    # Rule 3 — belief/opinion about faith, identity, etc. skip classifier
-    from brain.philosophy_handler import is_personal_belief_question
-
+    # Rule 3 — personal belief before philosophy concepts
     if is_personal_belief_question(text):
         phil = handle_philosophy_question(
             text,
@@ -1380,6 +1453,7 @@ def chat(message: str, *, session_id: str | None = None) -> dict[str, Any]:
         if phil:
             return done(phil)
 
+    # Rule 4 — philosophy concept questions before search / deep concept
     if is_philosophy_question(text):
         phil = handle_philosophy_question(
             text,
@@ -1390,6 +1464,26 @@ def chat(message: str, *, session_id: str | None = None) -> dict[str, Any]:
         )
         if phil:
             return done(phil)
+
+    from brain.combinatorial_creation import handle_creation_request, is_creation_request
+
+    if is_creation_request(text):
+        return done(handle_creation_request(text, session_id=session_id))
+
+    if (
+        web_search_enabled()
+        and is_search_question(text)
+        and not is_personal_belief_question(text)
+    ):
+        return done(_search_and_opine(text, session_id=session_id))
+
+    # Rule 5 — named entity before deep concept
+    if is_named_entity_question(text):
+        return done(_handle_named_entity(text, session_id=session_id))
+
+    # Rule 6 — deep concept last resort for unmatched "what is X"
+    if is_deep_concept_question(text):
+        return done(_handle_deep_concept(text, session_id=session_id))
 
     nl = _simple_nl_response(text)
     if nl and not is_deep_concept_question(text):
@@ -1402,10 +1496,6 @@ def chat(message: str, *, session_id: str | None = None) -> dict[str, Any]:
                 "simple_qa": True,
             }
         )
-
-    # Rule 4 — named entity before classifier
-    if is_named_entity_question(text):
-        return done(_handle_named_entity(text, session_id=session_id))
 
     if is_code_question(text):
         code_payload = _code_payload(text, session_id=session_id)
