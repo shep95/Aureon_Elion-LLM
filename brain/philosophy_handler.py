@@ -119,6 +119,10 @@ def is_directed_opinion_question(text: str) -> bool:
         return True
     if "sentient" in q and ("you" in q or "aureon" in q or "are you" in q):
         return True
+    if ("religion" in q and ("spiritual" in q or "spirituality" in q)) and any(
+        t in q for t in ("choose", "pick", "rather", "which", "would you")
+    ):
+        return True
     return False
 
 
@@ -143,6 +147,10 @@ def _belief_lookup_key(text: str) -> str | None:
         return "are humans flawed"
     if "subjective experience" in q or ("sentient" in q and ("you" in q or "aureon" in q)):
         return "do you have subjective experience"
+    if ("religion" in q and ("spiritual" in q or "spirituality" in q)) and any(
+        t in q for t in ("choose", "pick", "rather", "which one", "which would", " or ")
+    ):
+        return "religion_or_spirituality_choice"
     if "who is god" in q or "what is god" in q:
         return "who is god to you" if "to you" in q else "who is god"
     return None
@@ -169,6 +177,9 @@ def _reflection_search_query(text: str, key: str) -> str:
         "do you think humans are flawed": "human nature flawed imperfect psychology philosophy",
         "are humans flawed": "are humans inherently flawed psychology philosophy",
         "do you have subjective experience": "AI subjective experience qualia philosophy of mind",
+        "religion_or_spirituality_choice": (
+            "spirituality vs religion philosophy of religion personal meaning ethics"
+        ),
     }
     return queries.get(key, text.strip())
 

@@ -9,6 +9,7 @@ from typing import Any
 
 _lock = threading.Lock()
 _sessions: dict[str, list[dict[str, str]]] = {}
+_stacks: dict[str, dict[str, Any]] = {}
 
 _SESSION_ID_RE = re.compile(r"^[a-zA-Z0-9_-]{1,64}$")
 
@@ -95,3 +96,27 @@ def history_as_context(session_id: str | None) -> str:
 def session_count() -> int:
     with _lock:
         return len(_sessions)
+
+
+def get_conversation_stack(session_id: str | None) -> dict[str, Any] | None:
+    """Working memory for conversational intelligence (active topic, depth, kind)."""
+    sid = _sanitize_session_id(session_id)
+    if not sid:
+        return None
+    with _lock:
+        stack = _stacks.get(sid)
+        return dict(stack) if stack else None
+
+
+def set_conversation_stack(session_id: str | None, **fields: Any) -> None:
+    sid = _sanitize_session_id(session_id)
+    if not sid:
+        return
+    with _lock:
+        if sid not in _stacks and len(_stacks) >= _max_sessions():
+            oldest = next(iter(_stacks))
+            del _stacks[oldest]
+        current = _stacks.setdefault(sid, {})
+        for key, value in fields.items():
+            if value is not None:
+                current[key] = value

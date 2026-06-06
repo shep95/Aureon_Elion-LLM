@@ -256,18 +256,10 @@ def _deterministic_payload(text: str, *, session_id: str | None) -> dict[str, An
 
 
 def _resolve_followup(text: str, session_id: str | None) -> str:
-    """Map 'tell me more about that' to the prior user question."""
-    if not session_id:
-        return text
-    q = text.lower()
-    triggers = ("tell me more", "more about that", "about that", "explain that", "what about that")
-    if any(t in q for t in triggers):
-        from app.session_memory import get_history
+    """Map vague follow-ups to the prior user question (legacy hook)."""
+    from brain.conversation_engine import resolve_message
 
-        hist = get_history(session_id, limit=1)
-        if hist:
-            return f"{hist[-1]['user']} — follow up: {text}"
-    return text
+    return resolve_message(text, session_id).resolved_text
 
 
 # --- Routing guards (Zophiel audit) -------------------------------------------
@@ -810,9 +802,15 @@ def is_search_question(text: str) -> bool:
     return any(t in q for t in _LIVE_SEARCH_TRIGGERS)
 
 
-def _search_and_opine(text: str, *, session_id: str | None) -> dict[str, Any]:
-    """Search DuckDuckGo, form opinion deterministically — no transformer reasoning."""
-    from brain.opinion_brain import form_opinion
+def _search_and_opine(
+    text: str,
+    *,
+    session_id: str | None,
+    depth: int = 0,
+    continuation: bool = False,
+) -> dict[str, Any]:
+    """Search DuckDuckGo, form a human briefing — sources live in payload, not prose."""
+    from brain.opinion_brain import form_human_brief
     from brain.web_search import search
 
     results = search(text)
@@ -828,7 +826,7 @@ def _search_and_opine(text: str, *, session_id: str | None) -> dict[str, Any]:
             "learning": learning_snapshot(),
         }
 
-    opinion_data = form_opinion(text, results)
+    opinion_data = form_human_brief(text, results, depth=depth if continuation else 0)
 
     if not opinion_data.get("opinion"):
         return {
@@ -841,22 +839,9 @@ def _search_and_opine(text: str, *, session_id: str | None) -> dict[str, Any]:
             "learning": learning_snapshot(),
         }
 
-    corpus_context = ""
-    try:
-        from brain.vector_rag import retrieve_with_citations
-
-        corpus_context, _hits, _citations = retrieve_with_citations(text)
-    except Exception:
-        pass
-
-    reply_parts = [opinion_data["opinion"]]
-    if corpus_context and len(corpus_context) > 50:
-        reply_parts.append(f"\n\nFrom my trained corpus: {corpus_context[:300]}")
     sources = opinion_data.get("sources") or ["web"]
-    reply_parts.append(f"\n\nSources: {', '.join(sources)}")
-
-    return {
-        "reply": "\n".join(reply_parts),
+    payload: dict[str, Any] = {
+        "reply": str(opinion_data["opinion"]),
         "kind": "search_opinion",
         "session_id": session_id,
         "sources": sources,
@@ -864,6 +849,10 @@ def _search_and_opine(text: str, *, session_id: str | None) -> dict[str, Any]:
         "confidence": opinion_data.get("confidence", 0.0),
         "learning": learning_snapshot(),
     }
+    if continuation:
+        payload["continuation"] = True
+        payload["conversation_depth"] = depth
+    return payload
 
 
 def _predict_with_timeout(
@@ -1568,6 +1557,9 @@ def chat(message: str, *, session_id: str | None = None) -> dict[str, Any]:
             reply = recovered
         if session_id and reply:
             append_turn(session_id, user=original, assistant=reply)
+            from brain.conversation_engine import update_stack_from_turn
+
+            update_stack_from_turn(session_id, user=original, payload=out)
         return out
 
     if not text:
@@ -1707,6 +1699,27 @@ def chat(message: str, *, session_id: str | None = None) -> dict[str, Any]:
     if is_creation_request(text):
         return done(handle_creation_request(text, session_id=session_id))
 
+    from brain.conversation_engine import is_continuation_message, try_continuation_response
+
+    if session_id and is_continuation_message(message or ""):
+        cont = try_continuation_response(
+            (message or "").strip(),
+            session_id=session_id,
+            search_and_opine_fn=_search_and_opine,
+            predict_fn=_predict_with_search_fallback,
+            philosophy_fn=lambda t, session_id=session_id: handle_philosophy_question(
+                t,
+                session_id=session_id,
+                predict_fn=_predict_with_search_fallback,
+                classify_fn=lambda _x: None,
+                learning_snapshot_fn=learning_snapshot,
+            ),
+        )
+        if cont:
+            cont["session_id"] = session_id
+            cont["learning"] = learning_snapshot()
+            return done(cont)
+
     if is_code_question(text):
         code_payload = _code_payload(text, session_id=session_id)
         if code_payload:
@@ -1752,6 +1765,16 @@ def chat(message: str, *, session_id: str | None = None) -> dict[str, Any]:
 
     if is_prediction_question(text):
         return done(_brain_predict_payload(text, session_id=session_id))
+
+    from brain.conversation_engine import is_continuation_message as _is_cont
+
+    if session_id and _is_cont(message or ""):
+        return done({
+            "reply": "I lost the thread — what topic should I go deeper on?",
+            "kind": "continuation_clarify",
+            "session_id": session_id,
+            "learning": learning_snapshot(),
+        })
 
     ciper_payload = _ciper_chat_payload(text, session_id=session_id)
     if ciper_payload:

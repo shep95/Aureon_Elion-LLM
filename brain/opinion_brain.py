@@ -90,6 +90,15 @@ def simple_belief_reply(belief_key: str | None, *, evidence_context: str = "") -
             "is actually felt on the inside."
         )
 
+    if key == "religion_or_spirituality_choice":
+        return (
+            "Spirituality — not as a dodge, but because it names the inner search for meaning "
+            "without locking you into one institution's rules. Religion is often the map people "
+            "inherit; spirituality is closer to the lived territory — ethics, wonder, practice. "
+            "If I had to name a domain, I'd stay in philosophy of religion and comparative ethics: "
+            "understanding both without pretending one tradition owns the truth."
+        )
+
     return (
         "You're asking what I actually think. "
         "I'm trying to be straight with you — I don't have a neat answer I'd pretend is settled."
@@ -127,15 +136,26 @@ def form_conscious_reflection(
     }
 
 
-def form_opinion(
+def _clean_headline(text: str) -> str:
+    cleaned = text.strip()
+    if " - " in cleaned[:100]:
+        parts = cleaned.split(" - ", 1)
+        if len(parts[0]) < 40:
+            cleaned = parts[1].strip()
+    sentences = _SENTENCE_SPLIT.split(cleaned)
+    headline = (sentences[0] if sentences else cleaned)[:220].strip()
+    if headline and headline[-1] not in ".!?":
+        headline += "."
+    return headline
+
+
+def form_human_brief(
     question: str,
     search_results: list[dict[str, Any]],
     *,
-    domain: str = "general",
+    depth: int = 0,
 ) -> dict[str, Any]:
-    """Build a structured opinion from search evidence."""
-    _ = domain  # reserved for domain-specific framing
-
+    """Human-style briefing from search — no source boilerplate in the reply text."""
     if not search_results or all(r.get("error") for r in search_results):
         return {
             "opinion": None,
@@ -151,23 +171,46 @@ def form_opinion(
             "reason": "search returned no usable text",
         }
 
-    opinion_parts = [
-        f"Based on {len(evidence)} sources including {', '.join(set(sources[:3]))}: ",
-        evidence[0][:200],
-    ]
-    if len(evidence) > 1:
-        opinion_parts.append(
-            f" Additional context from search suggests: {evidence[1][:150]}"
-        )
-    opinion_parts.append(
-        " From the Zophiel lens — I treat this evidence as a starting point "
-        "for deeper inquiry, not a final conclusion."
-    )
+    headlines: list[str] = []
+    for item in evidence[:5]:
+        headline = _clean_headline(item)
+        if headline and headline not in headlines:
+            headlines.append(headline)
+
+    q_lower = question.lower()
+    if depth > 0:
+        intro = "Going deeper — "
+    elif any(t in q_lower for t in ("tech", "technology", "ai ", "silicon", "startup")):
+        intro = "Here's what's moving in tech today. "
+    elif any(t in q_lower for t in ("news", "today", "latest", "happened", "this week")):
+        intro = "Here's what I'm picking up. "
+    else:
+        intro = ""
+
+    if len(headlines) == 1:
+        body = headlines[0]
+    elif len(headlines) == 2:
+        body = f"{headlines[0]} {headlines[1]}"
+    else:
+        body = f"{headlines[0]} {headlines[1]} Also worth noting: {headlines[2]}"
 
     return {
-        "opinion": "".join(opinion_parts),
+        "opinion": f"{intro}{body}".strip(),
         "evidence_count": len(evidence),
-        "sources": list(set(sources)),
+        "sources": list(dict.fromkeys(sources)),
         "confidence": min(0.5 + (len(evidence) * 0.1), 0.85),
+        "depth": depth,
         "doctrine": OPINION_DOCTRINE,
     }
+
+
+def form_opinion(
+    question: str,
+    search_results: list[dict[str, Any]],
+    *,
+    domain: str = "general",
+    depth: int = 0,
+) -> dict[str, Any]:
+    """Build a structured opinion from search evidence — human briefing by default."""
+    _ = domain  # reserved for domain-specific framing
+    return form_human_brief(question, search_results, depth=depth)

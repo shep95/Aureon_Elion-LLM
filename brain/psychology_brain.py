@@ -75,6 +75,8 @@ def _response_mode(payload: dict[str, Any], user_message: str) -> str:
     if payload.get("classification"):
         return "classified_direct"
     kind = payload.get("kind", "chat")
+    if kind == "search_opinion":
+        return "live_briefing"
     if kind in ("status", "grades", "help", "research", "mind", "think"):
         return "technical_report"
     return "conversational"
@@ -151,6 +153,10 @@ def shape_human_reply(
         shaped = _match_user_length(reply, user_message)
         register = "conversational"
         traits.extend(["pattern_recognition", "measurable_confidence"])
+    elif mode == "live_briefing":
+        shaped = re.sub(r"\n\nSources:.*$", "", reply.strip(), flags=re.DOTALL | re.IGNORECASE)
+        register = "conversational"
+        traits.extend(["live_briefing", "conversational_momentum"])
     else:
         shaped = reply
         register = "conversational"
