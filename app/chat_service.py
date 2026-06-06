@@ -568,31 +568,63 @@ def _handle_identity_or_belief(text: str, *, session_id: str | None) -> dict[str
     return handle_identity(text, session_id=session_id)
 
 
+def _is_weak_predict_answer(answer: str) -> bool:
+    text = answer.strip().lower()
+    if not text or len(text) < 12:
+        return True
+    if _is_classification_leak(answer):
+        return True
+    for marker in (FALLBACK_CORPUS.lower(), FALLBACK_TRAINING.lower()):
+        if marker[:40] in text:
+            return True
+    return False
+
+
 def _handle_deep_concept(text: str, *, session_id: str | None) -> dict[str, Any]:
     """Deep single-concept questions — RAG + predict + auto-search fallback."""
     from brain.vector_rag import retrieve_with_citations
+    from brain.web_search import web_search_enabled
 
     rag_context, _hits, rag_citations = retrieve_with_citations(text)
     enriched = f"{rag_context} question {text}" if rag_context else text
     result = _predict_with_search_fallback(enriched, session_id=session_id, force=True)
 
-    if result and result.get("answer") and len(str(result["answer"])) > 20:
+    if result and result.get("answer"):
         answer = str(result["answer"]).strip()
-        if not _is_classification_leak(answer):
+        if not _is_weak_predict_answer(answer):
             citations = list(result.get("citations") or [])
             if not citations and rag_citations:
                 citations = rag_citations[:3]
-            return {
+            kind = "search_opinion" if result.get("search_opinion") else "deep_concept"
+            payload: dict[str, Any] = {
                 "reply": answer,
-                "kind": "deep_concept",
+                "kind": kind,
                 "session_id": session_id,
                 "learning": learning_snapshot(),
-                "brain_predict": True,
+                "brain_predict": not result.get("search_opinion"),
                 "citations": citations,
             }
+            if result.get("sources"):
+                payload["sources"] = result["sources"]
+            return payload
+
+    if web_search_enabled():
+        search_payload = _search_and_opine(text, session_id=session_id)
+        if search_payload.get("kind") == "search_opinion":
+            search_payload["kind"] = "deep_concept_search"
+            return search_payload
+
+    fallback = _fallback_to_predict(text, session_id=session_id)
+    if not _is_weak_predict_answer(fallback):
+        return {
+            "reply": fallback,
+            "kind": "deep_concept",
+            "session_id": session_id,
+            "learning": learning_snapshot(),
+        }
 
     return {
-        "reply": _fallback_to_predict(text, session_id=session_id),
+        "reply": fallback,
         "kind": "deep_concept_thin",
         "session_id": session_id,
         "learning": learning_snapshot(),
