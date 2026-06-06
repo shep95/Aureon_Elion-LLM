@@ -28,7 +28,10 @@ def test_github_sync_enabled_with_token(monkeypatch):
     monkeypatch.setenv("AUREON_GITHUB_TOKEN", "ghp_test")
     assert is_github_sync_enabled() is True
     cfg = GitHubSyncConfig.from_env()
+    assert "houseofasher/Aureon-LLM" in cfg.repos
     assert "ZorakCorp/Aureon-LLM" in cfg.repos
+    assert cfg.on_startup is True
+    assert cfg.interval_sec == 3600
 
 
 def test_build_export_files_has_corpus_prefix():

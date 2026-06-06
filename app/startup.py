@@ -178,6 +178,10 @@ def _deferred_startup() -> None:
                 "Auto-learn OFF — set AUREON_AUTO_LEARN=1 on Railway to enable automated learning."
             )
 
+        from app.learning_github_sync import start_github_sync_scheduler
+
+        start_github_sync_scheduler()
+
         _preload_olivetti_background()
 
         with _lock:

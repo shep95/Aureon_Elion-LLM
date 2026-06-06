@@ -654,6 +654,40 @@ When deployed on Railway, **auto-learn starts automatically** (unless `AUREON_AU
 
 Auto-learn uses the same training lock as manual POST requests — if you trigger a demo while a cycle runs, one will wait or skip.
 
+### Automatic GitHub push (learning corpus)
+
+Aureon **automatically pushes** everything it learns to GitHub on the **`learning-data`** branch (no manual git needed from Railway). That is the yellow **Compare & pull request** banner you see on GitHub after each sync.
+
+| When | What happens |
+|------|----------------|
+| **On deploy** | Full corpus export pushed to all repos (`AUREON_GITHUB_SYNC_ON_STARTUP=1`) |
+| **Every hour** | Scheduled re-sync (`AUREON_GITHUB_SYNC_INTERVAL_SEC=3600`) |
+| **After each auto-learn cycle** | Push latest labels, documents, graduations, self-inquiry |
+
+**Repos synced (default):**
+
+- [houseofasher/Aureon-LLM](https://github.com/houseofasher/Aureon-LLM) → `learning-data`
+- [ZorakCorp/Aureon-LLM](https://github.com/ZorakCorp/Aureon-LLM) → `learning-data`
+- [shep95/Aureon_Elion-LLM](https://github.com/shep95/Aureon_Elion-LLM) → `learning-data`
+
+**Railway variables:**
+
+```env
+AUREON_GITHUB_SYNC=1
+AUREON_GITHUB_TOKEN=<fine-grained PAT with Contents: Read and write>
+AUREON_GITHUB_REPOS=houseofasher/Aureon-LLM,ZorakCorp/Aureon-LLM,shep95/Aureon_Elion-LLM
+AUREON_GITHUB_SYNC_BRANCH=learning-data
+AUREON_GITHUB_SYNC_ON_STARTUP=1
+AUREON_GITHUB_SYNC_ON_CYCLE=1
+AUREON_GITHUB_SYNC_INTERVAL_SEC=3600
+```
+
+**Check status:** `GET /api/learning/github-sync` · **Manual trigger:** `POST /api/learning/github-sync` (API key)
+
+**Logs:** filter Railway for `github_learning_sync_complete` or `github_learning_sync_failed`.
+
+> **Note:** This syncs the **learned corpus** (`learning-corpus/` on `learning-data`). Code changes on `main` still go through normal `git push` from your machine.
+
 ---
 
 ## API reference

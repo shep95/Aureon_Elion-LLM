@@ -16,8 +16,11 @@ from app.learning_export import build_export_files
 logger = logging.getLogger(__name__)
 
 GITHUB_API = "https://api.github.com"
-DEFAULT_REPOS = "ZorakCorp/Aureon-LLM,shep95/Aureon_Elion-LLM"
+DEFAULT_REPOS = "houseofasher/Aureon-LLM,ZorakCorp/Aureon-LLM,shep95/Aureon_Elion-LLM"
 DEFAULT_BRANCH = "learning-data"
+
+_sync_scheduler_started = False
+_sync_stop = threading.Event()
 
 
 def _env_bool(name: str, default: bool = False) -> bool:
@@ -50,15 +53,28 @@ class GitHubSyncConfig:
     repos: list[str] = field(default_factory=list)
     branch: str = DEFAULT_BRANCH
     on_cycle: bool = True
+    on_startup: bool = True
+    interval_sec: int | None = 3600
 
     @classmethod
     def from_env(cls) -> GitHubSyncConfig:
+        interval_raw = os.environ.get("AUREON_GITHUB_SYNC_INTERVAL_SEC", "3600").strip()
+        interval: int | None
+        if interval_raw in ("0", "off", "false", "no"):
+            interval = None
+        else:
+            try:
+                interval = max(300, int(interval_raw))
+            except ValueError:
+                interval = 3600
         return cls(
             enabled=is_github_sync_enabled(),
             repos=github_repos(),
             branch=os.environ.get("AUREON_GITHUB_SYNC_BRANCH", DEFAULT_BRANCH).strip()
             or DEFAULT_BRANCH,
             on_cycle=_env_bool("AUREON_GITHUB_SYNC_ON_CYCLE", default=True),
+            on_startup=_env_bool("AUREON_GITHUB_SYNC_ON_STARTUP", default=True),
+            interval_sec=interval,
         )
 
 
@@ -234,10 +250,56 @@ def run_github_sync(*, reason: str = "manual") -> dict[str, Any]:
 def run_github_sync_background(*, reason: str = "auto_learn_cycle") -> None:
     if not is_github_sync_enabled():
         return
-    if not GitHubSyncConfig.from_env().on_cycle:
+    config = GitHubSyncConfig.from_env()
+    if reason == "auto_learn_cycle" and not config.on_cycle:
         return
 
     def _job() -> None:
         run_github_sync(reason=reason)
 
     threading.Thread(target=_job, name="aureon-github-sync", daemon=True).start()
+
+
+def _sync_scheduler_loop(config: GitHubSyncConfig) -> None:
+    if config.on_startup:
+        run_github_sync(reason="startup")
+    interval = config.interval_sec
+    if not interval:
+        return
+    while not _sync_stop.wait(interval):
+        run_github_sync(reason="scheduled")
+
+
+def start_github_sync_scheduler() -> None:
+    """Background GitHub push — on startup + every interval_sec (default 1h)."""
+    global _sync_scheduler_started
+    if not is_github_sync_enabled():
+        logger.info("GitHub sync OFF — set AUREON_GITHUB_SYNC=1 and AUREON_GITHUB_TOKEN.")
+        return
+    with _lock:
+        if _sync_scheduler_started:
+            return
+        _sync_scheduler_started = True
+
+    config = GitHubSyncConfig.from_env()
+    if not config.on_startup and not config.interval_sec:
+        logger.info("GitHub sync: cycle-only mode (startup/interval disabled).")
+        return
+
+    threading.Thread(
+        target=_sync_scheduler_loop,
+        args=(config,),
+        name="aureon-github-sync-scheduler",
+        daemon=True,
+    ).start()
+    logger.info(
+        "GitHub sync scheduler ACTIVE — branch=%s repos=%s startup=%s interval=%ss",
+        config.branch,
+        config.repos,
+        config.on_startup,
+        config.interval_sec or "off",
+    )
+
+
+def stop_github_sync_scheduler() -> None:
+    _sync_stop.set()
