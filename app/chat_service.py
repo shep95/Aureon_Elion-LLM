@@ -291,18 +291,9 @@ _SEARCH_CONFIDENCE_THRESHOLD = 0.30
 
 def is_own_output(text: str, session_id: str | None) -> bool:
     """True when input matches a recent assistant turn in this session."""
-    if not session_id:
-        return False
-    from app.session_memory import get_history
+    from app.session_memory import was_my_output
 
-    stripped = text.strip().lower()
-    if len(stripped) <= 30:
-        return False
-    for turn in get_history(session_id):
-        assistant = turn.get("assistant", "").strip().lower()
-        if assistant and stripped in assistant:
-            return True
-    return False
+    return was_my_output(session_id, text)
 
 
 def _is_classification_leak(text: str) -> bool:
@@ -1021,9 +1012,9 @@ def _command_response(message: str) -> dict[str, Any] | None:
                 "• `/think` — ask myself meta-cognitive questions (identity, gaps, consciousness)\n"
                 "• `/roadmap` — capability matrix + path beyond frontier LLMs\n"
                 "• `/agent <task>` — multi-step tool loop (search → calculate → verify)\n"
-                "• `/evolve <task>` — algorithmic self-evolve on a fork branch "
-                "(AST + predict + code_master; syntax + pytest gates before commit; "
-                "never pushes main without approval)\n"
+                "• `/evolve <task>` — scaffold a fork branch for a proposed upgrade "
+                "(AST file analysis + algorithmic patch proposals via predict/code_master; "
+                "syntax + pytest gates before commit; never pushes main without approval)\n"
                 "• `/research <topic>` — cross-domain taxonomy + Ciper drill-down\n"
                 "• `/vitals` — security organism (nomad stack)\n\n"
                 "**Prediction brain:** factual questions run through token embeddings → "
@@ -1150,9 +1141,13 @@ def _command_response(message: str) -> dict[str, Any] | None:
             return {
                 "reply": (
                     "Usage: `/evolve improve philosophy routing` — "
-                    "I run the algorithmic evolve loop: AST analysis, predict brain reasoning, "
-                    "code_master for verified patches, then syntax + pytest gates before commit. "
-                    "Fork push requires explicit API approval."
+                    "scaffolds a fork branch: AST analysis, file suggestions, and "
+                    "algorithmic patch proposals (predict + code_master). "
+                    "Syntax + pytest run before commit. Fork push needs explicit API approval.\n\n"
+                    "**Can do:** branch, read/write, AST analysis, verified append-only patches, "
+                    "syntax + test gates, fork push.\n"
+                    "**Cannot yet:** novel architectural refactors or reliable from-scratch code "
+                    "at current transformer scale — wire a stronger model to close that gap."
                 ),
                 "kind": "self_evolve",
             }
@@ -1162,17 +1157,20 @@ def _command_response(message: str) -> dict[str, Any] | None:
         status = repo_status()
         return {
             "reply": (
-                f"**Algorithmic self-evolve** for: {task}\n\n"
+                f"**Evolve scaffold** for: {task}\n\n"
                 f"Suggested files: {', '.join(plan['suggested_files'])}\n"
                 f"Brain: {plan['capabilities'].get('brain', 'predict + code_master + AST')}\n"
                 f"Current branch: `{status['current_branch']}` · fork remote: `{status['fork_remote']}`\n\n"
+                "**Can:** " + "; ".join(plan["capabilities"]["can"][:4]) + "…\n"
+                "**Cannot yet:** " + plan["capabilities"]["cannot_yet"][0] + "\n\n"
                 "Use authenticated API:\n"
                 "• `POST /api/brain/self/plan` — file suggestions + AST analysis\n"
-                "• `POST /api/brain/self/auto` — full algorithmic patch cycle\n"
-                "• `POST /api/brain/self/branch` — create fork branch\n"
-                "• `POST /api/brain/self/write` — manual patch override\n"
-                "• `POST /api/brain/self/commit` — syntax + pytest gate, then commit locally\n"
-                "• `POST /api/brain/self/push` with `approve_push: true` — push fork only\n\n"
+                "• `POST /api/brain/self/analyze` — deep AST read for one file\n"
+                "• `POST /api/brain/self/propose` — patch proposals (no git writes)\n"
+                "• `POST /api/brain/self/auto` — full algorithmic cycle on fork\n"
+                "• `POST /api/brain/self/write` — your patch override\n"
+                "• `POST /api/brain/self/commit` — syntax + pytest gate, then commit\n"
+                "• `POST /api/brain/self/push` with `approve_push: true` — fork only\n\n"
                 "Main is never pushed without your explicit approval."
             ),
             "kind": "self_evolve",
@@ -1290,8 +1288,13 @@ def chat(message: str, *, session_id: str | None = None) -> dict[str, Any]:
         return done(_agent_payload(text, session_id=session_id))
 
     from brain.web_search import web_search_enabled
+    from brain.philosophy_handler import is_personal_belief_question
 
-    if web_search_enabled() and is_search_question(text):
+    if (
+        web_search_enabled()
+        and is_search_question(text)
+        and not is_personal_belief_question(text)
+    ):
         return done(_search_and_opine(text, session_id=session_id))
 
     from brain.identity_handler import handle_identity, is_identity_question

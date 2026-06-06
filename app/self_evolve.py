@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 import logging
 import os
 import re
@@ -28,6 +29,14 @@ def fork_remote() -> str:
 
 def branch_prefix() -> str:
     return _env("AUREON_SELF_EVOLVE_BRANCH_PREFIX", "aureon/self-evolve-")
+
+
+def skip_syntax_verify() -> bool:
+    return _env("AUREON_SELF_EVOLVE_SKIP_VERIFY", "").lower() in ("1", "true", "yes")
+
+
+def skip_test_gate() -> bool:
+    return _env("AUREON_SELF_EVOLVE_SKIP_TESTS", "").lower() in ("1", "true", "yes")
 
 
 def validate_repo_path(rel_path: str) -> Path:
@@ -112,6 +121,155 @@ def create_evolution_branch(description: str) -> dict[str, Any]:
     return {"branch": branch, "description": description}
 
 
+def analyze_file_for_task(rel_path: str, task: str) -> dict[str, Any]:
+    """Read a file and identify relevant sections for the task (AST-based, not keyword-only)."""
+    source = read_source(rel_path)["content"]
+    analysis: dict[str, Any] = {
+        "path": rel_path,
+        "task": task,
+        "line_count": len(source.splitlines()),
+        "functions": [],
+        "classes": [],
+        "imports": [],
+        "issues": [],
+        "recommendations": [],
+    }
+
+    try:
+        tree = ast.parse(source)
+    except SyntaxError as exc:
+        analysis["issues"].append(f"Syntax error: {exc}")
+        analysis["recommendations"].append("Fix syntax before any evolve patch.")
+        return analysis
+
+    analysis["module_docstring"] = (ast.get_docstring(tree) or "")[:400]
+
+    for node in ast.iter_child_nodes(tree):
+        if isinstance(node, ast.Import):
+            analysis["imports"].append({
+                "module": "",
+                "names": [a.name for a in node.names],
+                "line": node.lineno,
+            })
+        elif isinstance(node, ast.ImportFrom):
+            analysis["imports"].append({
+                "module": node.module or "",
+                "names": [a.name for a in node.names],
+                "line": node.lineno,
+            })
+
+    task_tokens = {t for t in re.findall(r"[a-z0-9]+", task.lower()) if len(t) > 2}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef):
+            doc = ast.get_docstring(node) or ""
+            name_l = node.name.lower()
+            fn_tokens = set(re.findall(r"[a-z0-9]+", name_l + " " + doc.lower()))
+            relevant = bool(task_tokens & fn_tokens)
+            entry = {
+                "name": node.name,
+                "line": node.lineno,
+                "end_line": getattr(node, "end_lineno", node.lineno),
+                "docstring": doc[:240],
+                "task_relevant": relevant,
+                "arg_count": len(node.args.args),
+            }
+            analysis["functions"].append(entry)
+            if not doc and relevant:
+                analysis["issues"].append(f"Function `{node.name}` (line {node.lineno}) lacks docstring.")
+        elif isinstance(node, ast.ClassDef):
+            doc = ast.get_docstring(node) or ""
+            analysis["classes"].append({
+                "name": node.name,
+                "line": node.lineno,
+                "docstring": doc[:240],
+            })
+
+    relevant = [f for f in analysis["functions"] if f["task_relevant"]]
+    analysis["task_relevant_functions"] = [f["name"] for f in relevant]
+
+    if rel_path.endswith(".py"):
+        if not relevant and analysis["functions"]:
+            analysis["recommendations"].append(
+                "No function names overlap task keywords — review manually or enrich docstrings."
+            )
+        elif relevant:
+            analysis["recommendations"].append(
+                f"Start with: {', '.join(f['name'] for f in relevant[:4])}."
+            )
+        if analysis["issues"]:
+            analysis["recommendations"].append(
+                "Prefer docstring enrichment or append-only verified helpers — not in-place rewrites."
+            )
+        else:
+            analysis["recommendations"].append(
+                "Use code_master retrieval for new helpers; pytest gate runs before commit."
+            )
+
+    return analysis
+
+
+def verify_before_commit(paths: list[str]) -> dict[str, Any]:
+    """Run syntax check on modified files before committing."""
+    results: dict[str, Any] = {"passed": [], "failed": [], "skipped": []}
+
+    for rel_path in paths:
+        if not rel_path.endswith(".py"):
+            results["skipped"].append(rel_path)
+            continue
+        try:
+            content = read_source(rel_path)["content"]
+            ast.parse(content)
+            results["passed"].append(rel_path)
+        except SyntaxError as exc:
+            results["failed"].append({"path": rel_path, "error": str(exc)})
+        except (ValueError, FileNotFoundError) as exc:
+            results["failed"].append({"path": rel_path, "error": str(exc)})
+
+    results["ok"] = len(results["failed"]) == 0
+    return results
+
+
+def run_tests_before_commit(*, timeout: int = 120) -> dict[str, Any]:
+    """Run the test suite — block commit if tests fail."""
+    try:
+        result = subprocess.run(
+            ["python", "-m", "pytest", "tests/", "-x", "-q", "--tb=short"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            check=False,
+        )
+    except subprocess.TimeoutExpired as exc:
+        output = (exc.stdout or "") + (exc.stderr or "")
+        return {
+            "passed": False,
+            "output": output[-2000:],
+            "errors": "pytest timed out",
+        }
+
+    combined = (result.stdout or "") + (result.stderr or "")
+    return {
+        "passed": result.returncode == 0,
+        "output": combined[-2000:],
+        "returncode": result.returncode,
+    }
+
+
+def _paths_from_git_status() -> list[str]:
+    status = _run_git(["status", "--porcelain"], check=False).stdout.strip()
+    paths: list[str] = []
+    for line in status.splitlines():
+        if len(line) < 4:
+            continue
+        rel = line[3:].strip().replace("\\", "/")
+        if " -> " in rel:
+            rel = rel.split(" -> ", 1)[1]
+        if rel:
+            paths.append(rel)
+    return paths
+
+
 def commit_evolution(message: str, *, paths: list[str] | None = None) -> dict[str, Any]:
     if paths:
         for p in paths:
@@ -119,13 +277,43 @@ def commit_evolution(message: str, *, paths: list[str] | None = None) -> dict[st
         _run_git(["add", *paths])
     else:
         _run_git(["add", "-A"])
+
     status = _run_git(["status", "--porcelain"], check=False).stdout.strip()
     if not status:
         return {"committed": False, "reason": "nothing to commit"}
+
+    verify_paths = paths if paths else _paths_from_git_status()
+    verification: dict[str, Any] | None = None
+    tests: dict[str, Any] | None = None
+
+    if verify_paths and not skip_syntax_verify():
+        verification = verify_before_commit(verify_paths)
+        if not verification["ok"]:
+            return {
+                "committed": False,
+                "reason": "syntax verification failed",
+                "verification": verification,
+            }
+
+    if not skip_test_gate():
+        tests = run_tests_before_commit()
+        if not tests["passed"]:
+            return {
+                "committed": False,
+                "reason": "test suite failed",
+                "verification": verification,
+                "tests": tests,
+            }
+
     _run_git(["commit", "-m", message[:500]])
     sha = _run_git(["rev-parse", "--short", "HEAD"]).stdout.strip()
     branch = _run_git(["rev-parse", "--abbrev-ref", "HEAD"]).stdout.strip()
-    return {"committed": True, "branch": branch, "sha": sha, "message": message}
+    result: dict[str, Any] = {"committed": True, "branch": branch, "sha": sha, "message": message}
+    if verification is not None:
+        result["verification"] = verification
+    if tests is not None:
+        result["tests"] = {"passed": True}
+    return result
 
 
 def push_fork(*, branch: str | None = None, approved: bool = False) -> dict[str, Any]:
@@ -168,15 +356,43 @@ def plan_evolution(task: str) -> dict[str, Any]:
             suggestions.append(path)
     if not suggestions:
         suggestions = ["app/chat_service.py", "brain/predict_engine.py"]
+
+    file_analysis: list[dict[str, Any]] = []
+    for path in suggestions[:5]:
+        try:
+            file_analysis.append(analyze_file_for_task(path, task))
+        except (ValueError, FileNotFoundError) as exc:
+            file_analysis.append({"path": path, "task": task, "issues": [str(exc)]})
+
     return {
         "task": task,
         "suggested_files": suggestions,
+        "analysis": file_analysis,
+        "capabilities": {
+            "can": [
+                "create git branches on a fork",
+                "read/write source files in allowed prefixes",
+                "AST-based file analysis (functions, classes, imports)",
+                "algorithmic patch proposals (predict + code_master + AST)",
+                "syntax verification (ast.parse) before every commit",
+                "pytest gate before every commit (disable with AUREON_SELF_EVOLVE_SKIP_TESTS=1)",
+                "commit and push to fork with explicit approval gate",
+            ],
+            "cannot_yet": [
+                "autonomously decide architecturally sound refactors from task text alone",
+                "generate reliable novel production code at d_model=128 without retrieval",
+                "reason about correctness beyond syntax + existing test suite",
+            ],
+            "brain": "algorithmic (predict + code_master + AST) — scales when a stronger model is wired to write_source()",
+        },
         "workflow": [
-            "1. POST /api/brain/self/read — inspect suggested files",
-            "2. POST /api/brain/self/write — apply changes on fork branch",
-            "3. POST /api/brain/self/commit — commit locally",
-            "4. POST /api/brain/self/push with approve_push=true — push fork only",
-            "5. Open GitHub PR for human approval before merging to main",
+            "1. POST /api/brain/self/plan — file suggestions + AST analysis",
+            "2. POST /api/brain/self/auto — algorithmic patch cycle (predict + code_master)",
+            "3. POST /api/brain/self/read — inspect suggested files",
+            "4. POST /api/brain/self/write — apply manual overrides if needed",
+            "5. POST /api/brain/self/commit — syntax check + pytest, then commit locally",
+            "6. POST /api/brain/self/push with approve_push=true — push fork only",
+            "7. Open GitHub PR for human approval before merging to main",
         ],
     }
 
@@ -186,11 +402,14 @@ def run_evolution_cycle(
     *,
     writes: list[dict[str, str]] | None = None,
     approve_push: bool = False,
+    algorithmic: bool = True,
 ) -> dict[str, Any]:
-    """Full cycle: branch → optional writes → commit → optional fork push."""
+    """Full cycle: branch → algorithmic or manual writes → verify → commit → optional fork push."""
     plan = plan_evolution(task)
     branch_info = create_evolution_branch(task)
     written: list[str] = []
+    evolution: dict[str, Any] | None = None
+
     if writes:
         for item in writes:
             path = item.get("path", "")
@@ -198,13 +417,27 @@ def run_evolution_cycle(
             if path and content is not None:
                 write_source(path, content)
                 written.append(path)
+    elif algorithmic:
+        from brain.evolve_engine import propose_evolution_writes
+
+        evolution = propose_evolution_writes(task, plan)
+        for item in evolution.get("writes", []):
+            path = item.get("path", "")
+            content = item.get("content", "")
+            if path and content is not None:
+                write_source(path, content)
+                written.append(path)
+
     commit = commit_evolution(f"self-evolve: {task[:200]}", paths=written or None)
     push = push_fork(branch=branch_info["branch"], approved=approve_push)
-    return {
-        "ok": True,
+    result: dict[str, Any] = {
+        "ok": commit.get("committed", False) or bool(written),
         "plan": plan,
         "branch": branch_info["branch"],
         "written": written,
         "commit": commit,
         "push": push,
     }
+    if evolution is not None:
+        result["evolution"] = evolution
+    return result

@@ -460,6 +460,21 @@ def api_self_evolve_plan(body: dict[str, Any], _: Mutating) -> dict:
     return {"plan": plan_evolution(task), "repo": repo_status()}
 
 
+@app.post("/api/brain/self/analyze")
+def api_self_evolve_analyze(body: dict[str, Any], _: Mutating) -> dict:
+    """AST-based code understanding for one file before any edit."""
+    from app.self_evolve import analyze_file_for_task
+
+    path = str(body.get("path", "")).strip()
+    task = str(body.get("task", body.get("description", "review"))).strip()
+    if not path:
+        raise HTTPException(status_code=400, detail="path required")
+    try:
+        return {"analysis": analyze_file_for_task(path, task)}
+    except (ValueError, FileNotFoundError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
 @app.get("/api/brain/self/status")
 def api_self_evolve_status(_: Mutating) -> dict:
     from app.self_evolve import list_source_files, repo_status
@@ -529,6 +544,33 @@ def api_self_evolve_push(body: dict[str, Any], _: Mutating) -> dict:
         return push_fork(branch=str(branch).strip() if branch else None, approved=approved)
     except RuntimeError as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@app.post("/api/brain/self/propose")
+def api_self_evolve_propose(body: dict[str, Any], _: Mutating) -> dict:
+    """Algorithmic patch proposals — AST + predict + code_master, no git writes."""
+    from app.self_evolve import plan_evolution, repo_status
+    from brain.evolve_engine import propose_evolution_writes
+
+    task = str(body.get("task", "")).strip()
+    if not task:
+        raise HTTPException(status_code=400, detail="task required")
+    plan = plan_evolution(task)
+    max_files = int(body.get("max_files", 3))
+    evolution = propose_evolution_writes(task, plan, max_files=max_files)
+    safe_proposals = [
+        {k: v for k, v in p.items() if k != "content"}
+        for p in evolution.get("proposals", [])
+    ]
+    return {
+        "task": task,
+        "strategy": evolution.get("strategy"),
+        "brain": evolution.get("brain"),
+        "proposals": safe_proposals,
+        "write_count": len(evolution.get("writes", [])),
+        "plan": plan,
+        "repo": repo_status(),
+    }
 
 
 @app.post("/api/brain/self/evolve")

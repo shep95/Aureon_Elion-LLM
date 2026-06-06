@@ -23,9 +23,9 @@ _lock = threading.Lock()
 _model: StackedAttentionLM | None = None
 _ready = False
 
-_TRAINING_NEED_MSG = (
-    "I need more training on this topic — ask me again after the next auto-learn cycle."
-)
+from brain.system_messages import FALLBACK_TRAINING
+
+_TRAINING_NEED_MSG = FALLBACK_TRAINING
 
 _CONTEXT_STOP = frozenset(
     {

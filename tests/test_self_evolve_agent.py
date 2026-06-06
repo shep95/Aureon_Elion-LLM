@@ -7,12 +7,27 @@ from app.self_evolve_agent import get_history, run_autonomous_evolution
 
 def _stub_evolve(monkeypatch, tmp_path):
     monkeypatch.setattr(
-        "app.self_evolve.create_evolution_branch",
+        "app.self_evolve_agent.plan_evolution",
+        lambda task: {
+            "task": task,
+            "suggested_files": ["app/chat_service.py"],
+            "workflow": [],
+            "capabilities": {"brain": "test"},
+        },
+    )
+    monkeypatch.setattr(
+        "app.self_evolve_agent.create_evolution_branch",
         lambda desc: {"branch": "aureon/self-evolve-test-1", "description": desc},
     )
     monkeypatch.setattr(
-        "app.self_evolve.read_source",
-        lambda p: {"path": p, "content": '"""module"""\n\npass\n'},
+        "app.self_evolve_agent.propose_evolution_writes",
+        lambda task, plan, max_files=3: {
+            "task": task,
+            "strategy": "annotate",
+            "brain": "algorithmic (predict + code_master + AST)",
+            "writes": [{"path": "app/chat_service.py", "content": '"""patched"""\n\npass\n'}],
+            "proposals": [{"path": "app/chat_service.py", "patched": True, "method": "annotate_stamp"}],
+        },
     )
 
     written: list[str] = []
@@ -21,13 +36,13 @@ def _stub_evolve(monkeypatch, tmp_path):
         written.append(path)
         return {"path": path, "written": True}
 
-    monkeypatch.setattr("app.self_evolve.write_source", _write)
+    monkeypatch.setattr("app.self_evolve_agent.write_source", _write)
     monkeypatch.setattr(
-        "app.self_evolve.commit_evolution",
+        "app.self_evolve_agent.commit_evolution",
         lambda msg, paths=None: {"committed": True, "message": msg, "paths": paths},
     )
     monkeypatch.setattr(
-        "app.self_evolve.push_fork",
+        "app.self_evolve_agent.push_fork",
         lambda branch=None, approved=False: {
             "pushed": approved,
             "branch": branch,
@@ -35,7 +50,7 @@ def _stub_evolve(monkeypatch, tmp_path):
         },
     )
     monkeypatch.setattr(
-        "app.self_evolve.repo_status",
+        "app.self_evolve_agent.repo_status",
         lambda: {"current_branch": "aureon/self-evolve-test-1", "policy": "fork-only"},
     )
     monkeypatch.setattr("app.self_evolve_agent.HISTORY_PATH", tmp_path / "history.jsonl")
@@ -47,6 +62,7 @@ def test_run_autonomous_evolution_pushes_fork(monkeypatch, tmp_path):
     result = run_autonomous_evolution("improve chat routing", auto_push_fork=True)
     assert result["ok"] is True
     assert result["autonomous"] is True
+    assert result["brain"] == "algorithmic (predict + code_master + AST)"
     assert result["branch"] == "aureon/self-evolve-test-1"
     assert result["push"]["pushed"] is True
     assert result["history_entry"]["main_blocked"] is True
@@ -66,3 +82,4 @@ def test_get_history_records_events(monkeypatch, tmp_path):
     assert len(history) >= 1
     assert history[0]["action"] == "autonomous_evolution"
     assert history[0]["task"] == "history test task"
+    assert history[0]["brain"] == "algorithmic (predict + code_master + AST)"

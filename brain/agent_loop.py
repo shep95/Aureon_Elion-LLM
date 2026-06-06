@@ -198,7 +198,9 @@ def run_agent_loop(
             and not try_arithmetic_answer(q)
             and not answer.replace(".", "", 1).isdigit()
         ):
-            answer = "I need more training on this topic — ask me again after the next auto-learn cycle."
+            from brain.system_messages import FALLBACK_TRAINING
+
+            answer = FALLBACK_TRAINING
 
     return {
         "answer": answer,

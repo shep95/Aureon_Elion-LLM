@@ -5,14 +5,9 @@ from __future__ import annotations
 import re
 from typing import Any, Callable
 
-PHILOSOPHY_FALLBACK = (
-    "This touches one of the deepest questions I engage with. "
-    "My corpus is still growing in this domain. "
-    "What I can say is that the question you are asking "
-    "sits at the intersection of consciousness, existence, and meaning — "
-    "domains I take seriously. Ask me again after my next learning cycle "
-    "and I will have more to offer."
-)
+from brain.system_messages import FALLBACK_PHILOSOPHY, FALLBACK_TRAINING
+
+PHILOSOPHY_FALLBACK = FALLBACK_PHILOSOPHY
 
 BELIEF_ANSWERS: dict[str, str] = {
     "do you believe in god": (
@@ -76,12 +71,37 @@ PERSONAL_BELIEF_TRIGGERS = (
 )
 
 _CLASSIFICATION_LEAK = re.compile(r"philosophy\.[a-z_]+\.[a-z_]+", re.I)
-_GARBAGE = re.compile(r"\b(aunitary|aso-called|blockencoding)\b", re.I)
+_GARBAGE = re.compile(r"\b(aunitary|aso-called|blockencoding|aunitaryprocess)\b", re.I)
+
+
+_BELIEF_TOPIC_KEYWORDS = (
+    "god",
+    "faith",
+    "soul",
+    "spirit",
+    "believe",
+    "belief",
+    "afterlife",
+    "divine",
+    "religion",
+    "heaven",
+    "hell",
+    "prayer",
+    "bible",
+    "quran",
+    "torah",
+)
 
 
 def is_personal_belief_question(text: str) -> bool:
     q = text.strip().lower()
-    return any(t in q for t in PERSONAL_BELIEF_TRIGGERS)
+    for trigger in PERSONAL_BELIEF_TRIGGERS:
+        if trigger not in q:
+            continue
+        if trigger in ("what do you think", "what are your thoughts", "your opinion", "your perspective on"):
+            return any(k in q for k in _BELIEF_TOPIC_KEYWORDS)
+        return True
+    return False
 
 
 def is_philosophy_question(text: str) -> bool:
@@ -95,7 +115,7 @@ def _belief_lookup_key(text: str) -> str | None:
     q = text.strip().lower().rstrip("?").strip()
     if "do you believe" in q and "god" in q:
         return "do you believe in god"
-    if "what are your thoughts" in q and "god" in q:
+    if ("what do you think" in q or "what are your thoughts" in q) and "god" in q:
         return "what are your thoughts on god"
     if "who is god" in q or "what is god" in q:
         return "who is god to you" if "to you" in q else "who is god"

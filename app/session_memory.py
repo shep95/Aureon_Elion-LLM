@@ -63,6 +63,23 @@ def get_history(session_id: str | None, *, limit: int | None = None) -> list[dic
         return list(_sessions.get(sid, [])[-cap:])
 
 
+def was_my_output(session_id: str | None, text: str) -> bool:
+    """Check if input matches something the assistant recently said in this session."""
+    history = get_history(session_id)
+    text_stripped = text.strip().lower()
+    if len(text_stripped) <= 30:
+        return False
+    for turn in history:
+        assistant_text = turn.get("assistant", "").strip().lower()
+        if not assistant_text:
+            continue
+        if text_stripped == assistant_text:
+            return True
+        if text_stripped in assistant_text or assistant_text in text_stripped:
+            return True
+    return False
+
+
 def history_as_context(session_id: str | None) -> str:
     """Compact prior turns for predict/RAG prompts."""
     turns = get_history(session_id)

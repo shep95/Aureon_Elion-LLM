@@ -33,7 +33,7 @@ def test_route_bytes_text_file():
 
 
 def test_route_bytes_rejects_oversized(monkeypatch):
-    monkeypatch.setenv("AUREON_MAX_UPLOAD_BYTES", "32")
+    monkeypatch.setattr("brain.file_router.MAX_UPLOAD_BYTES", 32)
     with pytest.raises(ValueError, match="too large"):
         route_bytes("big.txt", b"x" * 64)
 
