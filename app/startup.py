@@ -193,9 +193,12 @@ def _deferred_startup() -> None:
 
         start_github_sync_scheduler()
 
-        from brain.predict_engine import warmup_predict_brain_background
+        from brain.predict_engine import warm_up_predict_brain
 
-        warmup_predict_brain_background()
+        warm_stats = warm_up_predict_brain()
+        with _lock:
+            _state.details["predict_warmup"] = warm_stats
+        logger.info("Predict brain warm-up: %s", warm_stats)
 
         _preload_olivetti_background()
 

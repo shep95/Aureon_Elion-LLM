@@ -4,10 +4,10 @@ Stacked self-attention language model (NumPy, from scratch).
 Pipeline per user message:
   1. Tokenize words → ids
   2. Embed ids → vectors (d_model)
-  3. Self-attention — each token weights every other token
+  3. Self-attention — each token weights every other token (KV cache + sliding window)
   4. Stack layers (attention + feed-forward + residual)
   5. Softmax over vocabulary → next-token probabilities
-  6. Autoregressive decode — append token, repeat
+  6. Autoregressive decode — append token, repeat (speculative draft + verify)
 """
 
 from __future__ import annotations
@@ -42,6 +42,31 @@ def _causal_mask(seq_len: int) -> np.ndarray:
     return np.triu(np.ones((seq_len, seq_len), dtype=bool), k=1)
 
 
+def _use_speculative_decode() -> bool:
+    return os.environ.get("AUREON_SPECULATIVE_DECODE", "1").strip().lower() not in (
+        "0",
+        "false",
+        "no",
+        "off",
+    )
+
+
+@dataclass
+class KVCache:
+    """Per-layer hidden states for incremental decode — never recompute past tokens."""
+
+    seq_len: int = 0
+    embeddings: np.ndarray | None = None
+    hidden: list[np.ndarray] = field(default_factory=list)
+    last_logits: np.ndarray | None = None
+
+    def clear(self) -> None:
+        self.seq_len = 0
+        self.embeddings = None
+        self.hidden = []
+        self.last_logits = None
+
+
 @dataclass
 class AttentionLMConfig:
     d_model: int = 128
@@ -50,7 +75,7 @@ class AttentionLMConfig:
     max_seq_len: int = 1_000_000
     learning_rate: float = 0.05
     seed: int = 42
-    model_version: int = 5
+    model_version: int = 6
 
 
 @dataclass
@@ -71,11 +96,12 @@ class FeedForwardBlock:
             b2=np.zeros((1, d_model)),
         )
 
-    def forward(self, x: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-        z1 = x @ self.w1 + self.b1
+    def forward(self, x: np.ndarray, *, compute_dtype: type = np.float32) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        x32 = x.astype(compute_dtype)
+        z1 = x32 @ self.w1.astype(compute_dtype) + self.b1.astype(compute_dtype)
         h1 = relu(z1)
-        out = h1 @ self.w2 + self.b2
-        return out, z1, h1
+        out = h1 @ self.w2.astype(compute_dtype) + self.b2.astype(compute_dtype)
+        return out.astype(x.dtype, copy=False), z1, h1
 
 
 @dataclass
@@ -88,6 +114,8 @@ class StackedAttentionLM:
     w_out: np.ndarray
     b_out: np.ndarray
     layers: list[FeedForwardBlock] = field(default_factory=list)
+    _kv_cache: KVCache = field(default_factory=KVCache, repr=False)
+    _quantized: bool = field(default=False, repr=False)
 
     @classmethod
     def create(cls, tokenizer: WordTokenizer, config: AttentionLMConfig | None = None) -> StackedAttentionLM:
@@ -105,11 +133,48 @@ class StackedAttentionLM:
         )
         return model
 
+    def clear_cache(self) -> None:
+        """Call at the start of each new prompt / conversation."""
+        self._kv_cache.clear()
+
+    def quantize_weights(self) -> None:
+        """Compress weights to float16 — half memory, cast to float32 only during matmul."""
+        self.embeddings = self.embeddings.astype(np.float16)
+        self.w_out = self.w_out.astype(np.float16)
+        self.b_out = self.b_out.astype(np.float16)
+        for layer in self.layers:
+            layer.w1 = layer.w1.astype(np.float16)
+            layer.b1 = layer.b1.astype(np.float16)
+            layer.w2 = layer.w2.astype(np.float16)
+            layer.b2 = layer.b2.astype(np.float16)
+        self._quantized = True
+
+    def _compute_dtype(self) -> type:
+        return np.float32 if self._quantized else np.float64
+
+    def _cast_weight(self, w: np.ndarray) -> np.ndarray:
+        if self._quantized and w.dtype == np.float16:
+            return w.astype(np.float32)
+        return w
+
+    def _output_logits(self, x: np.ndarray) -> np.ndarray:
+        w = self._cast_weight(self.w_out)
+        b = self._cast_weight(self.b_out)
+        x32 = x.astype(np.float32) if self._quantized else x
+        return x32 @ w + b
+
     def _embed(self, token_ids: np.ndarray) -> np.ndarray:
-        x = self.embeddings[token_ids]
+        emb = self._cast_weight(self.embeddings) if self._quantized else self.embeddings
+        x = emb[token_ids].astype(np.float32) if self._quantized else emb[token_ids]
         seq = x.shape[1]
         x = x + self._positional_encoding(seq)[np.newaxis, :, :]
         return x
+
+    def _embed_at_position(self, token_id: int, position: int) -> np.ndarray:
+        emb = self._cast_weight(self.embeddings) if self._quantized else self.embeddings
+        vec = emb[int(token_id)].astype(np.float32) if self._quantized else emb[int(token_id)]
+        pe = self._positional_encoding(position + 1)[position]
+        return (vec + pe)[np.newaxis, np.newaxis, :]
 
     def _positional_encoding(self, seq_len: int) -> np.ndarray:
         d = self.config.d_model
@@ -142,6 +207,21 @@ class StackedAttentionLM:
             return out, weights
         return out, None
 
+    def _self_attention_last_only(self, x: np.ndarray) -> np.ndarray:
+        """Attention output for the last query position only — O(window) not O(seq²)."""
+        window = attention_window()
+        seq = x.shape[1]
+        q_idx = seq - 1
+        start = max(0, q_idx - window + 1)
+        x_norm = self._layer_norm(x)
+        keys = x_norm[:, start : q_idx + 1, :]
+        query = x_norm[:, q_idx : q_idx + 1, :]
+        d_model = x.shape[-1]
+        scores = (query @ np.swapaxes(keys, -1, -2)) / np.sqrt(d_model)
+        scores = np.clip(scores, -40.0, 40.0)
+        weights = _softmax_3d(scores)
+        return weights @ x[:, start : q_idx + 1, :]
+
     def _self_attention(
         self, x: np.ndarray, *, return_weights: bool = False
     ) -> tuple[np.ndarray, np.ndarray | None]:
@@ -157,10 +237,95 @@ class StackedAttentionLM:
             return out, weights
         return out, None
 
+    def _forward_full_fill_cache(self, token_ids: np.ndarray) -> np.ndarray:
+        """Full forward pass — populate KV cache for incremental decode."""
+        if token_ids.ndim == 1:
+            token_ids = token_ids[np.newaxis, :]
+
+        seq = token_ids.shape[1]
+        if seq > self.config.max_seq_len:
+            token_ids = token_ids[:, -self.config.max_seq_len :]
+            seq = token_ids.shape[1]
+
+        x = self._embed(token_ids)
+        cache = self._kv_cache
+        cache.clear()
+        cache.embeddings = x.copy()
+        cache.hidden = []
+
+        for block in self.layers:
+            attn_out, _ = self._self_attention(x, return_weights=False)
+            x = x + attn_out
+            ffn_out, _, _ = block.forward(x, compute_dtype=self._compute_dtype())
+            x = x + ffn_out
+            cache.hidden.append(x.copy())
+
+        logits = self._output_logits(x)
+        cache.last_logits = logits
+        cache.seq_len = seq
+        return logits
+
+    def _forward_incremental(self, token_id: int, position: int) -> np.ndarray:
+        """One new token — reuse cached K/V via stored hidden states."""
+        cache = self._kv_cache
+        x = self._embed_at_position(token_id, position)
+
+        for li, block in enumerate(self.layers):
+            if li == 0:
+                cache.embeddings = (
+                    np.concatenate([cache.embeddings, x], axis=1)
+                    if cache.embeddings is not None
+                    else x.copy()
+                )
+                x_in = cache.embeddings
+            else:
+                past = cache.hidden[li - 1]
+                x_in = np.concatenate([past, x], axis=1)
+
+            attn_out = self._self_attention_last_only(x_in)
+            x = x + attn_out
+            ffn_out, _, _ = block.forward(x, compute_dtype=self._compute_dtype())
+            x = x + ffn_out
+
+            if li < len(cache.hidden):
+                cache.hidden[li] = np.concatenate([cache.hidden[li], x], axis=1)
+            else:
+                cache.hidden.append(x.copy())
+
+        logits = self._output_logits(x)
+        cache.last_logits = logits
+        cache.seq_len = position + 1
+        return logits
+
+    def forward_cached(self, token_ids: np.ndarray) -> np.ndarray:
+        """Cached forward — full pass on new prompt, incremental when seq grows by 1."""
+        if token_ids.ndim == 1:
+            token_ids = token_ids[np.newaxis, :]
+
+        seq = token_ids.shape[1]
+        cache = self._kv_cache
+
+        if seq == 0:
+            raise ValueError("empty token sequence")
+
+        if cache.seq_len == 0 or seq < cache.seq_len:
+            return self._forward_full_fill_cache(token_ids)
+
+        if seq == cache.seq_len and cache.last_logits is not None:
+            return cache.last_logits
+
+        if seq == cache.seq_len + 1:
+            return self._forward_incremental(int(token_ids[0, -1]), seq - 1)
+
+        return self._forward_full_fill_cache(token_ids)
+
     def forward(
-        self, token_ids: np.ndarray, *, return_attention: bool = False
+        self, token_ids: np.ndarray, *, return_attention: bool = False, use_cache: bool = False
     ) -> tuple[np.ndarray, list[np.ndarray]]:
         """Return logits (batch, seq, vocab) and optional attention per layer."""
+        if use_cache and not return_attention:
+            return self.forward_cached(token_ids), []
+
         if token_ids.ndim == 1:
             token_ids = token_ids[np.newaxis, :]
 
@@ -177,19 +342,22 @@ class StackedAttentionLM:
             if weights is not None:
                 attentions.append(weights[0])
             x = x + attn_out
-            ffn_out, _, _ = block.forward(x)
+            ffn_out, _, _ = block.forward(x, compute_dtype=self._compute_dtype())
             x = x + ffn_out
 
-        logits = x @ self.w_out + self.b_out
+        logits = self._output_logits(x)
         return logits, attentions
 
     def next_token_distribution(
-        self, token_ids: list[int] | np.ndarray, *, top_k: int = 5
+        self, token_ids: list[int] | np.ndarray, *, top_k: int = 5, use_cache: bool = True
     ) -> dict[str, Any]:
         arr = np.array(token_ids, dtype=int)
         if arr.ndim == 1:
             arr = arr[np.newaxis, :]
-        logits, attentions = self.forward(arr, return_attention=True)
+        if use_cache:
+            logits = self.forward_cached(arr)
+        else:
+            logits, attentions = self.forward(arr, return_attention=True)
         probs = softmax(logits)[0, -1]
         top_idx = np.argsort(probs)[::-1][:top_k]
         distribution = [
@@ -200,23 +368,25 @@ class StackedAttentionLM:
             for i in top_idx
         ]
         attention_pairs: list[dict[str, Any]] = []
-        if attentions and arr.shape[1] > 1:
-            last_layer = attentions[-1]
-            src_tokens = [self.tokenizer.id_to_word[int(t)] for t in arr[0]]
-            query_idx = len(src_tokens) - 1
-            row = last_layer[query_idx]
-            for j, score in enumerate(row):
-                if j == query_idx or score < 0.05:
-                    continue
-                attention_pairs.append(
-                    {
-                        "query": src_tokens[query_idx],
-                        "key": src_tokens[j],
-                        "weight": round(float(score), 4),
-                    }
-                )
-            attention_pairs.sort(key=lambda p: p["weight"], reverse=True)
-            attention_pairs = attention_pairs[:6]
+        if not use_cache and arr.shape[1] > 1:
+            _, attentions = self.forward(arr, return_attention=True)
+            if attentions:
+                last_layer = attentions[-1]
+                src_tokens = [self.tokenizer.id_to_word[int(t)] for t in arr[0]]
+                query_idx = len(src_tokens) - 1
+                row = last_layer[query_idx]
+                for j, score in enumerate(row):
+                    if j == query_idx or score < 0.05:
+                        continue
+                    attention_pairs.append(
+                        {
+                            "query": src_tokens[query_idx],
+                            "key": src_tokens[j],
+                            "weight": round(float(score), 4),
+                        }
+                    )
+                attention_pairs.sort(key=lambda p: p["weight"], reverse=True)
+                attention_pairs = attention_pairs[:6]
 
         return {
             "distribution": distribution,
@@ -225,6 +395,14 @@ class StackedAttentionLM:
             "attention_pairs": attention_pairs,
             "layers": self.config.n_layers,
         }
+
+    def _next_token_id(self, token_ids: list[int], *, use_cache: bool = True) -> int:
+        arr = np.array([token_ids], dtype=int)
+        if use_cache:
+            logits = self.forward_cached(arr)
+        else:
+            logits, _ = self.forward(arr, return_attention=False)
+        return int(np.argmax(softmax(logits)[0, -1]))
 
     def generate(
         self,
@@ -242,39 +420,101 @@ class StackedAttentionLM:
         token_ids = truncate_tokens_for_inference(token_ids, max_window=attention_window())
         generated_steps: list[dict[str, Any]] = []
 
-        for _ in range(max_new_tokens):
-            step_info = self.next_token_distribution(token_ids)
-            next_id = int(
-                np.argmax(
-                    softmax(
-                        self.forward(np.array([token_ids], dtype=int), return_attention=False)[0]
-                    )[0, -1]
+        self.clear_cache()
+        draft_n = speculative_draft_tokens()
+        use_spec = draft_n > 1 and _use_speculative_decode()
+        spec_accepted = 0
+        spec_drafted = 0
+
+        base_len = len(token_ids)
+        self.forward_cached(np.array([token_ids], dtype=int))
+
+        while len(generated_steps) < max_new_tokens:
+            if use_spec:
+                drafts: list[int] = []
+                draft_ids = list(token_ids)
+                for _ in range(draft_n):
+                    if len(generated_steps) + len(drafts) >= max_new_tokens:
+                        break
+                    next_id = self._next_token_id(draft_ids, use_cache=True)
+                    word = self.tokenizer.id_to_word[next_id]
+                    drafts.append(next_id)
+                    spec_drafted += 1
+                    if word in stop_words:
+                        break
+                    draft_ids.append(next_id)
+
+                if not drafts:
+                    break
+
+                verify_logits, _ = self.forward(np.array([token_ids + drafts], dtype=int))
+                accepted = 0
+                for i, draft_token in enumerate(drafts):
+                    pos = base_len + i
+                    full_choice = int(np.argmax(softmax(verify_logits)[0, pos - 1]))
+                    if full_choice == draft_token:
+                        accepted += 1
+                    else:
+                        break
+
+                take = max(1, accepted)
+                spec_accepted += take
+                chosen = drafts[:take]
+
+                self.clear_cache()
+                token_ids.extend(chosen)
+                self.forward_cached(np.array([token_ids], dtype=int))
+
+                for next_id in chosen:
+                    word = self.tokenizer.id_to_word[next_id]
+                    step_info = self.next_token_distribution(token_ids, use_cache=True)
+                    generated_steps.append(
+                        {
+                            "token": word,
+                            "distribution": step_info["distribution"],
+                            "attention_pairs": step_info["attention_pairs"],
+                        }
+                    )
+                    if word in stop_words:
+                        break
+                if generated_steps and generated_steps[-1]["token"] in stop_words:
+                    break
+                base_len = len(token_ids)
+            else:
+                step_info = self.next_token_distribution(token_ids, use_cache=True)
+                next_id = self._next_token_id(token_ids, use_cache=True)
+                word = self.tokenizer.id_to_word[next_id]
+                token_ids.append(next_id)
+                generated_steps.append(
+                    {
+                        "token": word,
+                        "distribution": step_info["distribution"],
+                        "attention_pairs": step_info["attention_pairs"],
+                    }
                 )
-            )
-            word = self.tokenizer.id_to_word[next_id]
-            token_ids.append(next_id)
-            generated_steps.append(
-                {
-                    "token": word,
-                    "distribution": step_info["distribution"],
-                    "attention_pairs": step_info["attention_pairs"],
-                }
-            )
-            if word in stop_words:
-                break
+                if word in stop_words:
+                    break
 
         answer_tokens = [
             t
             for t in token_ids
             if self.tokenizer.id_to_word[t] not in {"<bos>", "<pad>", "<eos>", "<unk>"}
         ]
-        return {
+        result: dict[str, Any] = {
             "prompt": prompt,
             "token_ids": token_ids,
             "text": self.tokenizer.decode(answer_tokens),
             "steps": generated_steps,
             "inference": inference_profile(len(token_ids)),
         }
+        if use_spec:
+            result["speculative"] = {
+                "draft_tokens": draft_n,
+                "drafted_total": spec_drafted,
+                "accepted_total": spec_accepted,
+                "mode": "draft_verify",
+            }
+        return result
 
     def generate_speculative(
         self,
@@ -283,24 +523,12 @@ class StackedAttentionLM:
         max_new_tokens: int = 12,
         stop_words: frozenset[str] | None = None,
     ) -> dict[str, Any]:
-        """Draft tokens with a short window, verify each with the main forward pass."""
-        stop_words = stop_words or frozenset({"<eos>", "<pad>"})
-        draft_n = speculative_draft_tokens()
-        base = self.generate(prompt, max_new_tokens=max_new_tokens, stop_words=stop_words)
-        accepted = 0
-        for step in base.get("steps", [])[:draft_n]:
-            if step.get("token") not in stop_words:
-                accepted += 1
-        base["speculative"] = {
-            "draft_tokens": draft_n,
-            "accepted_draft_tokens": accepted,
-            "mode": "verify_on_generate",
-        }
-        base["inference"] = inference_profile(len(base.get("token_ids", [])))
-        return base
+        """Speculative decode — generate() already uses draft+verify when enabled."""
+        return self.generate(prompt, max_new_tokens=max_new_tokens, stop_words=stop_words)
 
     def train(self, texts: list[str], *, epochs: int = 80, verbose: bool = False) -> list[dict[str, float]]:
         """Next-token cross-entropy — backprop through output head, embeddings, and FFN layers."""
+        self.clear_cache()
         sequences: list[list[int]] = []
         max_len = self.config.max_seq_len
         chunk_cap = int(os.environ.get("AUREON_PREDICT_TRAIN_CHUNK", "256"))
@@ -345,11 +573,11 @@ class StackedAttentionLM:
                     attn_out, attn_w = self._self_attention(x, return_weights=True)
                     attentions.append(attn_w)
                     x_attn = x + attn_out
-                    ffn_out, z1, h1 = block.forward(x_attn)
+                    ffn_out, z1, h1 = block.forward(x_attn, compute_dtype=np.float64)
                     layer_caches.append((x, attn_w, x_attn, z1, h1))
                     x = x_attn + ffn_out
 
-                logits = x @ self.w_out + self.b_out
+                logits = self._output_logits(x)
                 probs = softmax(logits)[0]
                 eps = 1e-9
                 loss = -np.mean(np.log(probs[np.arange(seq_len), targets] + eps))
@@ -361,15 +589,20 @@ class StackedAttentionLM:
                 d_logits[np.arange(seq_len), targets] -= 1.0
                 d_logits /= seq_len
 
-                d_hidden = d_logits @ self.w_out.T
-                self.w_out -= lr * (x[0].T @ d_logits)
-                self.b_out -= lr * np.sum(d_logits, axis=0, keepdims=True)
+                w_out = self.w_out.astype(np.float64)
+                d_hidden = d_logits @ w_out.T
+                self.w_out = (w_out - lr * (x[0].T @ d_logits)).astype(self.w_out.dtype)
+                self.b_out = (self.b_out.astype(np.float64) - lr * np.sum(d_logits, axis=0, keepdims=True)).astype(
+                    self.b_out.dtype
+                )
 
+                emb = self.embeddings.astype(np.float64)
                 for t_idx, token_id in enumerate(x_ids[0]):
-                    self.embeddings[int(token_id)] -= lr * d_hidden[t_idx]
-                    norm = np.linalg.norm(self.embeddings[int(token_id)])
+                    emb[int(token_id)] -= lr * d_hidden[t_idx]
+                    norm = np.linalg.norm(emb[int(token_id)])
                     if norm > 3.0:
-                        self.embeddings[int(token_id)] *= 3.0 / norm
+                        emb[int(token_id)] *= 3.0 / norm
+                self.embeddings = emb.astype(self.embeddings.dtype)
 
                 ffn_lr = lr * 0.25
                 d_layer = d_hidden[np.newaxis, :, :]
@@ -377,26 +610,32 @@ class StackedAttentionLM:
                     block = self.layers[li]
                     _, _, x_attn, z1, h1 = layer_caches[li]
                     d_ffn = d_layer[0]
-                    d_h1 = d_ffn @ block.w2.T
+                    d_h1 = d_ffn @ block.w2.astype(np.float64).T
                     grad_w2 = h1[0].T @ d_ffn
                     grad_w1 = x_attn[0].T @ (d_h1 * relu_derivative(z1[0]))
-                    for grad, param in (
-                        (grad_w2, block.w2),
-                        (grad_w1, block.w1),
-                    ):
+                    for grad, param_name in ((grad_w2, "w2"), (grad_w1, "w1")):
+                        param = getattr(block, param_name)
                         gnorm = np.linalg.norm(grad)
                         if gnorm > 1.0:
                             grad = grad * (1.0 / gnorm)
-                        param -= ffn_lr * grad
-                    block.b2 -= ffn_lr * np.sum(d_ffn, axis=0, keepdims=True)
-                    block.b1 -= ffn_lr * np.sum(d_h1 * relu_derivative(z1[0]), axis=0, keepdims=True)
-                    d_layer = ((d_h1 * relu_derivative(z1[0])) @ block.w1.T)[np.newaxis, :, :]
+                        setattr(block, param_name, (param.astype(np.float64) - ffn_lr * grad).astype(param.dtype))
+                    block.b2 = (block.b2.astype(np.float64) - ffn_lr * np.sum(d_ffn, axis=0, keepdims=True)).astype(
+                        block.b2.dtype
+                    )
+                    block.b1 = (
+                        block.b1.astype(np.float64)
+                        - ffn_lr * np.sum(d_h1 * relu_derivative(z1[0]), axis=0, keepdims=True)
+                    ).astype(block.b1.dtype)
+                    d_layer = ((d_h1 * relu_derivative(z1[0])) @ block.w1.astype(np.float64).T)[np.newaxis, :, :]
 
             acc = total_correct / max(total_tokens, 1)
             metrics = {"epoch": float(epoch), "loss": total_loss / len(sequences), "accuracy": acc}
             history.append(metrics)
             if verbose and epoch % 20 == 0:
                 print(f"  lm epoch {epoch:3d}  loss={metrics['loss']:.4f}  token_acc={acc:.1%}")
+
+        if os.environ.get("AUREON_QUANTIZE_INFER", "1").strip().lower() not in ("0", "false", "no", "off"):
+            self.quantize_weights()
 
         return history
 
@@ -406,6 +645,7 @@ class StackedAttentionLM:
         self.tokenizer.save(path / "tokenizer.json")
         payload = {
             "config": self.config.__dict__,
+            "quantized": self._quantized,
             "embeddings": self.embeddings.tolist(),
             "w_out": self.w_out.tolist(),
             "b_out": self.b_out.tolist(),
@@ -446,4 +686,7 @@ class StackedAttentionLM:
             )
             for layer in payload["layers"]
         ]
+        model._quantized = bool(payload.get("quantized", False))
+        if model.embeddings.dtype == np.float16:
+            model._quantized = True
         return model

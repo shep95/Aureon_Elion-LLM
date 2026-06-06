@@ -2,16 +2,21 @@
 
 from __future__ import annotations
 
+import os
+import threading
+import time
 from typing import Any
 
 import numpy as np
 
 from app.auto_learn import get_auto_learn_scheduler
+from app.predict_rate_limit import get_predict_rate_limiter
+from app.session_memory import append_turn, history_as_context
 from brain.cortex import brain_status
 from brain.domains.taxonomy import total_micro_subdomains
 from brain.grades import GRADE_CURRICULUM, curriculum_public, epochs_for_grade, get_grade
 from brain.graduation import current_grade, progress_report
-from brain.ciper_logic import ciper_research
+from brain.cipher_logic import ciper_research
 from brain.agent_loop import is_agent_task, run_agent_loop
 from brain.brain_classifiers import classify_moe
 from brain.capability_roadmap import roadmap_snapshot, simulate_future_timeline, try_roadmap_answer
@@ -33,13 +38,72 @@ from pipeline.step4_evaluation.benchmarks import _load_production_model, _predic
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+_snapshot_lock = threading.Lock()
+_snapshot_cache: dict[str, Any] | None = None
+_snapshot_cached_at: float = 0.0
+
+
+def _snapshot_ttl_sec() -> float:
+    raw = os.environ.get("AUREON_LEARNING_SNAPSHOT_TTL_SEC", "30").strip()
+    try:
+        return max(1.0, float(raw))
+    except ValueError:
+        return 30.0
+
+
+def learning_snapshot(*, force: bool = False) -> dict[str, Any]:
+    global _snapshot_cache, _snapshot_cached_at
+    now = time.monotonic()
+    if not force:
+        with _snapshot_lock:
+            if _snapshot_cache is not None and (now - _snapshot_cached_at) < _snapshot_ttl_sec():
+                return _snapshot_cache
+
+    scheduler = get_auto_learn_scheduler()
+    status = scheduler.status()
+    brain = brain_status()
+    timeline = estimate_learning_timeline(
+        interval_sec=status.get("config", {}).get("interval_sec", 3600),
+        max_grades_per_cycle=status.get("config", {}).get("max_grades_per_cycle", 1),
+        micro_subdomain_count=brain.get("micro_subdomains", total_micro_subdomains()),
+    )
+    payload = {
+        "auto_learn": status,
+        "brain": {
+            "domains": brain.get("domains"),
+            "micro_subdomains": brain.get("micro_subdomains"),
+            "micro_agents": brain.get("micro_agents"),
+            "documents": brain.get("documents"),
+            "grade_levels_graduated": brain.get("grade_levels_graduated"),
+            "grade_progress_rows": brain.get("grade_progress_rows"),
+        },
+        "timeline": timeline,
+        "self_inquiry": {
+            "enabled": is_self_inquiry_enabled(),
+            "recent": recent_inquiries(8),
+        },
+        "meta_consciousness": {
+            "enabled": is_meta_consciousness_enabled(),
+            "recent": combined_recent_inquiries(8),
+        },
+    }
+    with _snapshot_lock:
+        _snapshot_cache = payload
+        _snapshot_cached_at = now
+    return payload
+
+
+def _learning_snapshot() -> dict[str, Any]:
+    """Cached snapshot for chat payloads."""
+    return learning_snapshot()
+
 
 def _finalize(payload: dict[str, Any], user_message: str) -> dict[str, Any]:
     return finalize_chat_payload(apply_chat_reward(payload, user_message), user_message)
 
 
 def _agent_payload(text: str, *, session_id: str | None) -> dict[str, Any]:
-    result = run_agent_loop(text)
+    result = run_agent_loop(text, session_id=session_id)
     return {
         "reply": result["answer"],
         "kind": "agent",
@@ -103,37 +167,6 @@ def estimate_learning_timeline(
                 "Assumes one successful grade graduation per auto-learn cycle. "
                 "Failed grades retry; trainer needs ≥2 label classes for full accuracy gates."
             ),
-        },
-    }
-
-
-def learning_snapshot() -> dict[str, Any]:
-    scheduler = get_auto_learn_scheduler()
-    status = scheduler.status()
-    brain = brain_status()
-    timeline = estimate_learning_timeline(
-        interval_sec=status.get("config", {}).get("interval_sec", 3600),
-        max_grades_per_cycle=status.get("config", {}).get("max_grades_per_cycle", 1),
-        micro_subdomain_count=brain.get("micro_subdomains", total_micro_subdomains()),
-    )
-    return {
-        "auto_learn": status,
-        "brain": {
-            "domains": brain.get("domains"),
-            "micro_subdomains": brain.get("micro_subdomains"),
-            "micro_agents": brain.get("micro_agents"),
-            "documents": brain.get("documents"),
-            "grade_levels_graduated": brain.get("grade_levels_graduated"),
-            "grade_progress_rows": brain.get("grade_progress_rows"),
-        },
-        "timeline": timeline,
-        "self_inquiry": {
-            "enabled": is_self_inquiry_enabled(),
-            "recent": recent_inquiries(8),
-        },
-        "meta_consciousness": {
-            "enabled": is_meta_consciousness_enabled(),
-            "recent": combined_recent_inquiries(8),
         },
     }
 
@@ -213,11 +246,82 @@ def _deterministic_payload(text: str, *, session_id: str | None) -> dict[str, An
     }
 
 
-def _brain_predict_payload(text: str, *, session_id: str | None) -> dict[str, Any] | None:
+def _resolve_followup(text: str, session_id: str | None) -> str:
+    """Map 'tell me more about that' to the prior user question."""
+    if not session_id:
+        return text
+    q = text.lower()
+    triggers = ("tell me more", "more about that", "about that", "explain that", "what about that")
+    if any(t in q for t in triggers):
+        from app.session_memory import get_history
+
+        hist = get_history(session_id, limit=1)
+        if hist:
+            return f"{hist[-1]['user']} — follow up: {text}"
+    return text
+
+
+def _predict_with_timeout(
+    question: str,
+    *,
+    session_id: str | None = None,
+    seconds: float | None = None,
+    force: bool = False,
+) -> dict[str, Any]:
+    """Run predict brain with rate limit + timeout — always returns a dict."""
+    if not get_predict_rate_limiter().try_acquire(session_id):
+        return {
+            "answer": "Too many predict requests — wait a minute and try again.",
+            "abstained": False,
+            "rate_limited": True,
+            "confidence": 0.0,
+            "model": "stacked_attention_lm",
+            "citations": [],
+        }
+
+    limit = seconds if seconds is not None else float(os.environ.get("AUREON_PREDICT_TIMEOUT_SEC", "8"))
+    conv = history_as_context(session_id)
+    result: list[dict[str, Any] | None] = [None]
+
+    def _run() -> None:
+        try:
+            result[0] = predict_with_steps(question, conversation_context=conv, force=force)
+        except Exception:
+            result[0] = None
+
+    worker = threading.Thread(target=_run, name="aureon-predict", daemon=True)
+    worker.start()
+    worker.join(timeout=limit)
+
+    if worker.is_alive():
+        return {
+            "answer": (
+                "This question needs deeper corpus grounding than I can compute in time. "
+                "Try again after auto-learn finishes, or ask `/mind` for what I know now."
+            ),
+            "abstained": False,
+            "timed_out": True,
+            "confidence": 0.1,
+            "model": "stacked_attention_lm",
+            "citations": [],
+        }
+
+    if result[0] is None:
+        from brain.predict_engine import _TRAINING_NEED_MSG
+
+        return {
+            "answer": _TRAINING_NEED_MSG,
+            "abstained": True,
+            "confidence": 0.0,
+            "model": "stacked_attention_lm",
+            "citations": [],
+        }
+    return result[0]
+
+
+def _brain_predict_payload(text: str, *, session_id: str | None) -> dict[str, Any]:
     """Attention LM — embed, attend, predict next tokens autoregressively."""
-    result = predict_with_steps(text)
-    if not result:
-        return None
+    result = _predict_with_timeout(text, session_id=session_id)
     payload: dict[str, Any] = {
         "reply": result["answer"],
         "kind": "chat",
@@ -235,11 +339,75 @@ def _brain_predict_payload(text: str, *, session_id: str | None) -> dict[str, An
         },
         "brain_predict": True,
         "abstained": result.get("abstained", False),
+        "timed_out": result.get("timed_out", False),
     }
     if result.get("citations"):
         cites = result["citations"][:3]
         payload["citations"] = cites
     return payload
+
+
+def is_code_question(text: str) -> bool:
+    q = text.strip().lower()
+    triggers = (
+        "write a function",
+        "write a python",
+        "write code",
+        "def ",
+        "how do i code",
+        "write a script",
+        "debug this",
+        "fix this code",
+        "what does this code do",
+        "write a program",
+        "implement",
+        "code that",
+    )
+    return any(t in q for t in triggers)
+
+
+def _code_payload(text: str, *, session_id: str | None) -> dict[str, Any] | None:
+    from brain.code_evaluator import evaluate_code_response, extract_python_code
+
+    result = _predict_with_timeout(text, session_id=session_id, force=True)
+    if not result or not result.get("answer"):
+        return None
+
+    code = extract_python_code(result.get("answer", ""))
+    test: str | None = None
+    for cite in result.get("citations") or []:
+        extra = cite.get("extra") or cite.get("metadata") or {}
+        if extra.get("test"):
+            test = str(extra["test"])
+            break
+
+    evaluation = evaluate_code_response(code, test)
+
+    answer = result["answer"]
+    if not evaluation["syntax_valid"]:
+        answer = (
+            f"{code}\n\n"
+            f"# Note: syntax check flagged an issue — {evaluation['error']}"
+        )
+    elif evaluation.get("passed_tests") is False:
+        answer = f"{code}\n\n# Note: unit tests did not pass."
+    elif evaluation.get("passed_tests") is True:
+        answer = code
+
+    return {
+        "reply": answer,
+        "kind": "code",
+        "session_id": session_id,
+        "learning": learning_snapshot(),
+        "code_eval": evaluation,
+        "brain_predict": True,
+        "citations": result.get("citations", []),
+        "prediction": {
+            "model": result.get("model"),
+            "confidence": result.get("confidence"),
+            "citations": result.get("citations", []),
+        },
+    }
 
 
 def _ciper_chat_payload(text: str, *, session_id: str | None) -> dict[str, Any] | None:
@@ -294,6 +462,24 @@ def _simple_nl_response(text: str) -> str | None:
 
     if q in ("what is ai", "what is artificial intelligence"):
         return "Supervised machine learning — labels plus weights, not magic."
+
+    if q in ("what is math", "what is mathematics"):
+        return (
+            "Mathematics — study of numbers, patterns, and logical structure "
+            "underlying all science and reasoning."
+        )
+
+    if "consciousness" in q and q.startswith("what is"):
+        return "Consciousness — lived experience of awareness and self-knowledge."
+
+    if "meaning of life" in q:
+        return "Meaning — purpose, connection, and understanding; traditions answer differently."
+
+    if "god" in q and ("who is" in q or "what is" in q or "to you" in q):
+        return (
+            "No personal deity — I audit verified corpus. Traditions define God as "
+            "creator, consciousness, or meaning-source."
+        )
 
     if "what are you asking" in q or "questions do you ask" in q:
         items = combined_recent_inquiries(1)
@@ -526,17 +712,21 @@ def _command_response(message: str) -> dict[str, Any] | None:
 
 def chat(message: str, *, session_id: str | None = None) -> dict[str, Any]:
     """Process a chat message — psychology brain wraps algorithm brain output."""
-    text = (message or "").strip()
+    text = _resolve_followup((message or "").strip(), session_id)
+
+    def done(payload: dict[str, Any]) -> dict[str, Any]:
+        out = _finalize(payload, text or (message or ""))
+        reply = str(out.get("reply", "")).strip()
+        if session_id and reply:
+            append_turn(session_id, user=text or (message or ""), assistant=reply)
+        return out
+
     if not text:
-        return _finalize(
-            {"error": "empty message", "reply": "Send a message or try `/help`."},
-            text,
-        )
+        return done({"error": "empty message", "reply": "Send a message or try `/help`."})
 
     if len(text) > 8000:
-        return _finalize(
-            {"error": "message too long", "reply": "Please keep messages under 8000 characters."},
-            text,
+        return done(
+            {"error": "message too long", "reply": "Please keep messages under 8000 characters."}
         )
 
     cmd = _command_response(text)
@@ -561,49 +751,51 @@ def chat(message: str, *, session_id: str | None = None) -> dict[str, Any]:
             payload["agent"] = cmd["agent"]
         if "citations" in cmd:
             payload["citations"] = cmd["citations"]
-        return _finalize(payload, text)
+        return done(payload)
 
     if is_agent_task(text):
-        return _finalize(_agent_payload(text, session_id=session_id), text)
+        return done(_agent_payload(text, session_id=session_id))
 
     nl = _simple_nl_response(text)
     if nl:
-        return _finalize(
+        return done(
             {
                 "reply": to_simple_answer(nl),
                 "kind": "chat",
                 "session_id": session_id,
                 "learning": learning_snapshot(),
                 "simple_qa": True,
-            },
-            text,
+            }
         )
 
     deterministic = _deterministic_payload(text, session_id=session_id)
     if deterministic:
-        return _finalize(deterministic, text)
+        return done(deterministic)
+
+    if is_code_question(text):
+        code_payload = _code_payload(text, session_id=session_id)
+        if code_payload:
+            return done(code_payload)
 
     if is_prediction_question(text):
-        predict_payload = _brain_predict_payload(text, session_id=session_id)
-        if predict_payload:
-            return _finalize(predict_payload, text)
+        return done(_brain_predict_payload(text, session_id=session_id))
 
     ciper_payload = _ciper_chat_payload(text, session_id=session_id)
     if ciper_payload:
-        return _finalize(ciper_payload, text)
+        return done(ciper_payload)
 
     if is_simple_question(text):
         simple = _simple_chat_reply(text)
         simple["session_id"] = session_id
         simple["learning"] = learning_snapshot()
-        return _finalize(simple, text)
+        return done(simple)
 
     classification = _classify_message(text)
     ciper_payload = _ciper_chat_payload(text, session_id=session_id)
     if ciper_payload:
         if classification:
             ciper_payload["classification"] = classification
-        return _finalize(ciper_payload, text)
+        return done(ciper_payload)
 
     learning = learning_snapshot()
 
@@ -632,7 +824,7 @@ def chat(message: str, *, session_id: str | None = None) -> dict[str, Any]:
                 f"**Current focus:** `{active['path']}` @ grade **{active['current_grade']}**."
             )
 
-    return _finalize(
+    return done(
         {
             "reply": reply,
             "kind": "chat",
@@ -640,6 +832,5 @@ def chat(message: str, *, session_id: str | None = None) -> dict[str, Any]:
             "classification": classification,
             "learning": learning,
             "active_micro": active,
-        },
-        text,
+        }
     )

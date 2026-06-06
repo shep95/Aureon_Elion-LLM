@@ -65,6 +65,7 @@ def test_chat_prediction_brain(tmp_path, monkeypatch):
     monkeypatch.setenv("AUREON_PREDICT_D_MODEL", "48")
     monkeypatch.setenv("AUREON_PREDICT_LAYERS", "4")
     monkeypatch.setenv("AUREON_PREDICT_MAX_VOCAB", "2000")
+    monkeypatch.setenv("AUREON_PREDICT_TIMEOUT_SEC", "120")
     monkeypatch.setattr(pe, "MODEL_DIR", tmp_path / "models" / "predict_brain")
     monkeypatch.setattr(pe, "_model", None)
     monkeypatch.setattr(pe, "_ready", False)

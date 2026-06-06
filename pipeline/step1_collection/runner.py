@@ -13,6 +13,7 @@ from pipeline.step1_collection.collectors import (
     SeedCollector,
     save_raw_batch,
 )
+from brain.regions.code_collector import CodeCollector
 from pipeline.step1_collection.filters import load_raw_batches, run_filter_pipeline
 
 
@@ -26,12 +27,14 @@ def run_step1(
 
     collectors = [
         SeedCollector(),
+        CodeCollector(),
         LocalFileCollector(),
         ArxivCollector(),
         GutenbergCollector(),
     ]
     limits = {
         "seeds": seed_limit,
+        "code_corpus": 2000,
         "local_inbox": 50,
         "arxiv": arxiv_limit,
         "gutenberg": gutenberg_limit,

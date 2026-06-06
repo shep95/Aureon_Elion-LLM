@@ -13,14 +13,17 @@ from brain.vector_rag import retrieve_with_citations
 ToolFn = Callable[..., dict[str, Any]]
 
 
-def _tool_rag_search(query: str) -> dict[str, Any]:
+def _tool_rag_search(query: str, *, ctx: dict[str, Any]) -> dict[str, Any]:
     context, hits, citations = retrieve_with_citations(query, top_k=6)
+    ctx["rag_context"] = context
+    ctx["citations"] = list(citations[:5])
+    ctx["rag_hits"] = len(hits)
     return {
         "tool": "rag_search",
         "ok": bool(hits),
         "hits": len(hits),
         "context_words": len(context.split()) if context else 0,
-        "citations": citations[:5],
+        "citations": ctx["citations"],
         "preview": hits[0].snippet(200) if hits else "",
     }
 
@@ -37,9 +40,29 @@ def _tool_calculate(expression: str) -> dict[str, Any]:
     }
 
 
-def _tool_classify(text: str) -> dict[str, Any]:
+def _tool_classify(text: str, *, ctx: dict[str, Any]) -> dict[str, Any]:
     result = classify_moe(text)
+    ctx["classification"] = result
     return {"tool": "classify", "ok": result is not None, "classification": result}
+
+
+def _tool_predict(question: str, *, ctx: dict[str, Any], conversation_context: str = "") -> dict[str, Any]:
+    rag_block = ctx.get("rag_context") or ""
+    conv = f"{conversation_context} {rag_block}".strip()
+    pred = predict_with_steps(question, conversation_context=conv)
+    if not pred:
+        return {"tool": "predict", "ok": False}
+    ctx["predict_answer"] = pred.get("answer")
+    ctx["predict_confidence"] = pred.get("confidence")
+    if pred.get("citations"):
+        ctx["citations"] = list(pred["citations"])
+    return {
+        "tool": "predict",
+        "ok": not pred.get("abstained", False),
+        "confidence": pred.get("confidence"),
+        "abstained": pred.get("abstained", False),
+        "answer": pred.get("answer"),
+    }
 
 
 def _tool_verify(citations: list[dict[str, Any]], answer: str) -> dict[str, Any]:
@@ -79,27 +102,40 @@ def is_agent_task(text: str) -> bool:
     return any(t in lower for t in triggers)
 
 
-def run_agent_loop(question: str, *, max_steps: int = 5) -> dict[str, Any]:
+def run_agent_loop(
+    question: str,
+    *,
+    max_steps: int = 5,
+    session_id: str | None = None,
+) -> dict[str, Any]:
     """
     Plan → execute tools → verify → synthesize answer.
-    Tools: rag_search, calculate, classify, predict, verify.
+    Shared ctx threads RAG/classify/predict results across steps.
     """
+    from app.session_memory import history_as_context
+
     q = question.strip()
     if q.lower().startswith("/agent"):
         q = q[6:].strip(" :")
 
+    ctx: dict[str, Any] = {
+        "question": q,
+        "citations": [],
+        "rag_context": "",
+        "classification": None,
+        "predict_answer": None,
+    }
+    conv = history_as_context(session_id)
     steps: list[dict[str, Any]] = []
     citations: list[dict[str, Any]] = []
     answer: str | None = None
     confidence = 0.0
     expr = _extract_math_expression(q)
 
-    # Step 1 — corpus search
-    rag = _tool_rag_search(q)
+    rag = _tool_rag_search(q, ctx=ctx)
     steps.append(rag)
-    citations = list(rag.get("citations") or [])
+    citations = list(ctx.get("citations") or [])
 
-    # Step 2 — arithmetic (exact evaluators first)
     arith = try_arithmetic_answer(q)
     if arith:
         steps.append(
@@ -117,31 +153,21 @@ def run_agent_loop(question: str, *, max_steps: int = 5) -> dict[str, Any]:
         if calc.get("ok"):
             answer = str(calc["answer"])
 
-    # Step 3 — domain classification
     if len(steps) < max_steps:
-        clf = _tool_classify(q)
+        clf = _tool_classify(q, ctx=ctx)
         steps.append(clf)
 
-    # Step 4 — predict brain if no arithmetic answer
     if not answer and len(steps) < max_steps:
-        pred = predict_with_steps(q)
-        if pred:
-            steps.append(
-                {
-                    "tool": "predict",
-                    "ok": not pred.get("abstained", False),
-                    "confidence": pred.get("confidence"),
-                    "abstained": pred.get("abstained", False),
-                }
-            )
-            answer = pred.get("answer")
-            confidence = float(pred.get("confidence") or 0.0)
-            citations = list(pred.get("citations") or citations)
+        pred_step = _tool_predict(q, ctx=ctx, conversation_context=conv)
+        steps.append(pred_step)
+        if pred_step.get("answer"):
+            answer = str(pred_step["answer"])
+            confidence = float(pred_step.get("confidence") or 0.0)
+            citations = list(ctx.get("citations") or citations)
 
     if not answer:
         answer = "I couldn't complete the agent plan with grounded tools."
 
-    # Step 5 — verification gate
     if len(steps) < max_steps:
         verify = _tool_verify(citations, answer)
         steps.append(verify)
@@ -150,7 +176,7 @@ def run_agent_loop(question: str, *, max_steps: int = 5) -> dict[str, Any]:
             and not try_arithmetic_answer(q)
             and not answer.replace(".", "", 1).isdigit()
         ):
-            answer = "I don't know — agent verification failed (no auditable citations)."
+            answer = "I need more training on this topic — ask me again after the next auto-learn cycle."
 
     return {
         "answer": answer,
@@ -160,4 +186,8 @@ def run_agent_loop(question: str, *, max_steps: int = 5) -> dict[str, Any]:
         "confidence": confidence,
         "agent": True,
         "max_steps": max_steps,
+        "context": {
+            "rag_hits": ctx.get("rag_hits", 0),
+            "classification": ctx.get("classification"),
+        },
     }

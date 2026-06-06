@@ -17,10 +17,14 @@ from src.tokenizer import WordTokenizer
 logger = logging.getLogger(__name__)
 
 MODEL_DIR = MODELS_DIR / "predict_brain"
-CURRENT_MODEL_VERSION = 5
+CURRENT_MODEL_VERSION = 6
 _lock = threading.Lock()
 _model: StackedAttentionLM | None = None
 _ready = False
+
+_TRAINING_NEED_MSG = (
+    "I need more training on this topic — ask me again after the next auto-learn cycle."
+)
 
 _CONTEXT_STOP = frozenset(
     {
@@ -69,6 +73,20 @@ BOOTSTRAP_LINES: list[str] = [
     "question what is the scientific revolution answer the scientific revolution shifted europe toward empirical observation",
     "question what is sanskrit grammar answer panini's ashtadhyayi describes sanskrit morphology with formal rules",
     "question what is a feedback loop answer feedback systems measure output and adjust inputs to reduce error",
+    "question what is math answer mathematics is the study of numbers patterns and logical structure that underlies all science and reasoning",
+    "question what is mathematics answer mathematics is the study of numbers patterns and logical structure that underlies all science and reasoning",
+    "question who is god answer god is understood as the ultimate source of existence consciousness and meaning interpreted differently across traditions",
+    "question who is god to you answer i have no personal deity i audit verified corpus traditions define god as creator consciousness or meaning source",
+    "question what is consciousness answer consciousness is the lived experience of awareness and self knowledge",
+    "question what is the meaning of life answer the meaning of life is found through purpose connection and understanding",
+    "question write a python function to add two numbers answer def add(a, b): return a + b",
+    "question write a python function to reverse a string answer def reverse(s): return s[::-1]",
+    "question write a python function to check if a number is even answer def is_even(n): return n % 2 == 0",
+    "question write a python function to find the maximum in a list answer def find_max(lst): return max(lst)",
+    "question write a python for loop answer for i in range(n): print(i)",
+    "question what is a python class answer class MyClass: def __init__(self): pass",
+    "question write a python function to sort a list answer def sort_list(lst): return sorted(lst)",
+    "question write a python function to count words in a string answer def count_words(s): return len(s.split())",
 ]
 
 # Chain-of-thought reasoning lines (context → think → therefore → answer).
@@ -97,6 +115,56 @@ REASONING_LINES: list[str] = [
         "context newton motion force inertia question what is newton's first law "
         "think objects keep their state unless a net external force acts therefore "
         "answer an object stays at rest or in motion unless a force acts on it"
+    ),
+    (
+        "context god divine consciousness creator universe question who is god "
+        "think god means different things to different people some see god as the "
+        "creator of the universe others as pure consciousness others as the source "
+        "of all meaning therefore "
+        "answer god is understood as the ultimate source of existence consciousness "
+        "and meaning interpreted differently across traditions"
+    ),
+    (
+        "context god divine creator meaning supervised learning question who is god to you "
+        "think i have no personal deity i measure truth in verified corpus not revelation "
+        "traditions define god as creator consciousness or meaning source therefore "
+        "answer i have no personal deity i audit verified corpus traditions define god "
+        "as creator consciousness or meaning source"
+    ),
+    (
+        "context math mathematics numbers patterns logic structure question what is math "
+        "think mathematics is the study of patterns numbers and logical structure "
+        "it underlies all science and reasoning therefore "
+        "answer mathematics is the study of numbers patterns and logical structure "
+        "that underlies all science and reasoning"
+    ),
+    (
+        "context consciousness awareness mind soul spirit question what is consciousness "
+        "think consciousness is the state of being aware of oneself and the world "
+        "it is the inner experience of existence therefore "
+        "answer consciousness is the lived experience of awareness and self knowledge"
+    ),
+    (
+        "context purpose meaning life existence question what is the meaning of life "
+        "think meaning is constructed through relationships purpose and understanding "
+        "different traditions give different answers therefore "
+        "answer the meaning of life is found through purpose connection and understanding"
+    ),
+    (
+        "context python function input output return question write a function to add two numbers "
+        "think a function needs def keyword a name parameters and return statement "
+        "to add two numbers take a and b and return their sum therefore "
+        "answer def add(a, b): return a + b"
+    ),
+    (
+        "context python list iteration loop question write a function to find max in list "
+        "think iterate through all elements track the largest seen so far therefore "
+        "answer def find_max(lst): return max(lst)"
+    ),
+    (
+        "context python string manipulation question reverse a string "
+        "think strings can be sliced with negative step s[::-1] reverses therefore "
+        "answer def reverse(s): return s[::-1]"
     ),
 ]
 
@@ -212,17 +280,49 @@ def _retrieve_context(question: str, *, max_words: int | None = None) -> tuple[s
     return context, snippets, citations
 
 
+def _abstain_min_rag() -> float:
+    raw = os.environ.get("AUREON_ABSTAIN_MIN_RAG", "").strip()
+    if raw:
+        return float(raw)
+    return float(os.environ.get("AUREON_ABSTAIN_THRESHOLD", "0.03"))
+
+
+def _abstain_min_prob() -> float:
+    raw = os.environ.get("AUREON_ABSTAIN_MIN_PROB", "").strip()
+    if raw:
+        return float(raw)
+    return float(os.environ.get("AUREON_ABSTAIN_THRESHOLD", "0.15"))
+
+
+def _question_aliases(key: str) -> list[str]:
+    aliases = [key]
+    for suffix in (" to you", " to me", " for you"):
+        if key.endswith(suffix):
+            aliases.append(key[: -len(suffix)].strip())
+    return aliases
+
+
+def _format_bootstrap_answer(raw: str) -> str | None:
+    """Capitalize prose answers; leave executable code prefixes lowercase."""
+    if not raw:
+        return None
+    stripped = raw.strip()
+    code_starts = ("def ", "class ", "for ", "import ", "while ")
+    if stripped.startswith(code_starts):
+        return stripped
+    return stripped[0].upper() + stripped[1:]
+
+
 def _bootstrap_answer(question: str) -> str | None:
     key = question.strip().lower().rstrip("?").strip()
-    prefix = f"question {key} answer "
-    for line in BOOTSTRAP_LINES:
-        if line.startswith(prefix):
-            raw = line[len(prefix) :].strip()
-            return raw[0].upper() + raw[1:] if raw else None
-    for line in REASONING_LINES:
-        if f"question {key} " in line and " answer " in line:
-            raw = line.split(" answer ", 1)[1].strip()
-            return raw[0].upper() + raw[1:] if raw else None
+    for alias in _question_aliases(key):
+        prefix = f"question {alias} answer "
+        for line in BOOTSTRAP_LINES:
+            if line.startswith(prefix):
+                return _format_bootstrap_answer(line[len(prefix) :].strip())
+        for line in REASONING_LINES:
+            if f"question {alias} " in line and " answer " in line:
+                return _format_bootstrap_answer(line.split(" answer ", 1)[1].strip())
     return None
 
 
@@ -253,7 +353,12 @@ def _train_or_load() -> StackedAttentionLM:
             logger.warning("Predict brain load failed — retraining", exc_info=True)
 
     corpus = _build_training_corpus()
-    max_vocab = _env_int("AUREON_PREDICT_MAX_VOCAB", 1_000_000, minimum=1000, maximum=1_000_000)
+    max_vocab = _env_int(
+        "AUREON_PREDICT_TRAIN_MAX_VOCAB",
+        _env_int("AUREON_PREDICT_MAX_VOCAB", 32_000, minimum=1000, maximum=1_000_000),
+        minimum=1000,
+        maximum=1_000_000,
+    )
     tokenizer = WordTokenizer()
     tokenizer.build_vocab(corpus, min_freq=1, max_vocab=max_vocab)
 
@@ -323,20 +428,55 @@ def _extract_reasoning(raw: str) -> str:
     return text[0].upper() + text[1:] if len(text) > 1 else text.upper()
 
 
-def predict_with_steps(question: str) -> dict[str, Any] | None:
+def _abstain_result(
+    *,
+    confidence: float,
+    citations: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    return {
+        "abstained": True,
+        "answer": _TRAINING_NEED_MSG,
+        "confidence": round(confidence, 4),
+        "citations": citations or [],
+        "model": "stacked_attention_lm",
+        "model_version": CURRENT_MODEL_VERSION,
+    }
+
+
+def predict_with_steps(
+    question: str,
+    *,
+    conversation_context: str = "",
+    force: bool = False,
+) -> dict[str, Any] | None:
     """
     Run the prediction pipeline: context → tokenize → embed → attention →
     layers → reasoning → next-token → autoregressive generate.
     """
-    if not is_prediction_question(question):
+    if not force and not is_prediction_question(question):
         return None
 
-    model = get_predict_model()
+    try:
+        model = get_predict_model()
+    except Exception as exc:
+        logger.exception("Predict model load failed")
+        return {
+            "abstained": True,
+            "answer": _TRAINING_NEED_MSG,
+            "confidence": 0.0,
+            "citations": [],
+            "model": "stacked_attention_lm",
+            "model_version": CURRENT_MODEL_VERSION,
+            "error": str(exc)[:200],
+        }
+
     q = question.strip().lower().rstrip("?")
     context, context_sources, citations = _retrieve_context(q)
+    if conversation_context.strip():
+        context = f"{conversation_context.strip()} {context}".strip()
     max_rag_score = max((c.get("score", 0) for c in citations), default=0.0)
-    min_rag = float(os.environ.get("AUREON_ABSTAIN_MIN_RAG", "0.06"))
-    min_prob = float(os.environ.get("AUREON_ABSTAIN_MIN_PROB", "0.12"))
+    min_rag = _abstain_min_rag()
+    min_prob = _abstain_min_prob()
     max_ctx_tokens = max(32, model.config.max_seq_len - 64)
 
     context_block = f"context {context} " if context else ""
@@ -371,37 +511,16 @@ def predict_with_steps(question: str) -> dict[str, Any] | None:
             top_prob = max(top_prob, 0.9)
 
     if not citations and not fallback and max_rag_score < min_rag:
-        return {
-            "abstained": True,
-            "answer": "I don't know — no grounded corpus match for that question.",
-            "confidence": round(top_prob, 4),
-            "citations": [],
-            "model": "stacked_attention_lm",
-            "model_version": CURRENT_MODEL_VERSION,
-        }
+        return _abstain_result(confidence=top_prob)
 
     if not answer or answer.lower() == q:
         if fallback:
             answer = fallback
         else:
-            return {
-                "abstained": True,
-                "answer": "I don't know — I couldn't verify an answer from the corpus.",
-                "confidence": round(top_prob, 4),
-                "citations": citations,
-                "model": "stacked_attention_lm",
-                "model_version": CURRENT_MODEL_VERSION,
-            }
+            return _abstain_result(confidence=top_prob, citations=citations)
 
     if not fallback and top_prob < min_prob and len(answer) < 8:
-        return {
-            "abstained": True,
-            "answer": "I don't know — confidence too low without corpus support.",
-            "confidence": round(top_prob, 4),
-            "citations": citations,
-            "model": "stacked_attention_lm",
-            "model_version": CURRENT_MODEL_VERSION,
-        }
+        return _abstain_result(confidence=top_prob, citations=citations)
 
     steps = [
         {
@@ -478,6 +597,27 @@ def predict_with_steps(question: str) -> dict[str, Any] | None:
         "generation": generation,
         "reasoning": reason_gen,
     }
+
+
+def warm_up_predict_brain(*, run_probe: bool = True) -> dict[str, Any]:
+    """Load model + RAG index before first user request — avoids cold-start hangs."""
+    out: dict[str, Any] = {"rag_docs": 0, "model_ready": False, "probe": False}
+    if os.environ.get("AUREON_PREDICT_BRAIN", "1").strip().lower() in ("0", "false", "no"):
+        return out
+    try:
+        from brain.vector_rag import get_rag_index
+
+        out["rag_docs"] = get_rag_index(force_rebuild=True).document_count
+        get_predict_model()
+        out["model_ready"] = _ready
+        if run_probe:
+            probe = predict_with_steps("what is mathematics")
+            out["probe"] = bool(probe and probe.get("answer"))
+            out["probe_answer"] = (probe or {}).get("answer", "")[:120]
+    except Exception as exc:
+        logger.warning("Predict brain warm-up skipped: %s", exc)
+        out["error"] = str(exc)[:200]
+    return out
 
 
 def warmup_predict_brain_background() -> None:

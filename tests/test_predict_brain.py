@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import numpy as np
+
 from brain.predict_engine import (
     BOOTSTRAP_LINES,
+    _bootstrap_answer,
     is_prediction_question,
     predict_with_steps,
 )
@@ -28,6 +31,47 @@ def test_attention_lm_forward_shape():
     assert len(attn) == 2
 
 
+def test_kv_cache_incremental_matches_full():
+    tok = WordTokenizer()
+    tok.build_vocab(BOOTSTRAP_LINES, min_freq=1, max_vocab=500)
+    model = StackedAttentionLM.create(tok, AttentionLMConfig(d_model=16, n_layers=2, d_ff=32))
+    ids = tok.encode("question what is the capital of france answer", add_bos=True)
+
+    model.clear_cache()
+    cached_logits = model.forward_cached(np.array([ids], dtype=int))
+    full_logits, _ = model.forward(np.array([ids], dtype=int))
+    assert cached_logits.shape == full_logits.shape
+    np.testing.assert_allclose(cached_logits[0, -1], full_logits[0, -1], rtol=0.15, atol=0.6)
+
+    model.clear_cache()
+    model.forward_cached(np.array([ids], dtype=int))
+    extra_id = tok.encode(" paris", add_bos=False, add_eos=False)[0]
+    inc_logits = model.forward_cached(np.array([ids + [extra_id]], dtype=int))
+    full2, _ = model.forward(np.array([ids + [extra_id]], dtype=int))
+    np.testing.assert_allclose(inc_logits[0, -1], full2[0, -1], rtol=0.15, atol=0.6)
+
+
+def test_speculative_generate_metadata(monkeypatch):
+    monkeypatch.setenv("AUREON_SPECULATIVE_DRAFT", "4")
+    monkeypatch.setenv("AUREON_SPECULATIVE_DECODE", "1")
+    tok = WordTokenizer()
+    tok.build_vocab(BOOTSTRAP_LINES, min_freq=1, max_vocab=500)
+    cfg = AttentionLMConfig(d_model=24, n_layers=2, d_ff=48, learning_rate=0.12)
+    model = StackedAttentionLM.create(tok, cfg)
+    model.train(BOOTSTRAP_LINES, epochs=80)
+    out = model.generate("question what is the capital of france answer", max_new_tokens=6)
+    assert out.get("speculative", {}).get("mode") == "draft_verify"
+
+
+def test_quantize_weights():
+    tok = WordTokenizer()
+    tok.build_vocab(["hello world"], min_freq=1)
+    model = StackedAttentionLM.create(tok, AttentionLMConfig(d_model=8, n_layers=1, d_ff=16))
+    model.quantize_weights()
+    assert model.embeddings.dtype == np.float16
+    assert model._quantized is True
+
+
 def test_attention_lm_train_and_generate():
     tok = WordTokenizer()
     tok.build_vocab(BOOTSTRAP_LINES, min_freq=1, max_vocab=500)
@@ -38,6 +82,15 @@ def test_attention_lm_train_and_generate():
     out = model.generate("question what is the capital of france answer", max_new_tokens=6)
     assert "steps" in out
     assert len(out["steps"]) >= 1
+
+
+def test_bootstrap_philosophy_seeds():
+    god = _bootstrap_answer("Who is God to you?")
+    assert god
+    assert "deity" in god.lower() or "god" in god.lower() or "corpus" in god.lower()
+    math = _bootstrap_answer("What is math?")
+    assert math
+    assert "mathematics" in math.lower() or "numbers" in math.lower()
 
 
 def test_is_prediction_question():

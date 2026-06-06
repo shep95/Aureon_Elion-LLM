@@ -14,10 +14,10 @@ def test_zophiel_taxonomy_loaded():
     stats = taxonomy_stats()
     assert stats["domains"] == 30
     assert stats["subdomains"] == 135
-    assert stats["micro_subdomains"] == 862
+    assert stats["micro_subdomains"] == 867
     assert len(KNOWLEDGE_TAXONOMY) == 30
     assert total_subdomains() == 135
-    assert total_micro_subdomains() == 862
+    assert total_micro_subdomains() == 867
 
 
 def test_sample_domain_structure():

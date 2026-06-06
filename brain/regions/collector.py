@@ -14,6 +14,7 @@ from db.models import Document
 from app.security import load_json_file_bounded
 from pipeline.config import SEEDS_DIR
 from brain.multimodal_collector import MultimodalCollector
+from brain.regions.code_collector import CODE_MICRO_SLUGS, CodeCollector
 from pipeline.step1_collection.collectors import (
     ArxivCollector,
     GutenbergCollector,
@@ -78,6 +79,7 @@ class CollectorAgent(MicroAgentBase):
 
         attempts += self._ingest_taxonomy_topics(session, ctx)
         attempts += self._ingest_seeds(session, ctx)
+        attempts += self._ingest_code_corpus(session, ctx)
         attempts += self._ingest_external_sources(session, ctx)
 
         query = _arxiv_query(ctx)
@@ -133,6 +135,29 @@ class CollectorAgent(MicroAgentBase):
                     "source_type": "taxonomy_seed",
                 },
             )
+            if ctx.grade_slug:
+                doc.metadata["grade"] = ctx.grade_slug
+            count += 1
+            self._persist_doc(session, ctx, doc)
+        return count
+
+    def _ingest_code_corpus(self, session: Session, ctx: AgentContext) -> int:
+        """Ingest HumanEval + MBPP when training a code-generation micro-topic."""
+        if ctx.subdomain_slug != "computer_science":
+            return 0
+        if ctx.micro_subdomain_slug not in CODE_MICRO_SLUGS:
+            return 0
+
+        limit = 2000
+        if ctx.grade:
+            limit = min(2000, max(ctx.grade.collection_limit * 200, 50))
+
+        count = 0
+        for doc in CodeCollector().collect(limit=limit):
+            doc.metadata.setdefault("domain", ctx.domain_slug)
+            doc.metadata.setdefault("subdomain", ctx.subdomain_slug)
+            doc.metadata.setdefault("micro_subdomain", ctx.micro_subdomain_slug)
+            doc.metadata.setdefault("code_area", "code_generation")
             if ctx.grade_slug:
                 doc.metadata["grade"] = ctx.grade_slug
             count += 1

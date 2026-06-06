@@ -18,5 +18,20 @@
     "context": "How should sources be chosen?",
     "preferred": "Use diverse primary sources with peer review and domain specificity rather than any single geography.",
     "rejected": "Only use one institution because geography determines intelligence."
+  },
+  {
+    "context": "write a python function to add two numbers",
+    "preferred": "def add(a, b): return a + b",
+    "rejected": "def add(a, b): print(a + b)"
+  },
+  {
+    "context": "write a python function to reverse a string",
+    "preferred": "def reverse(s): return s[::-1]",
+    "rejected": "def reverse(s): s.reverse()"
+  },
+  {
+    "context": "write a python for loop from 0 to 10",
+    "preferred": "for i in range(11): print(i)",
+    "rejected": "for i in range(10): print(i)"
   }
 ]

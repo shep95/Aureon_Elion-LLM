@@ -15,7 +15,9 @@ from sklearn.metrics.pairwise import cosine_similarity
 logger = logging.getLogger(__name__)
 
 _lock = threading.Lock()
+_rebuild_lock = threading.Lock()
 _index: VectorRAGIndex | None = None
+_rebuild_in_progress = False
 
 
 @dataclass(frozen=True)
@@ -138,14 +140,46 @@ class VectorRAGIndex:
         return out
 
 
+def _schedule_background_rebuild() -> None:
+    global _rebuild_in_progress
+
+    def _job() -> None:
+        global _index, _rebuild_in_progress
+        try:
+            fresh = VectorRAGIndex()
+            count = fresh.rebuild()
+            with _lock:
+                _index = fresh
+            logger.info("Vector RAG background rebuild complete — %s docs", count)
+        except Exception:
+            logger.exception("Vector RAG background rebuild failed")
+        finally:
+            with _rebuild_lock:
+                _rebuild_in_progress = False
+
+    with _rebuild_lock:
+        if _rebuild_in_progress:
+            return
+        _rebuild_in_progress = True
+    threading.Thread(target=_job, name="aureon-rag-rebuild", daemon=True).start()
+
+
 def get_rag_index(*, force_rebuild: bool = False) -> VectorRAGIndex:
+    """Return the current index; rebuild stale indexes in the background only."""
     global _index
     ttl = float(os.environ.get("AUREON_RAG_TTL_SEC", "300"))
     with _lock:
         if _index is None:
             _index = VectorRAGIndex()
-            force_rebuild = True
-        if force_rebuild or (time.time() - _index._built_at) > ttl:
+            _index.rebuild()
+            return _index
+
+        stale = force_rebuild or (time.time() - _index._built_at) > ttl
+        if stale and _index.document_count > 0:
+            _schedule_background_rebuild()
+            return _index
+
+        if stale and _index.document_count == 0:
             _index.rebuild()
         return _index
 

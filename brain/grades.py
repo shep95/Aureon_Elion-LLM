@@ -117,6 +117,31 @@ GRADE_CURRICULUM: tuple[GradeLevel, ...] = (
 
 GRADES_BY_SLUG: dict[str, GradeLevel] = {g.slug: g for g in GRADE_CURRICULUM}
 
+CODE_MICRO_SUBDOMAINS = frozenset(
+    {
+        "python_functions",
+        "python_algorithms",
+        "python_classes",
+        "javascript_functions",
+        "sql_queries",
+    }
+)
+
+# Code graduation uses unit-test pass rate instead of classification accuracy.
+CODE_GRADUATION_THRESHOLDS: dict[str, float] = {
+    "preschool": 0.30,
+    "elementary": 0.45,
+    "middle_school": 0.55,
+    "high_school": 0.65,
+    "undergraduate": 0.75,
+    "masters": 0.82,
+    "doctorate": 0.90,
+}
+
+
+def is_code_micro(micro_slug: str | None) -> bool:
+    return bool(micro_slug and micro_slug in CODE_MICRO_SUBDOMAINS)
+
 
 def grade_slugs() -> list[str]:
     return [g.slug for g in GRADE_CURRICULUM]
@@ -181,4 +206,17 @@ def evaluate_grade_gates(grade: GradeLevel, benchmarks: dict[str, dict]) -> dict
             "consistency": grade.consistency_gate,
             "verification": grade.accuracy_gate,
         },
+    }
+
+
+def evaluate_code_grade_gates(grade: GradeLevel, pass_rate: float) -> dict:
+    """Apply code-specific graduation thresholds (unit-test pass rate)."""
+    threshold = CODE_GRADUATION_THRESHOLDS.get(grade.slug, grade.accuracy_gate)
+    passed = pass_rate >= threshold
+    return {
+        "gates": {"code_pass_rate": passed},
+        "all_passed": passed,
+        "grade_slug": grade.slug,
+        "pass_rate": round(pass_rate, 4),
+        "thresholds": {"code_pass_rate": threshold},
     }

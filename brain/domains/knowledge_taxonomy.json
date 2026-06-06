@@ -5,7 +5,7 @@
   "stats": {
     "domains": 30,
     "subdomains": 135,
-    "micro_subdomains": 862,
+    "micro_subdomains": 867,
     "max_subdomains_per_domain": 8,
     "max_micros_per_subdomain": 17
   },
@@ -1122,6 +1122,61 @@
                 "Edge Computing",
                 "Fog Computing",
                 "Cloud Computing Architecture"
+              ]
+            },
+            "python_functions": {
+              "name": "Python Functions (Code Generation)",
+              "topics": [
+                "Function Signatures",
+                "Docstrings",
+                "Unit Tests",
+                "HumanEval Problems",
+                "Return Values",
+                "Type Hints"
+              ]
+            },
+            "python_algorithms": {
+              "name": "Python Algorithms (Code Generation)",
+              "topics": [
+                "Sorting",
+                "Searching",
+                "Dynamic Programming",
+                "Graph Traversal",
+                "MBPP Problems",
+                "Complexity Analysis"
+              ]
+            },
+            "python_classes": {
+              "name": "Python Classes (Code Generation)",
+              "topics": [
+                "Class Definitions",
+                "Constructors",
+                "Methods",
+                "Inheritance",
+                "Encapsulation",
+                "Object-Oriented Design"
+              ]
+            },
+            "javascript_functions": {
+              "name": "JavaScript Functions (Code Generation)",
+              "topics": [
+                "Arrow Functions",
+                "Callbacks",
+                "Async/Await",
+                "DOM Manipulation",
+                "Event Handlers",
+                "ES6 Syntax"
+              ]
+            },
+            "sql_queries": {
+              "name": "SQL Queries (Code Generation)",
+              "topics": [
+                "SELECT Statements",
+                "JOINs",
+                "Aggregations",
+                "Subqueries",
+                "INSERT/UPDATE/DELETE",
+                "Query Optimization"
               ]
             }
           }
@@ -6447,7 +6502,12 @@
         "software_engineering",
         "human_computer_interaction",
         "quantum_computing",
-        "distributed_systems"
+        "distributed_systems",
+        "python_functions",
+        "python_algorithms",
+        "python_classes",
+        "javascript_functions",
+        "sql_queries"
       ],
       "electrical_engineering": [
         "circuit_theory",
