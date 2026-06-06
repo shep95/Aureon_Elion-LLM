@@ -41,18 +41,120 @@ def sandbox_dir(proposal_id: str) -> Path:
     return SANDBOX_ROOT / proposal_id[:8]
 
 
+def _sanitize_label(text: str, *, limit: int = 80) -> str:
+    clean = re.sub(r"[^\w\s\-./]", "", text or "")[:limit].strip()
+    return clean or "general"
+
+
+def verify_prototype_code(code: str) -> dict[str, Any]:
+    """Security + syntax gate for curiosity-generated prototype modules."""
+    from brain.code_evaluator import check_forbidden_constructs, check_syntax
+
+    syntax = check_syntax(code)
+    if not syntax.get("valid"):
+        return {"ok": False, "syntax_valid": False, "security_valid": False, "error": syntax.get("error")}
+
+    forbidden = check_forbidden_constructs(code)
+    if not forbidden.get("safe"):
+        return {
+            "ok": False,
+            "syntax_valid": True,
+            "security_valid": False,
+            "error": forbidden.get("error"),
+        }
+
+    try:
+        tree = ast.parse(code)
+    except SyntaxError as exc:
+        return {"ok": False, "syntax_valid": False, "security_valid": False, "error": str(exc)}
+
+    has_run = any(
+        isinstance(n, ast.FunctionDef) and n.name == "run"
+        for n in ast.walk(tree)
+    )
+    if not has_run:
+        return {"ok": False, "syntax_valid": True, "security_valid": True, "error": "missing run() entry point"}
+
+    return {"ok": True, "syntax_valid": True, "security_valid": True, "error": None}
+
+
+def verify_sandbox_proposal(proposal_id: str) -> dict[str, Any]:
+    """Execute verification on all sandbox .py prototypes for a proposal."""
+    proposal = get_proposal(proposal_id)
+    if not proposal:
+        return {"ok": False, "error": "proposal_not_found"}
+
+    out_dir = sandbox_dir(proposal_id)
+    if not out_dir.is_dir():
+        return {"ok": False, "error": "sandbox_missing", "proposal_id": proposal_id}
+
+    modules: list[dict[str, Any]] = []
+    all_ok = True
+    for path in sorted(out_dir.rglob("*.py")):
+        code = path.read_text(encoding="utf-8")
+        check = verify_prototype_code(code)
+        runtime: dict[str, Any] | None = None
+        if check.get("ok"):
+            runtime = _run_prototype_file(path)
+            if not runtime.get("ok"):
+                check = {**check, "ok": False, "error": runtime.get("error")}
+                all_ok = False
+        else:
+            all_ok = False
+        modules.append({
+            "path": _path_ref(path),
+            "verification": check,
+            "runtime": runtime,
+        })
+
+    return {
+        "ok": all_ok and bool(modules),
+        "proposal_id": proposal_id,
+        "modules": modules,
+        "module_count": len(modules),
+    }
+
+
+def _run_prototype_file(path: Path) -> dict[str, Any]:
+    """Import sandbox module in isolation and call run() — no side effects expected."""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(f"curiosity_proto_{path.stem}", path)
+    if spec is None or spec.loader is None:
+        return {"ok": False, "error": "import spec failed"}
+    module = importlib.util.module_from_spec(spec)
+    try:
+        spec.loader.exec_module(module)
+    except Exception as exc:
+        return {"ok": False, "error": f"import failed: {exc}"}
+    run_fn = getattr(module, "run", None)
+    if not callable(run_fn):
+        return {"ok": False, "error": "run() not callable"}
+    try:
+        result = run_fn()
+    except Exception as exc:
+        return {"ok": False, "error": f"run() failed: {exc}"}
+    if not isinstance(result, dict):
+        return {"ok": False, "error": "run() must return dict"}
+    if result.get("status") != "sandbox_prototype":
+        return {"ok": False, "error": "unexpected run() status"}
+    return {"ok": True, "result": result}
+
+
 def _build_prototype_module(domain: str, task: str, proposal_id: str) -> tuple[str, str]:
     """Generate a verified Python prototype module for the sandbox."""
     slug = _slug(domain)
+    safe_domain = _sanitize_label(domain)
+    safe_task = _sanitize_label(task, limit=200)
     rel_path = f"brain/curiosity_proto_{slug}.py"
     code = (
-        f'"""Curiosity sandbox prototype — {domain} (proposal {proposal_id[:8]}).\n\n'
-        f"Task: {task[:200]}\n"
+        f'"""Curiosity sandbox prototype — {safe_domain} (proposal {proposal_id[:8]}).\n\n'
+        f"Task: {safe_task}\n"
         f'Human approval required before merge to main or Railway deploy.\n"""\n\n'
         f"from __future__ import annotations\n\n"
-        f"DOMAIN = {domain!r}\n"
+        f"DOMAIN = {safe_domain!r}\n"
         f"PROPOSAL_ID = {proposal_id!r}\n"
-        f"TASK = {task[:200]!r}\n\n"
+        f"TASK = {safe_task!r}\n\n"
         f"def describe() -> str:\n"
         f'    """Return capability summary for this curiosity prototype."""\n'
         f'    return f"Curiosity prototype {{DOMAIN}}: {{TASK[:120]}}"\n\n'
@@ -65,7 +167,9 @@ def _build_prototype_module(domain: str, task: str, proposal_id: str) -> tuple[s
         f'        "status": "sandbox_prototype",\n'
         f"    }}\n"
     )
-    ast.parse(code)
+    verified = verify_prototype_code(code)
+    if not verified.get("ok"):
+        raise ValueError(f"prototype verification failed: {verified.get('error')}")
     return rel_path, code
 
 
@@ -146,6 +250,15 @@ def build_sandbox(proposal_id: str) -> dict[str, Any]:
         sandbox_files.append(_path_ref(manifest_path))
 
     railway_section = manifests[0]["service_name"] if manifests else None
+    verification = verify_sandbox_proposal(proposal_id)
+    if not verification.get("ok"):
+        return {
+            "ok": False,
+            "error": "sandbox_verification_failed",
+            "verification": verification,
+            "proposal_id": proposal_id,
+        }
+
     updated = mark_sandbox_ready(
         proposal_id,
         sandbox_path=_path_ref(out_dir),
@@ -162,6 +275,7 @@ def build_sandbox(proposal_id: str) -> dict[str, Any]:
         "sandbox_files": sandbox_files,
         "railway_section": railway_section,
         "railway_manifests": manifests,
+        "verification": verification,
         "proposal": updated,
     }
 
@@ -286,17 +400,39 @@ def deploy_proposal(
     if not proposal:
         return {"ok": False, "error": "proposal_not_found"}
 
-    if proposal.get("status") == "approved":
+    status = proposal.get("status")
+    if status == "deployed":
+        return {"ok": False, "error": "already_deployed", "status": status}
+    if status == "rejected":
+        return {"ok": False, "error": "rejected", "status": status}
+
+    if status == "approved":
         pass
-    elif proposal.get("status") in ("pending_approval", "sandbox_ready"):
+    elif status in ("pending_approval", "sandbox_ready"):
         approval = approve_proposal(proposal_id, approved=True, reviewer=reviewer)
         if not approval.get("ok"):
             return approval
         proposal = approval.get("proposal") or proposal
     else:
-        return {"ok": False, "error": "not_ready_for_deploy", "status": proposal.get("status")}
+        return {"ok": False, "error": "not_ready_for_deploy", "status": status}
+
+    if not proposal.get("advancements"):
+        return {"ok": False, "error": "no_advancements", "status": status}
+
+    sandbox_check = verify_sandbox_proposal(proposal_id)
+    if not sandbox_check.get("ok"):
+        return {"ok": False, "error": "sandbox_verification_failed", "verification": sandbox_check}
 
     repo_result = _apply_sandbox_to_repo(proposal)
+    commit = repo_result.get("commit") or {}
+    if repo_result.get("written") and not commit.get("committed"):
+        return {
+            "ok": False,
+            "error": "commit_failed",
+            "deploy": {"repo": repo_result},
+            "reason": commit.get("reason"),
+        }
+
     github_result = push_github_brief(proposal, approved=approve_github)
     push_result = push_fork(
         branch=repo_result.get("branch"),
@@ -307,7 +443,10 @@ def deploy_proposal(
         "repo": repo_result,
         "github": github_result,
         "push": push_result,
+        "sandbox_verification": sandbox_check,
         "repo_status": repo_status(),
+        "branch": repo_result.get("branch"),
+        "github_branch": github_result.get("branch"),
     }
     mark_deployed(proposal_id, deploy)
     record_audit(proposal_id, "deployed", f"branch={repo_result.get('branch')}")

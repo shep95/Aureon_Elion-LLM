@@ -5,8 +5,15 @@ from __future__ import annotations
 import pytest
 
 from app.chat_service import chat
-from app.curiosity_proposals import get_proposal, list_proposals
-from app.curiosity_sandbox import build_sandbox, deploy_proposal, push_github_brief, run_curiosity_cycle
+from app.curiosity_proposals import approve_proposal, get_proposal, list_proposals
+from app.curiosity_sandbox import (
+    build_sandbox,
+    deploy_proposal,
+    push_github_brief,
+    run_curiosity_cycle,
+    verify_prototype_code,
+    verify_sandbox_proposal,
+)
 from brain.curiosity_engine import (
     generate_market_queries,
     is_curiosity_enabled,
@@ -82,10 +89,89 @@ def test_build_sandbox_idempotent(proposals_file):
     assert any("research-brief" in f for f in sandbox["sandbox_files"])
 
 
-def test_approve_without_git(monkeypatch, proposals_file):
+def test_github_push_requires_approval(proposals_file):
+    result = run_curiosity_cycle(search_fn=_mock_search)
+    proposal = get_proposal(result["proposal"]["id"])
+    blocked = push_github_brief(proposal, approved=False)
+    assert blocked["pushed"] is False
+
+
+def test_prototype_modules_verify_and_run(proposals_file):
     result = run_curiosity_cycle(search_fn=_mock_search)
     pid = result["proposal"]["id"]
+    verification = verify_sandbox_proposal(pid)
+    assert verification["ok"] is True
+    assert verification["module_count"] >= 1
+    for mod in verification["modules"]:
+        assert mod["verification"]["ok"] is True
+        assert mod["verification"]["security_valid"] is True
+        assert mod["runtime"]["ok"] is True
+        assert mod["runtime"]["result"]["status"] == "sandbox_prototype"
 
+
+def test_verify_prototype_rejects_unsafe_code():
+    bad = "import os\n\ndef run():\n    os.system('echo hi')\n    return {'status': 'sandbox_prototype'}\n"
+    check = verify_prototype_code(bad)
+    assert check["ok"] is False
+    assert check["security_valid"] is False
+
+
+def test_deploy_blocked_when_rejected(proposals_file):
+    result = run_curiosity_cycle(search_fn=_mock_search)
+    pid = result["proposal"]["id"]
+    approve_proposal(pid, approved=False, reviewer="test")
+    deploy = deploy_proposal(pid, approve_github=True)
+    assert deploy["ok"] is False
+    assert deploy["error"] == "rejected"
+
+
+def test_deploy_blocked_when_already_deployed(monkeypatch, proposals_file):
+    result = run_curiosity_cycle(search_fn=_mock_search)
+    pid = result["proposal"]["id"]
+    _mock_deploy_git(monkeypatch)
+    first = deploy_proposal(pid, approve_github=True, reviewer="test")
+    assert first["ok"] is True
+    second = deploy_proposal(pid, approve_github=True, reviewer="test")
+    assert second["ok"] is False
+    assert second["error"] == "already_deployed"
+
+
+def test_deploy_blocked_on_commit_failure(monkeypatch, proposals_file):
+    result = run_curiosity_cycle(search_fn=_mock_search)
+    pid = result["proposal"]["id"]
+    _mock_deploy_git(monkeypatch)
+    monkeypatch.setattr(
+        "app.self_evolve.commit_evolution",
+        lambda msg, paths=None: {"committed": False, "reason": "test suite failed"},
+    )
+    deploy = deploy_proposal(pid, approve_github=False, reviewer="test")
+    assert deploy["ok"] is False
+    assert deploy["error"] == "commit_failed"
+    assert get_proposal(pid)["status"] != "deployed"
+
+
+def test_fork_push_requires_explicit_approval(proposals_file):
+    result = run_curiosity_cycle(search_fn=_mock_search)
+    proposal = get_proposal(result["proposal"]["id"])
+    from app.self_evolve import push_fork
+
+    blocked = push_fork(branch="aureon/test", approved=False)
+    assert blocked["pushed"] is False
+
+
+def test_sandbox_isolated_from_repo_brain(proposals_file, monkeypatch):
+    writes: list[str] = []
+
+    def track_write(path, content):
+        writes.append(path)
+        return {"path": path, "written": True}
+
+    monkeypatch.setattr("app.curiosity_sandbox.write_source", track_write)
+    run_curiosity_cycle(search_fn=_mock_search)
+    assert writes == []
+
+
+def _mock_deploy_git(monkeypatch):
     monkeypatch.setattr(
         "app.curiosity_sandbox.create_evolution_branch",
         lambda task: {"branch": "aureon/test-curiosity-branch", "description": task},
@@ -111,8 +197,14 @@ def test_approve_without_git(monkeypatch, proposals_file):
         },
     )
 
+
+def test_approve_without_git(monkeypatch, proposals_file):
+    result = run_curiosity_cycle(search_fn=_mock_search)
+    pid = result["proposal"]["id"]
+    _mock_deploy_git(monkeypatch)
     deploy = deploy_proposal(pid, approve_github=True, approve_push=False, reviewer="test")
     assert deploy["ok"] is True
+    assert deploy["deploy"]["sandbox_verification"]["ok"] is True
     updated = get_proposal(pid)
     assert updated["status"] == "deployed"
 
@@ -154,10 +246,3 @@ def test_chat_natural_curiosity(proposals_file, monkeypatch):
     msg = "the algorithm gets curious about what it is and does market research on the web"
     result = chat(msg)
     assert result["kind"] == "curiosity"
-
-
-def test_github_push_requires_approval(proposals_file):
-    result = run_curiosity_cycle(search_fn=_mock_search)
-    proposal = get_proposal(result["proposal"]["id"])
-    blocked = push_github_brief(proposal, approved=False)
-    assert blocked["pushed"] is False
