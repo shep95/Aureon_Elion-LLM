@@ -948,3 +948,6 @@ def chat(message: str, *, session_id: str | None = None) -> dict[str, Any]:
             "active_micro": active,
         }
     )
+
+# SOLIA auto-evolve (2026-06-06)
+# Task: improve chat routing
