@@ -2,7 +2,15 @@
 
 from __future__ import annotations
 
-from app.chat_service import _code_payload, _predict_with_timeout, _simple_nl_response, is_code_question
+from app.chat_service import (
+    _code_payload,
+    _handle_named_entity,
+    _predict_with_timeout,
+    _simple_nl_response,
+    chat,
+    is_code_question,
+    is_named_entity_question,
+)
 
 
 def test_simple_nl_god_and_math():
@@ -56,4 +64,63 @@ def test_predict_timeout_fallback(monkeypatch):
     result = cs._predict_with_timeout("what is quantum gravity")
     assert result is not None
     assert result.get("timed_out") is True
-    assert result.get("answer")
+    from brain.system_messages import FALLBACK_CORPUS
+
+    assert FALLBACK_CORPUS in result.get("answer", "")
+
+
+def test_is_named_entity_question_positive():
+    assert is_named_entity_question("who is Adam and Eve") is True
+    assert is_named_entity_question("who was John Snow") is True
+    assert is_named_entity_question("tell me about Zophiel") is True
+    assert is_named_entity_question("who is Nikola Tesla") is True
+
+
+def test_is_named_entity_question_negative():
+    assert is_named_entity_question("what is mathematics") is False
+    assert is_named_entity_question("how does backpropagation work") is False
+    assert is_named_entity_question("what is the meaning of life") is False
+
+
+def test_named_entity_bypasses_classifier(monkeypatch):
+    classify_called: list[str] = []
+
+    def fake_classify(text: str):
+        classify_called.append(text)
+        return {"label": "biology.adam_developmental", "confidence": 0.99}
+
+    monkeypatch.setattr("app.chat_service._classify_message", fake_classify)
+    monkeypatch.setattr(
+        "app.chat_service._predict_with_timeout",
+        lambda *a, **kw: {
+            "answer": "Adam and Eve are biblical figures from Genesis.",
+            "abstained": False,
+            "citations": [],
+        },
+    )
+    monkeypatch.setattr(
+        "app.chat_service.retrieve_with_citations",
+        lambda q, **kw: ("genesis creation story", [], []),
+        raising=False,
+    )
+
+    result = chat("who is Adam and Eve", session_id="ne-1")
+    assert result["kind"] == "named_entity"
+    assert "Adam" in result["reply"]
+    assert classify_called == []
+
+
+def test_handle_named_entity_thin_corpus(monkeypatch):
+    monkeypatch.setattr(
+        "brain.vector_rag.retrieve_with_citations",
+        lambda q, **kw: ("", [], []),
+    )
+    monkeypatch.setattr("brain.web_search.search", lambda q, **kw: [])
+    monkeypatch.setattr(
+        "app.chat_service._predict_with_timeout",
+        lambda *a, **kw: {"answer": "short", "abstained": True},
+    )
+
+    result = _handle_named_entity("who is Zophiel", session_id="ne-thin")
+    assert result["kind"] == "named_entity_thin"
+    assert "named entity" in result["reply"].lower()

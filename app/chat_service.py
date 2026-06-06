@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 import threading
 import time
 from typing import Any
@@ -32,9 +33,18 @@ from brain.meta_consciousness import (
 )
 from brain.self_inquiry import is_self_inquiry_enabled, recent_inquiries
 from brain.simple_qa import is_simple_question, to_simple_answer
+from brain.system_messages import (
+    ECHO_DETECTED_REPLY,
+    FALLBACK_CORPUS,
+    FALLBACK_TRAINING,
+    RATE_LIMIT_PREDICT,
+    SELF_ECHO_DETECTED_REPLY,
+    is_system_echo,
+    still_training_reply,
+)
 from db.models import KnowledgeDomain, KnowledgeMicroSubdomain, KnowledgeSubdomain
 from db.session import get_session
-from pipeline.step4_evaluation.benchmarks import _load_production_model, _predict_label
+from pipeline.step4_evaluation.benchmarks import _load_production_model
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -205,24 +215,22 @@ def _active_micro_progress(session: Session) -> dict[str, Any] | None:
 
 
 def _classify_message(text: str) -> dict[str, Any] | None:
+    matches = _classification_top_matches(text)
+    if _should_disambiguate(matches):
+        return None
+
     moe = classify_moe(text)
     if moe:
         return moe
 
-    from pipeline.step4_evaluation.benchmarks import _load_production_model
-
-    loaded = _load_production_model()
-    if not loaded:
+    if not matches:
         return None
-    network, labels, extractor = loaded
-    prediction = _predict_label(network, labels, extractor, text)
-    x = extractor.transform([text])
-    proba = network.predict_proba(x)[0]
-    confidence = float(np.max(proba))
+
+    top = matches[0]
     return {
-        "label": prediction,
-        "confidence": round(confidence, 4),
-        "labels_available": labels,
+        "label": top["label"],
+        "confidence": round(float(top["score"]), 4),
+        "labels_available": [m["label"] for m in matches],
         "model": "production_classifier",
         "routing": "pipeline_fallback",
     }
@@ -261,6 +269,419 @@ def _resolve_followup(text: str, session_id: str | None) -> str:
     return text
 
 
+# --- Routing guards (Zophiel audit) -------------------------------------------
+
+_CLASSIFICATION_LEAK_RE = re.compile(r"^[a-z_]+\.[a-z_]+\.[a-z_]+", re.I)
+_SELF_DIRECTED_RE = re.compile(r"\b(you|your|yourself|aureon|solia)\b", re.I)
+_FIRST_PERSON_DIRECTED = (
+    "to you",
+    "do you",
+    "your thoughts",
+    "your opinion",
+    "you believe",
+    "you think",
+    "your view",
+    "you feel",
+    "your perspective",
+    "what do you think",
+    "what are your thoughts",
+)
+_SEARCH_CONFIDENCE_THRESHOLD = 0.30
+
+
+def is_own_output(text: str, session_id: str | None) -> bool:
+    """True when input matches a recent assistant turn in this session."""
+    if not session_id:
+        return False
+    from app.session_memory import get_history
+
+    stripped = text.strip().lower()
+    if len(stripped) <= 30:
+        return False
+    for turn in get_history(session_id):
+        assistant = turn.get("assistant", "").strip().lower()
+        if assistant and stripped in assistant:
+            return True
+    return False
+
+
+def _is_classification_leak(text: str) -> bool:
+    """Raw taxonomy slug (domain.subdomain.micro) must never reach the user."""
+    return bool(_CLASSIFICATION_LEAK_RE.match(text.strip()))
+
+
+def is_self_directed(text: str) -> bool:
+    """Question is directed at the system itself."""
+    return bool(_SELF_DIRECTED_RE.search(text))
+
+
+def is_opinion_request(text: str) -> bool:
+    """First-person directed questions are opinion requests — never classify."""
+    q = text.lower()
+    return any(t in q for t in _FIRST_PERSON_DIRECTED)
+
+
+def is_opinion_or_identity(text: str) -> bool:
+    from brain.identity_handler import is_identity_question
+    from brain.philosophy_handler import is_personal_belief_question
+
+    return is_identity_question(text) or is_personal_belief_question(text)
+
+
+def is_deep_concept_question(text: str) -> bool:
+    """Single-concept 'what is X' questions need RAG + full predict — not one-liners."""
+    q = text.strip().lower().rstrip("?").strip()
+    deep_starters = ("what is ", "what are ", "explain ", "define ")
+    if not any(q.startswith(s) for s in deep_starters):
+        return False
+    remainder = q.split(None, 2)
+    return len(remainder) <= 3
+
+
+def _should_disambiguate(matches: list[dict[str, Any]]) -> bool:
+    if len(matches) < 2:
+        return False
+    scores = sorted((float(m.get("score", 0)) for m in matches), reverse=True)
+    return scores[0] >= 0.65 and scores[1] >= 0.65 and abs(scores[0] - scores[1]) < 0.15
+
+
+def _human_label_for_slug(slug: str) -> str:
+    parts = slug.split(".")
+    if len(parts) == 3:
+        from brain.domains.taxonomy import lookup_names
+
+        names = lookup_names(parts[0], parts[1], parts[2])
+        return (
+            names.get("micro_subdomain")
+            or names.get("subdomain")
+            or slug.replace("_", " ").replace(".", " → ")
+        )
+    return slug.replace("_", " ").replace(".", " → ")
+
+
+def _format_disambiguation(matches: list[dict[str, Any]]) -> list[str]:
+    return [
+        str(m.get("human_label") or m.get("name") or m.get("slug", "")).replace("_", " ")
+        for m in matches
+    ]
+
+
+def _classification_top_matches(text: str, *, top_n: int = 5) -> list[dict[str, Any]]:
+    loaded = _load_production_model()
+    if not loaded:
+        return []
+    network, labels, extractor = loaded
+    if len(labels) < 2:
+        return []
+    x = extractor.transform([text])
+    proba = network.predict_proba(x)[0]
+    matches: list[dict[str, Any]] = []
+    for i, label in enumerate(labels):
+        matches.append(
+            {
+                "label": label,
+                "slug": label,
+                "score": float(proba[i]),
+                "human_label": _human_label_for_slug(label),
+            }
+        )
+    matches.sort(key=lambda m: m["score"], reverse=True)
+    return matches[:top_n]
+
+
+def _disambiguation_payload(text: str, matches: list[dict[str, Any]]) -> dict[str, Any] | None:
+    if not _should_disambiguate(matches):
+        return None
+    options = _format_disambiguation(matches[:2])
+    return {
+        "reply": f"I found several possible meanings: {' · '.join(options)}. Which did you mean?",
+        "kind": "disambiguation",
+        "options": options,
+    }
+
+
+def _predict_with_search_fallback(
+    text: str,
+    *,
+    session_id: str | None = None,
+    force: bool = False,
+) -> dict[str, Any]:
+    """Predict brain; auto-search when confidence drops below threshold."""
+    result = _predict_with_timeout(text, session_id=session_id, force=force)
+    confidence = float(result.get("confidence", 0) or 0) if result else 0.0
+    if confidence >= _SEARCH_CONFIDENCE_THRESHOLD:
+        return result
+    if result.get("rate_limited") or result.get("timed_out"):
+        return result
+
+    from brain.web_search import format_for_context, search, web_search_enabled
+
+    if not web_search_enabled():
+        return result
+    try:
+        search_results = search(text)
+        context = format_for_context(search_results)
+        if context:
+            enriched = f"{context} question {text}"
+            boosted = _predict_with_timeout(enriched, session_id=session_id, force=True)
+            if boosted and boosted.get("answer"):
+                boosted_conf = float(boosted.get("confidence", 0) or 0)
+                if boosted_conf > confidence or len(str(boosted["answer"])) > len(
+                    str(result.get("answer", ""))
+                ):
+                    return boosted
+    except Exception:
+        pass
+    return result
+
+
+def _fallback_to_predict(question: str, *, session_id: str | None) -> str:
+    """Re-route leaked taxonomy labels through predict + search."""
+    result = _predict_with_search_fallback(question, session_id=session_id, force=True)
+    answer = str(result.get("answer", "")).strip() if result else ""
+    if answer and len(answer) > 20 and not _is_classification_leak(answer):
+        return answer
+    return FALLBACK_CORPUS
+
+
+def _handle_identity_or_belief(text: str, *, session_id: str | None) -> dict[str, Any]:
+    from brain.identity_handler import handle_identity, is_identity_question
+    from brain.philosophy_handler import handle_philosophy_question, is_personal_belief_question
+
+    if is_identity_question(text):
+        return handle_identity(text, session_id=session_id)
+    if is_personal_belief_question(text):
+        phil = handle_philosophy_question(
+            text,
+            session_id=session_id,
+            predict_fn=_predict_with_search_fallback,
+            classify_fn=lambda _t: None,
+            learning_snapshot_fn=learning_snapshot,
+        )
+        if phil:
+            return phil
+    return handle_identity(text, session_id=session_id)
+
+
+def _handle_deep_concept(text: str, *, session_id: str | None) -> dict[str, Any]:
+    """Deep single-concept questions — RAG + predict + auto-search fallback."""
+    from brain.vector_rag import retrieve_with_citations
+
+    rag_context, _hits, rag_citations = retrieve_with_citations(text)
+    enriched = f"{rag_context} question {text}" if rag_context else text
+    result = _predict_with_search_fallback(enriched, session_id=session_id, force=True)
+
+    if result and result.get("answer") and len(str(result["answer"])) > 20:
+        answer = str(result["answer"]).strip()
+        if not _is_classification_leak(answer):
+            citations = list(result.get("citations") or [])
+            if not citations and rag_citations:
+                citations = rag_citations[:3]
+            return {
+                "reply": answer,
+                "kind": "deep_concept",
+                "session_id": session_id,
+                "learning": learning_snapshot(),
+                "brain_predict": True,
+                "citations": citations,
+            }
+
+    return {
+        "reply": _fallback_to_predict(text, session_id=session_id),
+        "kind": "deep_concept_thin",
+        "session_id": session_id,
+        "learning": learning_snapshot(),
+    }
+
+
+def is_named_entity_question(text: str) -> bool:
+    """
+    Detect questions about specific named people, figures,
+    characters, or concepts — not abstract domains.
+
+    Examples that return True:
+      who is Adam and Eve
+      who was John Snow
+      who is Asher Newton
+      who is Nikola Tesla
+      what is the Bible
+      tell me about Zophiel
+
+    Examples that return False:
+      what is mathematics
+      how does backpropagation work
+      what is the meaning of life
+    """
+    q = text.strip()
+
+    question_starters = (
+        "who is",
+        "who was",
+        "who were",
+        "who are",
+        "tell me about",
+        "describe",
+    )
+    q_lower = q.lower()
+    starts_with_question = any(q_lower.startswith(s) for s in question_starters)
+    if not starts_with_question:
+        return False
+
+    words = q.split()
+    if len(words) < 3:
+        return False
+
+    remainder = words[2:]
+    has_proper_noun = any(
+        w[0].isupper() and len(w) > 1 for w in remainder if w.isalpha()
+    )
+
+    lowercase_names = (
+        "adam",
+        "eve",
+        "moses",
+        "jesus",
+        "buddha",
+        "muhammad",
+        "god",
+        "zeus",
+        "thor",
+        "asher",
+        "newton",
+        "einstein",
+        "tesla",
+        "plato",
+    )
+    has_known_name = any(name in q_lower for name in lowercase_names)
+
+    return has_proper_noun or has_known_name
+
+
+def _handle_named_entity(text: str, *, session_id: str | None) -> dict[str, Any]:
+    """
+    Handle questions about named people, figures, characters.
+    Routes to predict brain with RAG — never to domain classifier.
+    """
+    from brain.vector_rag import retrieve_with_citations
+    from brain.web_search import format_for_context, search
+
+    rag_context, _hits, rag_citations = retrieve_with_citations(text)
+
+    search_context = ""
+    if not rag_context or len(rag_context) < 100:
+        try:
+            results = search(text)
+            search_context = format_for_context(results)
+        except Exception:
+            pass
+
+    context_parts: list[str] = []
+    if rag_context:
+        context_parts.append(rag_context)
+    if search_context:
+        context_parts.append(search_context)
+
+    enriched = " ".join(context_parts) + f" question {text}"
+
+    result = _predict_with_search_fallback(enriched, session_id=session_id, force=True)
+
+    if result and result.get("answer") and len(str(result["answer"])) > 20:
+        citations = list(result.get("citations") or [])
+        if not citations and rag_citations:
+            citations = rag_citations[:3]
+        return {
+            "reply": result["answer"],
+            "kind": "named_entity",
+            "session_id": session_id,
+            "learning": learning_snapshot(),
+            "citations": citations,
+        }
+
+    return {
+        "reply": (
+            "I recognize that as a named entity question but my corpus "
+            "does not have strong grounding on this yet. "
+            "Run the Aureon Files ingest and ask me again — "
+            "or ask `/search` to pull live results."
+        ),
+        "kind": "named_entity_thin",
+        "session_id": session_id,
+        "learning": learning_snapshot(),
+    }
+
+
+_LIVE_SEARCH_TRIGGERS = (
+    "what is happening",
+    "latest",
+    "recent",
+    "news",
+    "today",
+    "current",
+    "right now",
+    "this year",
+    "in 2026",
+    "who won",
+    "what happened",
+    "price of",
+    "stock",
+    "weather",
+)
+
+
+def is_search_question(text: str) -> bool:
+    """Detect questions that benefit from live web data (not timeless opinion/belief)."""
+    q = text.strip().lower()
+    return any(t in q for t in _LIVE_SEARCH_TRIGGERS)
+
+
+def _search_and_opine(text: str, *, session_id: str | None) -> dict[str, Any]:
+    """Search DuckDuckGo, form opinion, return grounded response."""
+    from brain.opinion_brain import form_opinion
+    from brain.web_search import format_for_context, search
+
+    results = search(text)
+    opinion_data = form_opinion(text, results)
+
+    if not opinion_data.get("opinion"):
+        return {
+            "reply": (
+                "I searched for that but could not find reliable results. "
+                "Try a more specific question."
+            ),
+            "kind": "search_empty",
+            "session_id": session_id,
+            "learning": learning_snapshot(),
+        }
+
+    search_context = format_for_context(results)
+    enriched_question = f"{search_context} question {text}"
+
+    try:
+        result = _predict_with_timeout(enriched_question, session_id=session_id, force=True)
+        if result and result.get("answer") and len(str(result["answer"])) > 30:
+            if not is_system_echo(str(result["answer"])):
+                combined_reply = (
+                    f"{opinion_data['opinion']}\n\n"
+                    f"My perspective: {result['answer']}"
+                )
+            else:
+                combined_reply = opinion_data["opinion"]
+        else:
+            combined_reply = opinion_data["opinion"]
+    except Exception:
+        combined_reply = opinion_data["opinion"]
+
+    return {
+        "reply": combined_reply,
+        "kind": "search_opinion",
+        "sources": opinion_data.get("sources", []),
+        "evidence_count": opinion_data.get("evidence_count", 0),
+        "confidence": opinion_data.get("confidence", 0.0),
+        "session_id": session_id,
+        "learning": learning_snapshot(),
+    }
+
+
 def _predict_with_timeout(
     question: str,
     *,
@@ -271,7 +692,7 @@ def _predict_with_timeout(
     """Run predict brain with rate limit + timeout — always returns a dict."""
     if not get_predict_rate_limiter().try_acquire(session_id):
         return {
-            "answer": "Too many predict requests — wait a minute and try again.",
+            "answer": RATE_LIMIT_PREDICT,
             "abstained": False,
             "rate_limited": True,
             "confidence": 0.0,
@@ -295,10 +716,7 @@ def _predict_with_timeout(
 
     if worker.is_alive():
         return {
-            "answer": (
-                "This question needs deeper corpus grounding than I can compute in time. "
-                "Try again after auto-learn finishes, or ask `/mind` for what I know now."
-            ),
+            "answer": FALLBACK_CORPUS,
             "abstained": False,
             "timed_out": True,
             "confidence": 0.1,
@@ -307,10 +725,8 @@ def _predict_with_timeout(
         }
 
     if result[0] is None:
-        from brain.predict_engine import _TRAINING_NEED_MSG
-
         return {
-            "answer": _TRAINING_NEED_MSG,
+            "answer": FALLBACK_TRAINING,
             "abstained": True,
             "confidence": 0.0,
             "model": "stacked_attention_lm",
@@ -321,7 +737,7 @@ def _predict_with_timeout(
 
 def _brain_predict_payload(text: str, *, session_id: str | None) -> dict[str, Any]:
     """Attention LM — embed, attend, predict next tokens autoregressively."""
-    result = _predict_with_timeout(text, session_id=session_id)
+    result = _predict_with_search_fallback(text, session_id=session_id)
     payload: dict[str, Any] = {
         "reply": result["answer"],
         "kind": "chat",
@@ -513,17 +929,40 @@ def _simple_nl_response(text: str) -> str | None:
 
 def _simple_chat_reply(text: str, *, session_id: str | None = None) -> dict[str, Any]:
     """Simple Question, Simple Answer path — classification feeds predict, never replaces reply."""
+    from brain.philosophy_handler import is_personal_belief_question
+
     nl = _simple_nl_response(text)
-    if nl:
+    if nl and not is_deep_concept_question(text):
         return {"reply": to_simple_answer(nl), "kind": "chat", "simple_qa": True}
+
+    if is_personal_belief_question(text):
+        payload = _handle_identity_or_belief(text, session_id=session_id)
+        payload["simple_qa"] = True
+        return payload
+
+    if is_named_entity_question(text):
+        payload = _handle_named_entity(text, session_id=session_id)
+        payload["simple_qa"] = True
+        return payload
+
+    if is_deep_concept_question(text):
+        payload = _handle_deep_concept(text, session_id=session_id)
+        payload["simple_qa"] = True
+        return payload
+
+    top_matches = _classification_top_matches(text)
+    disambig = _disambiguation_payload(text, top_matches)
+    if disambig:
+        disambig["simple_qa"] = True
+        return disambig
 
     classification = _classify_message(text)
     if classification:
         enriched = f"domain context {classification['label']} question {text.strip().lower()}"
-        result = _predict_with_timeout(enriched, session_id=session_id, force=True)
+        result = _predict_with_search_fallback(enriched, session_id=session_id, force=True)
         if result and result.get("answer") and not result.get("abstained"):
             reply = str(result["answer"]).strip()
-            if len(reply) > 20 and "philosophy." not in reply.lower():
+            if len(reply) > 20 and not _is_classification_leak(reply):
                 payload: dict[str, Any] = {
                     "reply": to_simple_answer(reply),
                     "kind": "predict",
@@ -550,9 +989,13 @@ def _simple_chat_reply(text: str, *, session_id: str | None = None) -> dict[str,
         active = _active_micro_progress(session)
 
     if active:
-        reply = f"Still training — {doc_count} docs, focus {active['path']} @ {active['current_grade']}."
+        reply = still_training_reply(
+            doc_count=doc_count,
+            active_path=active["path"],
+            current_grade=active["current_grade"],
+        )
     else:
-        reply = f"Still training — {doc_count} docs, no promoted classifier yet."
+        reply = still_training_reply(doc_count=doc_count)
 
     return {
         "reply": to_simple_answer(reply),
@@ -578,7 +1021,9 @@ def _command_response(message: str) -> dict[str, Any] | None:
                 "• `/think` — ask myself meta-cognitive questions (identity, gaps, consciousness)\n"
                 "• `/roadmap` — capability matrix + path beyond frontier LLMs\n"
                 "• `/agent <task>` — multi-step tool loop (search → calculate → verify)\n"
-                "• `/evolve <task>` — self-upgrade on a fork branch (never pushes main without approval)\n"
+                "• `/evolve <task>` — algorithmic self-evolve on a fork branch "
+                "(AST + predict + code_master; syntax + pytest gates before commit; "
+                "never pushes main without approval)\n"
                 "• `/research <topic>` — cross-domain taxonomy + Ciper drill-down\n"
                 "• `/vitals` — security organism (nomad stack)\n\n"
                 "**Prediction brain:** factual questions run through token embeddings → "
@@ -705,8 +1150,9 @@ def _command_response(message: str) -> dict[str, Any] | None:
             return {
                 "reply": (
                     "Usage: `/evolve improve philosophy routing` — "
-                    "I create a fork branch, can read/write my own source, commit locally, "
-                    "and only push to your fork remote when you approve via API."
+                    "I run the algorithmic evolve loop: AST analysis, predict brain reasoning, "
+                    "code_master for verified patches, then syntax + pytest gates before commit. "
+                    "Fork push requires explicit API approval."
                 ),
                 "kind": "self_evolve",
             }
@@ -716,14 +1162,16 @@ def _command_response(message: str) -> dict[str, Any] | None:
         status = repo_status()
         return {
             "reply": (
-                f"**Self-evolve plan** for: {task}\n\n"
+                f"**Algorithmic self-evolve** for: {task}\n\n"
                 f"Suggested files: {', '.join(plan['suggested_files'])}\n"
+                f"Brain: {plan['capabilities'].get('brain', 'predict + code_master + AST')}\n"
                 f"Current branch: `{status['current_branch']}` · fork remote: `{status['fork_remote']}`\n\n"
                 "Use authenticated API:\n"
-                "• `POST /api/brain/self/plan` — file suggestions\n"
+                "• `POST /api/brain/self/plan` — file suggestions + AST analysis\n"
+                "• `POST /api/brain/self/auto` — full algorithmic patch cycle\n"
                 "• `POST /api/brain/self/branch` — create fork branch\n"
-                "• `POST /api/brain/self/write` — edit source (app/, brain/, src/)\n"
-                "• `POST /api/brain/self/commit` — commit locally\n"
+                "• `POST /api/brain/self/write` — manual patch override\n"
+                "• `POST /api/brain/self/commit` — syntax + pytest gate, then commit locally\n"
                 "• `POST /api/brain/self/push` with `approve_push: true` — push fork only\n\n"
                 "Main is never pushed without your explicit approval."
             ),
@@ -781,8 +1229,14 @@ def chat(message: str, *, session_id: str | None = None) -> dict[str, Any]:
     def done(payload: dict[str, Any]) -> dict[str, Any]:
         out = _finalize(payload, text or (message or ""))
         reply = str(out.get("reply", "")).strip()
+        original = text or (message or "")
+        if reply and _is_classification_leak(reply):
+            recovered = _fallback_to_predict(original, session_id=session_id)
+            out["reply"] = recovered
+            out["kind"] = "predict_leak_recovered"
+            reply = recovered
         if session_id and reply:
-            append_turn(session_id, user=text or (message or ""), assistant=reply)
+            append_turn(session_id, user=original, assistant=reply)
         return out
 
     if not text:
@@ -792,6 +1246,17 @@ def chat(message: str, *, session_id: str | None = None) -> dict[str, Any]:
         return done(
             {"error": "message too long", "reply": "Please keep messages under 8000 characters."}
         )
+
+    # Rule 1 — own output echo guard (before all routing)
+    if is_own_output(text, session_id) or is_system_echo(text):
+        kind = "self_echo_detected" if is_own_output(text, session_id) else "echo_detected"
+        reply = SELF_ECHO_DETECTED_REPLY if kind == "self_echo_detected" else ECHO_DETECTED_REPLY
+        return done({
+            "reply": reply,
+            "kind": kind,
+            "session_id": session_id,
+            "learning": learning_snapshot(),
+        })
 
     cmd = _command_response(text)
     if cmd:
@@ -824,30 +1289,57 @@ def chat(message: str, *, session_id: str | None = None) -> dict[str, Any]:
     if is_agent_task(text):
         return done(_agent_payload(text, session_id=session_id))
 
+    from brain.web_search import web_search_enabled
+
+    if web_search_enabled() and is_search_question(text):
+        return done(_search_and_opine(text, session_id=session_id))
+
     from brain.identity_handler import handle_identity, is_identity_question
     from brain.philosophy_handler import handle_philosophy_question, is_philosophy_question
 
+    # Rule 2 — self-directed identity / belief before simple_qa
+    if is_self_directed(text) and is_opinion_or_identity(text):
+        return done(_handle_identity_or_belief(text, session_id=session_id))
+
     if is_identity_question(text):
         return done(handle_identity(text, session_id=session_id))
-
-    if is_philosophy_question(text):
-        phil = handle_philosophy_question(
-            text,
-            session_id=session_id,
-            predict_fn=_predict_with_timeout,
-            classify_fn=_classify_message,
-            learning_snapshot_fn=learning_snapshot,
-        )
-        if phil:
-            return done(phil)
 
     from brain.combinatorial_creation import handle_creation_request, is_creation_request
 
     if is_creation_request(text):
         return done(handle_creation_request(text, session_id=session_id))
 
+    # Rule 5 — deep concept before simple_qa one-liners
+    if is_deep_concept_question(text) and not is_named_entity_question(text):
+        return done(_handle_deep_concept(text, session_id=session_id))
+
+    # Rule 3 — belief/opinion about faith, identity, etc. skip classifier
+    from brain.philosophy_handler import is_personal_belief_question
+
+    if is_personal_belief_question(text):
+        phil = handle_philosophy_question(
+            text,
+            session_id=session_id,
+            predict_fn=_predict_with_search_fallback,
+            classify_fn=lambda _t: None,
+            learning_snapshot_fn=learning_snapshot,
+        )
+        if phil:
+            return done(phil)
+
+    if is_philosophy_question(text):
+        phil = handle_philosophy_question(
+            text,
+            session_id=session_id,
+            predict_fn=_predict_with_search_fallback,
+            classify_fn=_classify_message,
+            learning_snapshot_fn=learning_snapshot,
+        )
+        if phil:
+            return done(phil)
+
     nl = _simple_nl_response(text)
-    if nl:
+    if nl and not is_deep_concept_question(text):
         return done(
             {
                 "reply": to_simple_answer(nl),
@@ -861,6 +1353,10 @@ def chat(message: str, *, session_id: str | None = None) -> dict[str, Any]:
     deterministic = _deterministic_payload(text, session_id=session_id)
     if deterministic:
         return done(deterministic)
+
+    # Rule 4 — named entity before classifier
+    if is_named_entity_question(text):
+        return done(_handle_named_entity(text, session_id=session_id))
 
     if is_code_question(text):
         code_payload = _code_payload(text, session_id=session_id)
@@ -880,6 +1376,14 @@ def chat(message: str, *, session_id: str | None = None) -> dict[str, Any]:
         simple["learning"] = learning_snapshot()
         return done(simple)
 
+    # Rule 7 — disambiguation before classifier when scores are tied
+    top_matches = _classification_top_matches(text)
+    disambig = _disambiguation_payload(text, top_matches)
+    if disambig:
+        disambig["session_id"] = session_id
+        disambig["learning"] = learning_snapshot()
+        return done(disambig)
+
     classification = _classify_message(text)
     if ciper_payload:
         if classification:
@@ -896,10 +1400,10 @@ def chat(message: str, *, session_id: str | None = None) -> dict[str, Any]:
 
     if classification:
         enriched = f"domain context {classification['label']} question {text.strip().lower()}"
-        result = _predict_with_timeout(enriched, session_id=session_id, force=True)
+        result = _predict_with_search_fallback(enriched, session_id=session_id, force=True)
         if result and result.get("answer") and not result.get("abstained"):
             reply = str(result["answer"]).strip()
-            if len(reply) > 20 and "philosophy." not in reply.lower():
+            if len(reply) > 20 and not _is_classification_leak(reply):
                 return done(
                     {
                         "reply": reply,
@@ -949,5 +1453,3 @@ def chat(message: str, *, session_id: str | None = None) -> dict[str, Any]:
         }
     )
 
-# SOLIA auto-evolve (2026-06-06)
-# Task: improve chat routing
