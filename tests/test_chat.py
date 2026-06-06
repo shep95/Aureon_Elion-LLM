@@ -60,7 +60,11 @@ def test_chat_prediction_brain(tmp_path, monkeypatch):
 
     monkeypatch.setenv("AUREON_DATA_DIR", str(tmp_path))
     monkeypatch.setenv("PIPELINE_DATA_DIR", str(tmp_path))
-    monkeypatch.setenv("AUREON_PREDICT_EPOCHS", "120")
+    monkeypatch.setenv("AUREON_PREDICT_EPOCHS", "80")
+    monkeypatch.setenv("AUREON_PREDICT_MAX_SEQ", "128")
+    monkeypatch.setenv("AUREON_PREDICT_D_MODEL", "48")
+    monkeypatch.setenv("AUREON_PREDICT_LAYERS", "4")
+    monkeypatch.setenv("AUREON_PREDICT_MAX_VOCAB", "2000")
     monkeypatch.setattr(pe, "MODEL_DIR", tmp_path / "models" / "predict_brain")
     monkeypatch.setattr(pe, "_model", None)
     monkeypatch.setattr(pe, "_ready", False)
@@ -69,6 +73,7 @@ def test_chat_prediction_brain(tmp_path, monkeypatch):
     assert result.get("brain_predict") is True
     assert "paris" in result["reply"].lower()
     assert result["prediction"]["pipeline"][0]["name"] == "tokenize"
+    assert result["prediction"]["context_window"] >= 128
 
 
 def test_api_chat_learning():

@@ -51,14 +51,18 @@ def test_predict_with_steps_capital_france(tmp_path, monkeypatch):
 
     monkeypatch.setenv("AUREON_DATA_DIR", str(tmp_path))
     monkeypatch.setenv("PIPELINE_DATA_DIR", str(tmp_path))
-    monkeypatch.setenv("AUREON_PREDICT_EPOCHS", "120")
+    monkeypatch.setenv("AUREON_PREDICT_EPOCHS", "80")
+    monkeypatch.setenv("AUREON_PREDICT_MAX_SEQ", "128")
+    monkeypatch.setenv("AUREON_PREDICT_D_MODEL", "48")
+    monkeypatch.setenv("AUREON_PREDICT_LAYERS", "4")
+    monkeypatch.setenv("AUREON_PREDICT_MAX_VOCAB", "2000")
     monkeypatch.setattr(pe, "MODEL_DIR", tmp_path / "models" / "predict_brain")
     monkeypatch.setattr(pe, "_model", None)
     monkeypatch.setattr(pe, "_ready", False)
     result = predict_with_steps("What is the capital of France?")
     assert result is not None
     assert "paris" in result["answer"].lower()
-    assert len(result["pipeline"]) == 6
-    assert result["pipeline"][2]["name"] == "attention"
-    assert result["pipeline"][4]["name"] == "next_token"
-    assert result["pipeline"][4]["distribution"]
+    assert len(result["pipeline"]) == 8
+    assert result["pipeline"][2]["name"] == "context"
+    assert result["pipeline"][5]["name"] == "reasoning"
+    assert result["pipeline"][6]["name"] == "next_token"

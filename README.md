@@ -128,7 +128,7 @@ The **Aureon Files** collection is the primary intellectual brain of this algori
 | | |
 |---|---|
 | **Core engine** | Neural network with backpropagation (from scratch) |
-| **Knowledge coverage** | 29 domains · 154 subdomains · 462 micro-subdomains · 3,870 micro-agents |
+| **Knowledge coverage** | 30 domains · 135 subdomains · 862 micro-subdomains · 6,162 micro-agents |
 | **Brain regions** | collector → verifier → labeler → trainer → evaluator → reward |
 | **Pipeline steps** | collect → label → train → evaluate → RLHF |
 | **Database** | PostgreSQL (Railway) or SQLite (local) |
@@ -293,6 +293,19 @@ flowchart TB
 
 **Bottom line:** “AI” in production is **supervised learning with good data, clear labels, and honest evaluation**. Aureon automates that loop across 862 micro-topics instead of pretending a chatbot already “knows” everything.
 
+### How the pieces connect
+
+| Layer | Role | Updates when |
+|-------|------|----------------|
+| **Brain regions** (collector → reward) | Per micro-topic supervised loop in PostgreSQL | Each grade cycle / auto-learn batch |
+| **Predict brain** (`brain/predict_engine.py`) | Attention LM for factual Q&A + chain-of-thought | Startup warmup + retrain after each auto-learn cycle |
+| **File pipeline** (`pipeline/orchestrator.py`) | Offline 5-step ML loop + production registry | Manual `POST /api/pipeline/run` |
+| **Chat** (`app/chat_service.py`) | Routes questions → predict brain → Ciper → classifier | Reads live DB + production models |
+| **GitHub sync** | Exports corpus to `learning-data` branch | After each auto-learn cycle |
+| **Label review** (`GET/POST /api/labels/review`) | Human approves teacher-model flags (~5–10%) | On demand |
+
+Auto-learn runs 24/7 (`AUREON_AUTO_LEARN_CONTINUOUS=1`), rotates all 862 micro-topics, syncs to GitHub, and retrains the predict brain so chat answers reflect the latest corpus.
+
 **Response rules**
 
 - **Simple Question, Simple Answer** — short questions get one short line from collected data or metrics.
@@ -302,7 +315,7 @@ flowchart TB
 
 ## Grade mastery — how long?
 
-Each **micro-subdomain** (462 total) progresses through **7 grades**: Pre-School → Elementary → Middle School → High School → Undergraduate → Master's → Doctorate. It must **graduate** each grade before the next unlocks.
+Each **micro-subdomain** (862 total) progresses through **7 grades**: Pre-School → Elementary → Middle School → High School → Undergraduate → Master's → Doctorate. It must **graduate** each grade before the next unlocks.
 
 | Scope | Default timing (continuous on Railway) |
 |-------|----------------------------------------|
@@ -355,7 +368,7 @@ https://YOUR-APP.up.railway.app/chat
 - Set **API base** to your Railway URL (auto-filled when hosted on Railway)
 - Sidebar shows organism vitals, auto-learn cycles, grade timing
 - Commands: `/status`, `/grades`, `/help`
-- **Prediction brain:** ask factual questions like `What is the capital of France?` — Aureon tokenizes, runs self-attention, stacks layers, predicts next tokens autoregressively. Response JSON includes `prediction.pipeline` with all six steps.
+- **Prediction brain:** ask factual questions like `What is the capital of France?` — Aureon retrieves corpus context (up to **1M tokens**), runs chain-of-thought **reasoning**, then self-attention + next-token generation. Vocabulary up to **1,000,000** words. Response JSON includes `prediction.pipeline` (8 steps).
 - When a production classifier is promoted, messages are **classified by domain**
 
 ### Connect from your own app
@@ -528,7 +541,7 @@ GET /api/brain/grades
 
 ### Knowledge taxonomy
 
-**29 domains**, **154 subdomains**, **462 micro-subdomains**, **3,870 registered micro-agents** (6 regions × 462 leaves + subdomain/domain coordinators).
+**30 domains**, **135 subdomains**, **862 micro-subdomains**, **6,162 registered micro-agents** (6 regions × 862 leaves + subdomain/domain coordinators).
 
 Examples:
 
@@ -592,7 +605,7 @@ git clone https://github.com/ZorakCorp/Aureon-LLM.git
 cd Aureon-LLM
 pip install -r requirements.txt
 
-# Initialize database + seed 29 domains
+# Initialize database + seed 30 domains
 python scripts/init_db.py
 
 # Web UI + API
@@ -731,6 +744,13 @@ AUREON_GITHUB_SYNC_INTERVAL_SEC=3600
 | `POST` | `/api/pipeline/run` | Run all 5 pipeline steps |
 | `POST` | `/api/pipeline/step/{1-5}` | Run a single step |
 | `GET` | `/api/pipeline/status` | Production model + latest run |
+
+### Labels & review
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/labels/review` | Pending teacher-model labels flagged for human review |
+| `POST` | `/api/labels/review/{label_id}` | Approve (optional relabel) or reject a pending label |
 
 ### ML demos
 

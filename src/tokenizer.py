@@ -12,8 +12,11 @@ PAD = "<pad>"
 UNK = "<unk>"
 BOS = "<bos>"
 EOS = "<eos>"
+CTX = "<ctx>"
+THINK = "<think>"
+THEREFORE = "<therefore>"
 
-SPECIALS = (PAD, UNK, BOS, EOS)
+SPECIALS = (PAD, UNK, BOS, EOS, CTX, THINK, THEREFORE)
 
 
 def _normalize(text: str) -> str:
@@ -35,21 +38,25 @@ class WordTokenizer:
 
     @property
     def pad_id(self) -> int:
-        return self.word_to_id[PAD]
+        return self.word_to_id.get(PAD, 0)
 
     @property
     def unk_id(self) -> int:
-        return self.word_to_id[UNK]
+        return self.word_to_id.get(UNK, 1)
 
     @property
     def bos_id(self) -> int:
-        return self.word_to_id[BOS]
+        return self.word_to_id.get(BOS, 2)
 
     @property
     def eos_id(self) -> int:
-        return self.word_to_id[EOS]
+        return self.word_to_id.get(EOS, 3)
 
-    def build_vocab(self, texts: Iterable[str], *, min_freq: int = 1, max_vocab: int = 4000) -> None:
+    @property
+    def think_id(self) -> int:
+        return self.word_to_id.get(THINK, 4)
+
+    def build_vocab(self, texts: Iterable[str], *, min_freq: int = 1, max_vocab: int = 1_000_000) -> None:
         freq: dict[str, int] = {}
         for text in texts:
             for word in _normalize(text).split():
@@ -63,7 +70,14 @@ class WordTokenizer:
         self.id_to_word = list(SPECIALS) + ranked
         self.word_to_id = {word: idx for idx, word in enumerate(self.id_to_word)}
 
-    def encode(self, text: str, *, add_bos: bool = True, add_eos: bool = False) -> list[int]:
+    def encode(
+        self,
+        text: str,
+        *,
+        add_bos: bool = True,
+        add_eos: bool = False,
+        max_tokens: int | None = None,
+    ) -> list[int]:
         ids: list[int] = []
         if add_bos:
             ids.append(self.bos_id)
@@ -71,6 +85,8 @@ class WordTokenizer:
             ids.append(self.word_to_id.get(word, self.unk_id))
         if add_eos:
             ids.append(self.eos_id)
+        if max_tokens is not None and len(ids) > max_tokens:
+            ids = [ids[0], *ids[-(max_tokens - 1) :]]
         return ids
 
     def decode(self, ids: Iterable[int], *, skip_special: bool = True) -> str:

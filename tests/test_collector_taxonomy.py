@@ -74,8 +74,9 @@ def test_collector_ingests_taxonomy_topics():
     assert result.metrics["collection_attempts"] >= 3
     assert result.metrics["new_documents"] >= 3
     assert len(docs) >= 3
-    assert all(d.source == "taxonomy" for d in docs)
-    assert all((d.extra or {}).get("topic") for d in docs)
+    taxonomy_docs = [d for d in docs if d.source == "taxonomy"]
+    assert len(taxonomy_docs) >= 3
+    assert all((d.extra or {}).get("topic") for d in taxonomy_docs)
 
 
 def test_collector_skips_duplicate_topics_on_rerun():

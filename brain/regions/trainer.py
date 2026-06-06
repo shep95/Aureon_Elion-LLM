@@ -65,8 +65,20 @@ class TrainerAgent(MicroAgentBase):
             learning_rate=LEARNING_RATE,
             output_activation="softmax",
         )
-        network.train(x, y, epochs=train_epochs, verbose_every=0)
-        metrics_dict = network.evaluate(x, y)
+        perm = np.random.default_rng(42).permutation(len(y))
+        val_n = max(1, len(y) // 5) if len(y) >= 5 else 0
+        if val_n:
+            val_idx = perm[:val_n]
+            train_idx = perm[val_n:]
+            x_train, y_train = x[train_idx], y[train_idx]
+            x_val, y_val = x[val_idx], y[val_idx]
+        else:
+            x_train, y_train = x, y
+            x_val, y_val = x, y
+
+        network.train(x_train, y_train, epochs=train_epochs, verbose_every=0)
+        train_metrics = network.evaluate(x_train, y_train)
+        val_metrics = network.evaluate(x_val, y_val)
 
         ensure_dirs()
         run_id = str(uuid.uuid4())[:8]
@@ -87,7 +99,10 @@ class TrainerAgent(MicroAgentBase):
         (artifact_dir / "metadata.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
 
         registry = ModelRegistry()
-        run_metrics = {"train_accuracy": round(metrics_dict["accuracy"], 4)}
+        run_metrics = {
+            "train_accuracy": round(train_metrics["accuracy"], 4),
+            "val_accuracy": round(val_metrics["accuracy"], 4),
+        }
         registry.log_run(run_id, run_metrics, str(model_path), {"scope": scope, "epochs": ctx.epochs})
         promoted = registry.should_promote(run_metrics)
         if promoted:

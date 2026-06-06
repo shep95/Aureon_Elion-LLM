@@ -1,1 +1,1 @@
-Supervised ML with backpropagation — brain-inspired micro-agents across 29 knowledge domains, 5-step training pipeline, PostgreSQL on Railway. Funded & backed by #HouseOfAsher, #ZophielIntelligenceAgency & ZorakCorp.
+Supervised ML with backpropagation — brain-inspired micro-agents across 30 knowledge domains, 862 micro-topics, 5-step training pipeline, PostgreSQL on Railway. Funded & backed by #HouseOfAsher, #ZophielIntelligenceAgency & ZorakCorp.

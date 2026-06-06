@@ -430,6 +430,10 @@ class AutoLearnScheduler:
 
             run_github_sync_background(reason="auto_learn_cycle")
 
+            from brain.predict_engine import retrain_predict_brain_background
+
+            retrain_predict_brain_background(reason="auto_learn_cycle")
+
         except HTTPException as exc:
             self.state.last_error = f"training busy: {exc.detail}"
             logger.warning("Auto-learn skipped — %s", exc.detail)

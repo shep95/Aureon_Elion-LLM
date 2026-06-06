@@ -55,12 +55,22 @@ class ModelRegistry:
         self._save_registry(registry)
         return run
 
+    @staticmethod
+    def _metric_score(metrics: dict[str, float], metric: str) -> float:
+        if metric in metrics:
+            return float(metrics[metric])
+        if metric == "val_accuracy" and "train_accuracy" in metrics:
+            return float(metrics["train_accuracy"])
+        if metric == "train_accuracy" and "val_accuracy" in metrics:
+            return float(metrics["val_accuracy"])
+        return 0.0
+
     def get_best_run(self, metric: str = "val_accuracy") -> dict | None:
         registry = self._load_registry()
         runs = [r for r in registry["runs"] if r.get("status") == "completed"]
         if not runs:
             return None
-        return max(runs, key=lambda r: r["metrics"].get(metric, 0.0))
+        return max(runs, key=lambda r: self._metric_score(r.get("metrics", {}), metric))
 
     def get_production(self) -> dict | None:
         if not self.production_path.exists():
@@ -81,5 +91,6 @@ class ModelRegistry:
         current = self.get_production()
         if not current:
             return True
-        current_score = current.get("metrics", {}).get(metric, 0.0)
-        return new_metrics.get(metric, 0.0) > current_score
+        current_score = self._metric_score(current.get("metrics", {}), metric)
+        new_score = self._metric_score(new_metrics, metric)
+        return new_score > current_score

@@ -209,6 +209,31 @@ def api_github_sync_run(_: Mutating) -> dict:
     return run_github_sync(reason="api")
 
 
+@app.get("/api/labels/review")
+def api_labels_review_pending(
+    limit: int = Query(default=50, ge=1, le=200),
+    domain_slug: str | None = Query(default=None),
+) -> dict:
+    """Labels flagged by the teacher model for human review."""
+    from app.label_review import list_pending_review
+
+    if domain_slug:
+        validate_slug(domain_slug)
+    return list_pending_review(limit=limit, domain_slug=domain_slug)
+
+
+@app.post("/api/labels/review/{label_id}")
+def api_labels_review_resolve(label_id: int, body: dict[str, Any], _: Mutating) -> dict:
+    """Approve (optionally relabel) or reject a pending label."""
+    from app.label_review import resolve_label
+
+    return resolve_label(
+        label_id,
+        label=str(body.get("label", "")).strip() or None,
+        approve=bool(body.get("approve", True)),
+    )
+
+
 @app.post("/api/chat")
 def api_chat(body: dict[str, Any]) -> dict[str, Any]:
     """Public chat — supervised classification + live learning context (no training)."""

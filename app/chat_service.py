@@ -165,6 +165,9 @@ def _brain_predict_payload(text: str, *, session_id: str | None) -> dict[str, An
         "learning": learning_snapshot(),
         "prediction": {
             "model": result["model"],
+            "model_version": result.get("model_version"),
+            "context_window": result.get("context_window"),
+            "vocab_size": result.get("vocab_size"),
             "pipeline": result["pipeline"],
             "prompt": result["prompt"],
         },

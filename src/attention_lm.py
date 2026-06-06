@@ -36,12 +36,13 @@ def _causal_mask(seq_len: int) -> np.ndarray:
 
 @dataclass
 class AttentionLMConfig:
-    d_model: int = 48
-    n_layers: int = 4
-    d_ff: int = 96
-    max_seq_len: int = 64
+    d_model: int = 128
+    n_layers: int = 6
+    d_ff: int = 512
+    max_seq_len: int = 1_000_000
     learning_rate: float = 0.05
     seed: int = 42
+    model_version: int = 3
 
 
 @dataclass
@@ -97,7 +98,20 @@ class StackedAttentionLM:
         return model
 
     def _embed(self, token_ids: np.ndarray) -> np.ndarray:
-        return self.embeddings[token_ids]
+        x = self.embeddings[token_ids]
+        seq = x.shape[1]
+        x = x + self._positional_encoding(seq)[np.newaxis, :, :]
+        return x
+
+    def _positional_encoding(self, seq_len: int) -> np.ndarray:
+        d = self.config.d_model
+        pe = np.zeros((seq_len, d))
+        position = np.arange(seq_len)[:, np.newaxis]
+        div_term = np.exp(np.arange(0, d, 2) * (-np.log(10000.0) / d))
+        pe[:, 0::2] = np.sin(position * div_term)
+        if d > 1:
+            pe[:, 1::2] = np.cos(position * div_term[: d // 2])
+        return pe
 
     def _layer_norm(self, x: np.ndarray) -> np.ndarray:
         mean = x.mean(axis=-1, keepdims=True)
@@ -195,9 +209,13 @@ class StackedAttentionLM:
         *,
         max_new_tokens: int = 12,
         stop_words: frozenset[str] | None = None,
+        max_prompt_tokens: int | None = None,
     ) -> dict[str, Any]:
         stop_words = stop_words or frozenset({"<eos>", "<pad>"})
-        token_ids = self.tokenizer.encode(prompt, add_bos=True, add_eos=False)
+        prompt_limit = max_prompt_tokens or max(8, self.config.max_seq_len - max_new_tokens)
+        token_ids = self.tokenizer.encode(
+            prompt, add_bos=True, add_eos=False, max_tokens=prompt_limit
+        )
         generated_steps: list[dict[str, Any]] = []
 
         for _ in range(max_new_tokens):
@@ -234,12 +252,20 @@ class StackedAttentionLM:
         }
 
     def train(self, texts: list[str], *, epochs: int = 80, verbose: bool = False) -> list[dict[str, float]]:
-        """Next-token cross-entropy on encoded sequences."""
+        """Next-token cross-entropy on encoded sequences (chunked for long context)."""
         sequences: list[list[int]] = []
+        max_len = self.config.max_seq_len
+        stride = max(max_len // 2, 32)
         for text in texts:
             ids = self.tokenizer.encode(text, add_bos=True, add_eos=True)
-            if len(ids) >= 3:
-                sequences.append(ids[: self.config.max_seq_len])
+            if len(ids) <= max_len:
+                if len(ids) >= 3:
+                    sequences.append(ids)
+                continue
+            for start in range(0, len(ids) - 2, stride):
+                chunk = ids[start : start + max_len]
+                if len(chunk) >= 3:
+                    sequences.append(chunk)
 
         if not sequences:
             return []
@@ -329,7 +355,10 @@ class StackedAttentionLM:
         path = Path(directory)
         tokenizer = WordTokenizer.load(path / "tokenizer.json")
         payload = json.loads((path / "model.json").read_text(encoding="utf-8"))
-        config = AttentionLMConfig(**payload["config"])
+        cfg_raw = dict(payload["config"])
+        cfg_raw.setdefault("model_version", 1)
+        allowed = {f.name for f in AttentionLMConfig.__dataclass_fields__.values()}
+        config = AttentionLMConfig(**{k: v for k, v in cfg_raw.items() if k in allowed})
         model = cls(
             config=config,
             tokenizer=tokenizer,

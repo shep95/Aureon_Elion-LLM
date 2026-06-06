@@ -13,7 +13,12 @@ from brain.domains.taxonomy import lookup_names
 from db.models import Document
 from app.security import load_json_file_bounded
 from pipeline.config import SEEDS_DIR
-from pipeline.step1_collection.collectors import ArxivCollector, RawDocument
+from pipeline.step1_collection.collectors import (
+    ArxivCollector,
+    GutenbergCollector,
+    LocalFileCollector,
+    RawDocument,
+)
 from pipeline.step1_collection.filters import filter_document
 
 DOMAIN_QUERIES: dict[str, str] = {
@@ -72,6 +77,7 @@ class CollectorAgent(MicroAgentBase):
 
         attempts += self._ingest_taxonomy_topics(session, ctx)
         attempts += self._ingest_seeds(session, ctx)
+        attempts += self._ingest_external_sources(session, ctx)
 
         query = _arxiv_query(ctx)
         if query:
@@ -153,6 +159,35 @@ class CollectorAgent(MicroAgentBase):
                 )
                 count += 1
                 self._persist_doc(session, ctx, doc)
+        return count
+
+    def _ingest_external_sources(self, session: Session, ctx: AgentContext) -> int:
+        """Pull Gutenberg excerpts and local inbox drops (deduped by content hash)."""
+        count = 0
+        gutenberg_limit = 1
+        if ctx.grade:
+            gutenberg_limit = min(ctx.grade.collection_limit, 2)
+
+        for doc in GutenbergCollector().collect(limit=gutenberg_limit):
+            count += 1
+            if ctx.grade_slug:
+                doc.metadata["grade"] = ctx.grade_slug
+            doc.metadata.setdefault("domain", ctx.domain_slug)
+            self._persist_doc(session, ctx, doc)
+
+        inbox_limit = 10
+        if ctx.grade:
+            inbox_limit = min(ctx.grade.collection_limit * 2, 25)
+        for doc in LocalFileCollector().collect(limit=inbox_limit):
+            meta_domain = doc.metadata.get("domain")
+            if meta_domain and meta_domain != ctx.domain_slug:
+                continue
+            count += 1
+            if ctx.grade_slug:
+                doc.metadata["grade"] = ctx.grade_slug
+            doc.metadata.setdefault("domain", ctx.domain_slug)
+            self._persist_doc(session, ctx, doc)
+
         return count
 
     def _persist_doc(self, session: Session, ctx: AgentContext, doc: RawDocument) -> bool:
