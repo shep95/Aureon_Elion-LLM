@@ -326,6 +326,31 @@ def get_brain_roadmap(
     }
 
 
+@app.get("/api/brain/benchmark")
+def get_brain_benchmark() -> dict:
+    """Run fixed Q&A benchmark vs illustrative frontier baseline."""
+    from brain.frontier_benchmark import run_frontier_benchmark
+
+    return run_frontier_benchmark(use_chat=True)
+
+
+@app.post("/api/brain/rag/rebuild")
+def rebuild_rag_index(_: Mutating) -> dict:
+    """Force-rebuild the vector RAG index from PostgreSQL corpus."""
+    from brain.vector_rag import get_rag_index
+
+    count = get_rag_index(force_rebuild=True).document_count
+    return {"ok": True, "documents_indexed": count}
+
+
+@app.get("/api/brain/rag/status")
+def rag_index_status() -> dict:
+    from brain.vector_rag import get_rag_index
+
+    index = get_rag_index()
+    return {"documents_indexed": index.document_count, "ready": index.document_count > 0}
+
+
 @app.post("/api/brain/run")
 def brain_run(
     _auth: Mutating,

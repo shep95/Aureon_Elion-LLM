@@ -434,6 +434,10 @@ class AutoLearnScheduler:
 
             retrain_predict_brain_background(reason="auto_learn_cycle")
 
+            from brain.vector_rag import invalidate_rag_index
+
+            invalidate_rag_index()
+
         except HTTPException as exc:
             self.state.last_error = f"training busy: {exc.detail}"
             logger.warning("Auto-learn skipped — %s", exc.detail)

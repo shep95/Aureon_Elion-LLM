@@ -17,7 +17,7 @@ from src.tokenizer import WordTokenizer
 logger = logging.getLogger(__name__)
 
 MODEL_DIR = MODELS_DIR / "predict_brain"
-CURRENT_MODEL_VERSION = 3
+CURRENT_MODEL_VERSION = 4
 _lock = threading.Lock()
 _model: StackedAttentionLM | None = None
 _ready = False
@@ -203,37 +203,13 @@ def _build_training_corpus() -> list[str]:
     return corpus
 
 
-def _retrieve_context(question: str, *, max_words: int | None = None) -> tuple[str, list[str]]:
-    """Keyword retrieval from corpus — fills the context window before reasoning."""
-    if max_words is None:
-        max_words = _env_int("AUREON_PREDICT_CONTEXT_WORDS", 1_000_000, minimum=50, maximum=1_000_000)
+def _retrieve_context(question: str, *, max_words: int | None = None) -> tuple[str, list[str], list[dict[str, Any]]]:
+    """Vector RAG retrieval — TF-IDF over corpus with verified citations."""
+    from brain.vector_rag import retrieve_with_citations
 
-    q_words = {
-        w
-        for w in re.findall(r"[a-z0-9']+", question.lower())
-        if len(w) > 2 and w not in _CONTEXT_STOP
-    }
-    if not q_words:
-        return "", []
-
-    pool = _load_db_documents() + _load_seed_documents()
-    ranked: list[tuple[int, str]] = []
-    for doc in pool:
-        doc_lower = doc.lower()
-        score = sum(1 for w in q_words if w in doc_lower)
-        if score > 0:
-            ranked.append((score, doc[:800]))
-
-    ranked.sort(key=lambda item: item[0], reverse=True)
-    snippets = [doc for _, doc in ranked[:8]]
-    words: list[str] = []
-    for snippet in snippets:
-        words.extend(re.findall(r"[a-z0-9']+", snippet.lower()))
-        if len(words) >= max_words:
-            break
-
-    context = " ".join(words[:max_words])
-    return context, snippets[:3]
+    context, hits, citations = retrieve_with_citations(question, max_words=max_words)
+    snippets = [h.snippet(400) for h in hits]
+    return context, snippets, citations
 
 
 def _bootstrap_answer(question: str) -> str | None:
@@ -357,7 +333,10 @@ def predict_with_steps(question: str) -> dict[str, Any] | None:
 
     model = get_predict_model()
     q = question.strip().lower().rstrip("?")
-    context, context_sources = _retrieve_context(q)
+    context, context_sources, citations = _retrieve_context(q)
+    max_rag_score = max((c.get("score", 0) for c in citations), default=0.0)
+    min_rag = float(os.environ.get("AUREON_ABSTAIN_MIN_RAG", "0.06"))
+    min_prob = float(os.environ.get("AUREON_ABSTAIN_MIN_PROB", "0.12"))
     max_ctx_tokens = max(32, model.config.max_seq_len - 64)
 
     context_block = f"context {context} " if context else ""
@@ -383,12 +362,46 @@ def predict_with_steps(question: str) -> dict[str, Any] | None:
 
     answer = _extract_answer(generation["text"], q)
     fallback = _bootstrap_answer(q)
+    top_prob = float(first_step.get("top_probability") or 0.0)
+
     if fallback:
         key_word = fallback.split()[0].lower()
         if not answer or len(answer) < 4 or key_word not in answer.lower():
             answer = fallback
+            top_prob = max(top_prob, 0.9)
+
+    if not citations and not fallback and max_rag_score < min_rag:
+        return {
+            "abstained": True,
+            "answer": "I don't know — no grounded corpus match for that question.",
+            "confidence": round(top_prob, 4),
+            "citations": [],
+            "model": "stacked_attention_lm",
+            "model_version": CURRENT_MODEL_VERSION,
+        }
+
     if not answer or answer.lower() == q:
-        return None
+        if fallback:
+            answer = fallback
+        else:
+            return {
+                "abstained": True,
+                "answer": "I don't know — I couldn't verify an answer from the corpus.",
+                "confidence": round(top_prob, 4),
+                "citations": citations,
+                "model": "stacked_attention_lm",
+                "model_version": CURRENT_MODEL_VERSION,
+            }
+
+    if not fallback and top_prob < min_prob and len(answer) < 8:
+        return {
+            "abstained": True,
+            "answer": "I don't know — confidence too low without corpus support.",
+            "confidence": round(top_prob, 4),
+            "citations": citations,
+            "model": "stacked_attention_lm",
+            "model_version": CURRENT_MODEL_VERSION,
+        }
 
     steps = [
         {
@@ -409,9 +422,11 @@ def predict_with_steps(question: str) -> dict[str, Any] | None:
         {
             "step": 3,
             "name": "context",
-            "description": "Retrieved corpus snippets fill the context window before reasoning.",
+            "description": "Vector RAG retrieves ranked corpus snippets with citations.",
             "words_used": len(context.split()) if context else 0,
             "sources": [s[:120] + "..." if len(s) > 120 else s for s in context_sources],
+            "citations": citations,
+            "retrieval": "vector_rag_tfidf",
         },
         {
             "step": 4,
@@ -456,6 +471,9 @@ def predict_with_steps(question: str) -> dict[str, Any] | None:
         "model_version": CURRENT_MODEL_VERSION,
         "context_window": model.config.max_seq_len,
         "vocab_size": model.tokenizer.vocab_size,
+        "confidence": round(top_prob, 4),
+        "citations": citations,
+        "abstained": False,
         "pipeline": steps,
         "generation": generation,
         "reasoning": reason_gen,
@@ -470,6 +488,9 @@ def warmup_predict_brain_background() -> None:
     def _job() -> None:
         try:
             get_predict_model()
+            from brain.vector_rag import invalidate_rag_index
+
+            invalidate_rag_index()
         except Exception:
             logger.exception("Predict brain warmup failed")
 
@@ -488,6 +509,9 @@ def retrain_predict_brain_background(*, reason: str = "auto_learn") -> None:
                 _model = None
                 _ready = False
             get_predict_model()
+            from brain.vector_rag import invalidate_rag_index
+
+            invalidate_rag_index()
             logger.info("Predict brain retrained (reason=%s)", reason)
         except Exception:
             logger.exception("Predict brain retrain failed (reason=%s)", reason)

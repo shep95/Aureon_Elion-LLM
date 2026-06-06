@@ -20,7 +20,8 @@ from brain.self_inquiry import is_self_inquiry_enabled, recent_inquiries
 from brain.simple_qa import is_simple_question, to_simple_answer
 from db.models import KnowledgeDomain, KnowledgeMicroSubdomain, KnowledgeSubdomain
 from db.session import get_session
-from pipeline.step4_evaluation.benchmarks import _load_production_model, _predict_label
+from pipeline.step4_evaluation.benchmarks import _predict_label
+from brain.brain_classifiers import classify_moe
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -139,6 +140,12 @@ def _active_micro_progress(session: Session) -> dict[str, Any] | None:
 
 
 def _classify_message(text: str) -> dict[str, Any] | None:
+    moe = classify_moe(text)
+    if moe:
+        return moe
+
+    from pipeline.step4_evaluation.benchmarks import _load_production_model
+
     loaded = _load_production_model()
     if not loaded:
         return None
@@ -152,6 +159,7 @@ def _classify_message(text: str) -> dict[str, Any] | None:
         "confidence": round(confidence, 4),
         "labels_available": labels,
         "model": "production_classifier",
+        "routing": "pipeline_fallback",
     }
 
 
@@ -178,7 +186,7 @@ def _brain_predict_payload(text: str, *, session_id: str | None) -> dict[str, An
     result = predict_with_steps(text)
     if not result:
         return None
-    return {
+    payload: dict[str, Any] = {
         "reply": result["answer"],
         "kind": "chat",
         "session_id": session_id,
@@ -188,11 +196,18 @@ def _brain_predict_payload(text: str, *, session_id: str | None) -> dict[str, An
             "model_version": result.get("model_version"),
             "context_window": result.get("context_window"),
             "vocab_size": result.get("vocab_size"),
-            "pipeline": result["pipeline"],
-            "prompt": result["prompt"],
+            "confidence": result.get("confidence"),
+            "citations": result.get("citations", []),
+            "pipeline": result.get("pipeline", []),
+            "prompt": result.get("prompt"),
         },
         "brain_predict": True,
+        "abstained": result.get("abstained", False),
     }
+    if result.get("citations"):
+        cites = result["citations"][:3]
+        payload["citations"] = cites
+    return payload
 
 
 def _ciper_chat_payload(text: str, *, session_id: str | None) -> dict[str, Any] | None:

@@ -13,6 +13,7 @@ Pipeline per user message:
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -42,7 +43,7 @@ class AttentionLMConfig:
     max_seq_len: int = 1_000_000
     learning_rate: float = 0.05
     seed: int = 42
-    model_version: int = 3
+    model_version: int = 4
 
 
 @dataclass
@@ -252,18 +253,20 @@ class StackedAttentionLM:
         }
 
     def train(self, texts: list[str], *, epochs: int = 80, verbose: bool = False) -> list[dict[str, float]]:
-        """Next-token cross-entropy on encoded sequences (chunked for long context)."""
+        """Next-token cross-entropy — backprop through output head, embeddings, and FFN layers."""
         sequences: list[list[int]] = []
         max_len = self.config.max_seq_len
-        stride = max(max_len // 2, 32)
+        chunk_cap = int(os.environ.get("AUREON_PREDICT_TRAIN_CHUNK", "256"))
+        train_max = min(max_len, max(32, chunk_cap))
+        stride = max(train_max // 2, 32)
         for text in texts:
             ids = self.tokenizer.encode(text, add_bos=True, add_eos=True)
-            if len(ids) <= max_len:
+            if len(ids) <= train_max:
                 if len(ids) >= 3:
                     sequences.append(ids)
                 continue
             for start in range(0, len(ids) - 2, stride):
-                chunk = ids[start : start + max_len]
+                chunk = ids[start : start + train_max]
                 if len(chunk) >= 3:
                     sequences.append(chunk)
 
@@ -320,6 +323,27 @@ class StackedAttentionLM:
                     norm = np.linalg.norm(self.embeddings[int(token_id)])
                     if norm > 3.0:
                         self.embeddings[int(token_id)] *= 3.0 / norm
+
+                ffn_lr = lr * 0.25
+                d_layer = d_hidden[np.newaxis, :, :]
+                for li in range(len(self.layers) - 1, -1, -1):
+                    block = self.layers[li]
+                    _, _, x_attn, z1, h1 = layer_caches[li]
+                    d_ffn = d_layer[0]
+                    d_h1 = d_ffn @ block.w2.T
+                    grad_w2 = h1[0].T @ d_ffn
+                    grad_w1 = x_attn[0].T @ (d_h1 * relu_derivative(z1[0]))
+                    for grad, param in (
+                        (grad_w2, block.w2),
+                        (grad_w1, block.w1),
+                    ):
+                        gnorm = np.linalg.norm(grad)
+                        if gnorm > 1.0:
+                            grad = grad * (1.0 / gnorm)
+                        param -= ffn_lr * grad
+                    block.b2 -= ffn_lr * np.sum(d_ffn, axis=0, keepdims=True)
+                    block.b1 -= ffn_lr * np.sum(d_h1 * relu_derivative(z1[0]), axis=0, keepdims=True)
+                    d_layer = ((d_h1 * relu_derivative(z1[0])) @ block.w1.T)[np.newaxis, :, :]
 
             acc = total_correct / max(total_tokens, 1)
             metrics = {"epoch": float(epoch), "loss": total_loss / len(sequences), "accuracy": acc}

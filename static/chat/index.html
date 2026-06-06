@@ -260,6 +260,25 @@
       line-height: 1.45;
     }
     .log-feed div { padding: 0.15rem 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+    .review-item {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.5rem;
+      margin-bottom: 0.45rem;
+      font-size: 0.72rem;
+    }
+    .review-item p { color: var(--muted); margin: 0.25rem 0; line-height: 1.4; }
+    .review-actions { display: flex; gap: 0.35rem; margin-top: 0.35rem; flex-wrap: wrap; }
+    .review-actions button {
+      font-size: 0.65rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+    }
+    .review-actions button:hover { border-color: var(--accent-2); }
   </style>
 </head>
 <body>
@@ -297,6 +316,14 @@
         </ul>
         <div class="log-feed" id="logFeed" style="margin-top:0.5rem">
           <div>Waiting for learning events…</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Label review</h3>
+        <p>Teacher-model flags uncertain labels (~5–10%) for human approval.</p>
+        <div id="reviewFeed" style="margin-top:0.5rem">
+          <div style="color:var(--muted);font-size:0.72rem">Loading review queue…</div>
         </div>
       </div>
 
@@ -347,6 +374,7 @@
           <button type="button" class="chip" data-cmd="/mind">What are you asking yourself?</button>
           <button type="button" class="chip" data-cmd="/status">What are you learning?</button>
           <button type="button" class="chip" data-cmd="/grades">Grade timeline</button>
+          <button type="button" class="chip" data-cmd="/roadmap">Roadmap</button>
           <button type="button" class="chip" data-cmd="/help">Help</button>
         </div>
         <form class="composer" id="form">
@@ -440,6 +468,57 @@
       }
     }
 
+    async function refreshLabelReview() {
+      const feed = $("reviewFeed");
+      try {
+        const data = await fetchJson("/api/labels/review?limit=5");
+        const pending = data.pending || [];
+        if (!pending.length) {
+          feed.innerHTML = '<div style="color:var(--muted);font-size:0.72rem">No labels pending review.</div>';
+          return;
+        }
+        feed.innerHTML = "";
+        pending.forEach((item) => {
+          const div = document.createElement("div");
+          div.className = "review-item";
+          div.innerHTML =
+            `<strong>${(item.title || "Untitled").slice(0, 60)}</strong>` +
+            `<p>${(item.text_preview || "").slice(0, 120)}</p>` +
+            `<p>Proposed: <strong>${item.proposed_label}</strong> (${Math.round((item.confidence || 0) * 100)}%)</p>` +
+            `<div class="review-actions">` +
+            `<button type="button" data-approve="${item.label_id}">Approve</button>` +
+            `<button type="button" data-reject="${item.label_id}">Reject</button>` +
+            `</div>`;
+          feed.appendChild(div);
+        });
+        feed.querySelectorAll("[data-approve]").forEach((btn) => {
+          btn.addEventListener("click", () => resolveLabel(btn.dataset.approve, true));
+        });
+        feed.querySelectorAll("[data-reject]").forEach((btn) => {
+          btn.addEventListener("click", () => resolveLabel(btn.dataset.reject, false));
+        });
+      } catch (_) {
+        feed.innerHTML = '<div style="color:var(--muted);font-size:0.72rem">Review queue unavailable.</div>';
+      }
+    }
+
+    async function resolveLabel(labelId, approve) {
+      const key = $("apiKey").value.trim();
+      const headers = { "Content-Type": "application/json" };
+      if (key) headers["X-API-Key"] = key;
+      try {
+        await fetch(base() + "/api/labels/review/" + labelId, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ approve }),
+        });
+        pushLog(`Label ${labelId} ${approve ? "approved" : "rejected"}`);
+        refreshLabelReview();
+      } catch (_) {
+        pushLog("Label review needs API key");
+      }
+    }
+
     async function refreshSidebar() {
       try {
         const [vitals, auto, health, learning, mind] = await Promise.all([
@@ -502,9 +581,18 @@
           addMsg(`↳ predict brain (${data.prediction.model || "attention_lm"})\n${steps}`, "system");
           pushLog(`Predict: ${data.prediction.pipeline.length}-step pipeline · ctx ${data.prediction.context_window || "?"} · vocab ${data.prediction.vocab_size || "?"}`);
         }
+        if (data.citations?.length || data.prediction?.citations?.length) {
+          const cites = (data.citations || data.prediction.citations).slice(0, 3);
+          const citeLine = cites.map((c) => `#${c.document_id} ${(c.title || c.source || "").slice(0, 40)}`).join(" · ");
+          addMsg(`↳ citations: ${citeLine}`, "system");
+        }
+        if (data.abstained) {
+          pushLog("Abstained — low corpus confidence");
+        }
         if (data.classification) {
-          pushLog(`Classified: ${data.classification.label} (${Math.round(data.classification.confidence * 100)}%)`);
-          addMsg(`↳ classified: ${data.classification.label} (${Math.round(data.classification.confidence * 100)}%)`, "system");
+          const scope = data.classification.scope ? ` · ${data.classification.scope}` : "";
+          pushLog(`Classified: ${data.classification.label} (${Math.round(data.classification.confidence * 100)}%)${scope}`);
+          addMsg(`↳ classified: ${data.classification.label} (${Math.round(data.classification.confidence * 100)}%)${scope}`, "system");
         }
         refreshSidebar();
       } catch (e) {
@@ -534,7 +622,9 @@
     );
     loadAccessInfo();
     refreshSidebar();
+    refreshLabelReview();
     setInterval(refreshSidebar, 30000);
+    setInterval(refreshLabelReview, 60000);
   </script>
 </body>
 </html>
