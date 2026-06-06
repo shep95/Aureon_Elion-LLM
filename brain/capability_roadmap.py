@@ -130,6 +130,13 @@ CAPABILITIES: tuple[dict[str, Any], ...] = (
         "status": "live",
         "frontier_gap": "Image/audio sidecars + JSON manifests feed the same grade ladder.",
     },
+    {
+        "id": "meta_consciousness",
+        "name": "Meta-consciousness self-inquiry",
+        "phase": 5,
+        "status": "live",
+        "frontier_gap": "Grounded identity/meta-cognition questions after each batch — honest self-model, not theater.",
+    },
 )
 
 

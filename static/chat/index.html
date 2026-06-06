@@ -299,10 +299,10 @@
       </div>
 
       <div class="panel">
-        <h3>Learning reflections</h3>
-        <p>After each grade cycle: <strong>Simple Question, Simple Answer</strong> + <strong>Marie/Ciper</strong> drill-down on broad topics.</p>
+        <h3>Inner monologue</h3>
+        <p>Learning reflections + <strong>meta-cognition</strong> — questions I ask myself about identity, gaps, and evidence.</p>
         <div class="log-feed" id="mindFeed" style="margin-top:0.5rem">
-          <div>Waiting for learning reflections…</div>
+          <div>Waiting for inner monologue…</div>
         </div>
       </div>
 
@@ -432,7 +432,8 @@
       const feed = $("mindFeed");
       const div = document.createElement("div");
       const answer = (item.answer || "").split("\n")[0].slice(0, 100);
-      div.textContent = "Q: " + (item.question || "").slice(0, 80) + (answer ? " · " + answer : "");
+      const tag = item.kind === "meta" ? "[meta] " : "[learn] ";
+      div.textContent = tag + "Q: " + (item.question || "").slice(0, 72) + (answer ? " · " + answer : "");
       feed.prepend(div);
       while (feed.children.length > 6) feed.removeChild(feed.lastChild);
     }

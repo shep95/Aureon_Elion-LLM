@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from app.auto_learn import get_auto_learn_scheduler, load_target_cursor
 from app.chat_service import learning_snapshot
+from brain.meta_consciousness import meta_log_path
 from brain.self_inquiry import inquiry_log_path
 from db.models import (
     BenchmarkResult,
@@ -386,6 +387,7 @@ def build_export_files() -> dict[str, bytes]:
             "| `pipeline_events.json` | Recent pipeline events |",
             "| `models/` | Trained classifier weights (JSON) |",
             "| `self_inquiry.jsonl` | Learning reflections — document excerpts + cycle metrics |",
+            "| `meta_consciousness.jsonl` | Meta-cognitive self-inquiry — identity, gaps, consciousness |",
             "| `snapshot.json` | Live brain + auto-learn status |",
             "",
             "Auto-generated on Railway. Secrets and audit logs are never included.",
@@ -429,6 +431,10 @@ def build_export_files() -> dict[str, bytes]:
     inquiry_path = inquiry_log_path()
     if inquiry_path.is_file():
         files[f"{CORPUS_PREFIX}/self_inquiry.jsonl"] = inquiry_path.read_bytes()
+
+    meta_path = meta_log_path()
+    if meta_path.is_file():
+        files[f"{CORPUS_PREFIX}/meta_consciousness.jsonl"] = meta_path.read_bytes()
 
     return files
 

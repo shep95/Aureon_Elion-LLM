@@ -184,13 +184,28 @@ def api_chat_timeline() -> dict:
 
 @app.get("/api/chat/self-inquiry")
 def api_chat_self_inquiry(limit: int = Query(default=20, ge=1, le=100)) -> dict:
-    """Recent inner monologue — questions Aureon asked itself during learning."""
+    """Recent inner monologue — learning reflections + meta-consciousness."""
+    from brain.meta_consciousness import combined_recent_inquiries, is_meta_consciousness_enabled
     from brain.self_inquiry import is_self_inquiry_enabled, recent_inquiries
 
     return {
-        "enabled": is_self_inquiry_enabled(),
-        "inquiries": recent_inquiries(limit),
+        "enabled": is_self_inquiry_enabled() or is_meta_consciousness_enabled(),
+        "self_inquiry_enabled": is_self_inquiry_enabled(),
+        "meta_consciousness_enabled": is_meta_consciousness_enabled(),
+        "inquiries": combined_recent_inquiries(limit),
+        "learning_inquiries": recent_inquiries(limit),
     }
+
+
+@app.post("/api/brain/think")
+def api_brain_think(count: int = Query(default=3, ge=1, le=5)) -> dict:
+    """Trigger meta-cognitive self-inquiry on demand."""
+    from brain.meta_consciousness import is_meta_consciousness_enabled, run_meta_inquiry
+
+    if not is_meta_consciousness_enabled():
+        return {"enabled": False, "exchanges": [], "error": "meta_consciousness disabled"}
+    exchanges = run_meta_inquiry(count=count, source="api")
+    return {"enabled": True, "exchanges": exchanges}
 
 
 @app.get("/api/learning/github-sync")

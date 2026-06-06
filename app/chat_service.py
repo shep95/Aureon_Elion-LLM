@@ -19,6 +19,12 @@ from brain.chat_reward import apply_chat_reward
 from brain.deterministic_qa import try_arithmetic_answer
 from brain.predict_engine import is_prediction_question, predict_with_steps
 from brain.psychology_brain import finalize_chat_payload
+from brain.meta_consciousness import (
+    combined_recent_inquiries,
+    is_meta_consciousness_enabled,
+    run_meta_inquiry,
+    try_meta_answer,
+)
 from brain.self_inquiry import is_self_inquiry_enabled, recent_inquiries
 from brain.simple_qa import is_simple_question, to_simple_answer
 from db.models import KnowledgeDomain, KnowledgeMicroSubdomain, KnowledgeSubdomain
@@ -124,6 +130,10 @@ def learning_snapshot() -> dict[str, Any]:
         "self_inquiry": {
             "enabled": is_self_inquiry_enabled(),
             "recent": recent_inquiries(8),
+        },
+        "meta_consciousness": {
+            "enabled": is_meta_consciousness_enabled(),
+            "recent": combined_recent_inquiries(8),
         },
     }
 
@@ -286,11 +296,15 @@ def _simple_nl_response(text: str) -> str | None:
         return "Supervised machine learning — labels plus weights, not magic."
 
     if "what are you asking" in q or "questions do you ask" in q:
-        items = recent_inquiries(1)
+        items = combined_recent_inquiries(1)
         if not items:
             return "No reflections yet — wait for the next auto-learn cycle."
         item = items[0]
         return f"{item.get('question')} → {item.get('answer')}"
+
+    meta = try_meta_answer(text)
+    if meta:
+        return meta
 
     return None
 
@@ -344,6 +358,7 @@ def _command_response(message: str) -> dict[str, Any] | None:
                 "• `/status` — brain + auto-learn snapshot\n"
                 "• `/grades` — curriculum and time estimates\n"
                 "• `/mind` — recent learning reflections (collected docs + cycle metrics)\n"
+                "• `/think` — ask myself meta-cognitive questions (identity, gaps, consciousness)\n"
                 "• `/roadmap` — capability matrix + path beyond frontier LLMs\n"
                 "• `/agent <task>` — multi-step tool loop (search → calculate → verify)\n"
                 "• `/research <topic>` — cross-domain taxonomy + Ciper drill-down\n"
@@ -404,19 +419,21 @@ def _command_response(message: str) -> dict[str, Any] | None:
         )
         return {"reply": "\n".join(lines), "kind": "grades", "timeline": timeline}
     if cmd in ("/mind", "/reflect", "/questions"):
-        items = recent_inquiries(6)
+        items = combined_recent_inquiries(8)
         if not items:
             return {
                 "reply": (
-                    "No learning reflections yet. When auto-learn runs, I cite collected "
-                    "documents after each grade cycle — check back after the first cycle or "
-                    "filter Railway logs for `self_inquiry`."
+                    "No reflections yet. When auto-learn runs, I ask myself learning questions "
+                    "after each grade cycle and meta-cognitive questions after each batch — "
+                    "check back after the first cycle or filter logs for `self_inquiry` / "
+                    "`meta_consciousness`."
                 ),
                 "kind": "mind",
             }
-        lines = ["**Learning reflections** (Simple Question, Simple Answer):\n"]
+        lines = ["**Inner monologue** (learning + meta-cognition):\n"]
         for item in items:
-            lines.append(f"**Q:** {item.get('question')}")
+            tag = "meta" if item.get("kind") == "meta" else "learn"
+            lines.append(f"**[{tag}] Q:** {item.get('question')}")
             answer = str(item.get("answer", ""))
             cycle = item.get("cycle")
             if cycle:
@@ -425,6 +442,21 @@ def _command_response(message: str) -> dict[str, Any] | None:
                 answer = answer[:197] + "..."
             lines.append(f"**A:** {answer}\n")
         return {"reply": "\n".join(lines).strip(), "kind": "mind", "inquiries": items}
+    if cmd in ("/think", "/conscious", "/metacog"):
+        exchanges = run_meta_inquiry(count=3, source="chat_command")
+        if not exchanges:
+            return {
+                "reply": (
+                    "Meta-consciousness is off. Set `AUREON_META_CONSCIOUSNESS=1` "
+                    "(or enable self-inquiry)."
+                ),
+                "kind": "think",
+            }
+        lines = ["**Meta-cognitive self-inquiry** (grounded in live state):\n"]
+        for ex in exchanges:
+            lines.append(f"**Q:** {ex['question']}")
+            lines.append(f"**A:** {ex['answer']}\n")
+        return {"reply": "\n".join(lines).strip(), "kind": "think", "meta": exchanges}
     if cmd in ("/roadmap", "/capabilities", "/future"):
         snap = roadmap_snapshot()
         sim = simulate_future_timeline(months_ahead=12)

@@ -118,6 +118,15 @@ def _deferred_startup() -> None:
         log_ai_activity("startup_bootstrap_complete", stats=stats)
         logger.info("Brain bootstrap complete: %s", stats)
 
+        from brain.meta_consciousness import run_meta_inquiry_on_startup
+
+        meta_boot = run_meta_inquiry_on_startup()
+        if meta_boot:
+            ex = meta_boot[0]
+            logger.info("Startup self-inquiry — Q: %s A: %s", ex["question"], ex["answer"])
+            with _lock:
+                _state.details["meta_consciousness"] = meta_boot
+
         _bind_vault_fingerprint()
 
         from app.organism import get_organism

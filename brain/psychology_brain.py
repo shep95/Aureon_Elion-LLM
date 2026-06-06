@@ -75,7 +75,7 @@ def _response_mode(payload: dict[str, Any], user_message: str) -> str:
     if payload.get("classification"):
         return "classified_direct"
     kind = payload.get("kind", "chat")
-    if kind in ("status", "grades", "help", "research", "mind"):
+    if kind in ("status", "grades", "help", "research", "mind", "think"):
         return "technical_report"
     return "conversational"
 

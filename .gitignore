@@ -17,6 +17,7 @@ data/queue/
 !data/seeds/
 data/aureon.db
 data/self_inquiry.jsonl
+data/meta_consciousness.jsonl
 data/audit/
 data/railway-secrets.json
 data/railway-test/

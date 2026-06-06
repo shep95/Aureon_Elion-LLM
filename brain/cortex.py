@@ -335,10 +335,12 @@ def run_batch_graduation_ladder(
 ) -> dict[str, Any]:
     """Run graduation ladders across many domain/subdomain/micro targets in one batch."""
     from app.activity_log import clear_cycle_id, log_ai_activity, new_cycle_id
+    from brain.meta_consciousness import reset_batch_meta_budget
     from brain.self_inquiry import reset_batch_inquiry_budget
 
     bootstrap_brain()
     reset_batch_inquiry_budget()
+    reset_batch_meta_budget()
     if targets is None:
         targets = iter_training_targets(
             domain_limit=domain_limit,

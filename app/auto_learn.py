@@ -438,6 +438,15 @@ class AutoLearnScheduler:
 
             invalidate_rag_index()
 
+            from brain.meta_consciousness import run_meta_inquiry_after_cycle
+
+            meta = run_meta_inquiry_after_cycle(source="auto_learn")
+            if meta:
+                self.state.last_result["meta_consciousness"] = [
+                    {"question": m["question"], "answer": m["answer"], "theme": m["theme"]}
+                    for m in meta
+                ]
+
         except HTTPException as exc:
             self.state.last_error = f"training busy: {exc.detail}"
             logger.warning("Auto-learn skipped — %s", exc.detail)
