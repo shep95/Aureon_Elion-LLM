@@ -12,6 +12,7 @@ from brain.domains.taxonomy import total_micro_subdomains
 from brain.grades import GRADE_CURRICULUM, curriculum_public, epochs_for_grade, get_grade
 from brain.graduation import current_grade, progress_report
 from brain.ciper_logic import ciper_research
+from brain.predict_engine import is_prediction_question, predict_with_steps
 from brain.psychology_brain import finalize_chat_payload
 from brain.self_inquiry import is_self_inquiry_enabled, recent_inquiries
 from brain.simple_qa import is_simple_question, to_simple_answer
@@ -152,6 +153,25 @@ def _classify_message(text: str) -> dict[str, Any] | None:
     }
 
 
+def _brain_predict_payload(text: str, *, session_id: str | None) -> dict[str, Any] | None:
+    """Attention LM — embed, attend, predict next tokens autoregressively."""
+    result = predict_with_steps(text)
+    if not result:
+        return None
+    return {
+        "reply": result["answer"],
+        "kind": "chat",
+        "session_id": session_id,
+        "learning": learning_snapshot(),
+        "prediction": {
+            "model": result["model"],
+            "pipeline": result["pipeline"],
+            "prompt": result["prompt"],
+        },
+        "brain_predict": True,
+    }
+
+
 def _ciper_chat_payload(text: str, *, session_id: str | None) -> dict[str, Any] | None:
     """Marie/Ciper decomposition + cross-domain research when applicable."""
     result = ciper_research(text)
@@ -259,6 +279,8 @@ def _command_response(message: str) -> dict[str, Any] | None:
                 "• `/mind` — recent learning reflections (collected docs + cycle metrics)\n"
                 "• `/research <topic>` — cross-domain taxonomy + Ciper drill-down\n"
                 "• `/vitals` — security organism (nomad stack)\n\n"
+                "**Prediction brain:** factual questions run through token embeddings → "
+                "self-attention → stacked layers → next-token probabilities → autoregressive answer.\n\n"
                 "Logic: **Marie/Ciper** — broad claims get facet drill-down; "
                 "specific questions get cross-domain answers when corpus supports it.\n"
                 "**Two brains:** psychology layer (how I act human) + algorithm layer "
@@ -406,6 +428,11 @@ def chat(message: str, *, session_id: str | None = None) -> dict[str, Any]:
             },
             text,
         )
+
+    if is_prediction_question(text):
+        predict_payload = _brain_predict_payload(text, session_id=session_id)
+        if predict_payload:
+            return finalize_chat_payload(predict_payload, text)
 
     ciper_payload = _ciper_chat_payload(text, session_id=session_id)
     if ciper_payload:

@@ -55,6 +55,22 @@ def test_chat_simple_question():
     assert "supervised" in result["reply"].lower()
 
 
+def test_chat_prediction_brain(tmp_path, monkeypatch):
+    import brain.predict_engine as pe
+
+    monkeypatch.setenv("AUREON_DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("PIPELINE_DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("AUREON_PREDICT_EPOCHS", "120")
+    monkeypatch.setattr(pe, "MODEL_DIR", tmp_path / "models" / "predict_brain")
+    monkeypatch.setattr(pe, "_model", None)
+    monkeypatch.setattr(pe, "_ready", False)
+    result = chat("What is the capital of France?")
+    assert result["kind"] == "chat"
+    assert result.get("brain_predict") is True
+    assert "paris" in result["reply"].lower()
+    assert result["prediction"]["pipeline"][0]["name"] == "tokenize"
+
+
 def test_api_chat_learning():
     r = client.get("/api/chat/learning")
     assert r.status_code == 200

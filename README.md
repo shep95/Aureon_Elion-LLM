@@ -355,6 +355,7 @@ https://YOUR-APP.up.railway.app/chat
 - Set **API base** to your Railway URL (auto-filled when hosted on Railway)
 - Sidebar shows organism vitals, auto-learn cycles, grade timing
 - Commands: `/status`, `/grades`, `/help`
+- **Prediction brain:** ask factual questions like `What is the capital of France?` — Aureon tokenizes, runs self-attention, stacks layers, predicts next tokens autoregressively. Response JSON includes `prediction.pipeline` with all six steps.
 - When a production classifier is promoted, messages are **classified by domain**
 
 ### Connect from your own app
