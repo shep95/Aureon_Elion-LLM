@@ -71,9 +71,9 @@ def test_predict_timeout_fallback(monkeypatch):
     result = cs._predict_with_timeout("what is quantum gravity")
     assert result is not None
     assert result.get("timed_out") is True
-    from brain.system_messages import FALLBACK_CORPUS
+    from brain.system_messages import FALLBACK_TIMEOUT
 
-    assert FALLBACK_CORPUS in result.get("answer", "")
+    assert FALLBACK_TIMEOUT in result.get("answer", "")
 
 
 def test_is_named_entity_question_positive():

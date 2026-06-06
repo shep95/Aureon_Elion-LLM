@@ -80,6 +80,30 @@ def test_search_and_opine_mocked(monkeypatch):
     assert "My perspective:" not in result["reply"]
 
 
+def test_timed_out_predict_falls_back_to_search(monkeypatch):
+    monkeypatch.setenv("AUREON_WEB_SEARCH_ENABLED", "1")
+    monkeypatch.setattr(
+        "app.chat_service._predict_with_timeout",
+        lambda *a, **kw: {
+            "answer": "I hit my compute time limit on that question",
+            "confidence": 0.1,
+            "timed_out": True,
+            "abstained": False,
+            "citations": [],
+        },
+    )
+    monkeypatch.setattr(
+        "brain.web_search.search",
+        lambda q, **kw: [{"text": "Thermodynamics studies heat, work, and energy.", "source": "web"}],
+    )
+
+    from app.chat_service import _predict_with_search_fallback
+
+    result = _predict_with_search_fallback("what is thermodynamics", session_id="timeout-1")
+    assert result.get("search_opinion") is True
+    assert "thermodynamics" in result.get("answer", "").lower() or "heat" in result.get("answer", "").lower()
+
+
 def test_low_confidence_named_entity_uses_deterministic_search(monkeypatch):
     monkeypatch.setenv("AUREON_WEB_SEARCH_ENABLED", "1")
     monkeypatch.setattr(

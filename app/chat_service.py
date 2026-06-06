@@ -36,6 +36,7 @@ from brain.simple_qa import is_simple_question, to_simple_answer
 from brain.system_messages import (
     ECHO_DETECTED_REPLY,
     FALLBACK_CORPUS,
+    FALLBACK_TIMEOUT,
     FALLBACK_TRAINING,
     RATE_LIMIT_PREDICT,
     SELF_ECHO_DETECTED_REPLY,
@@ -513,39 +514,61 @@ def _predict_result_from_search(text: str, *, session_id: str | None) -> dict[st
     }
 
 
+def _try_web_search_predict(text: str, *, session_id: str | None) -> dict[str, Any] | None:
+    """Deterministic DuckDuckGo + opinion — used when predict is slow or weak."""
+    from brain.web_search import web_search_enabled
+
+    if not web_search_enabled():
+        return None
+    try:
+        return _predict_result_from_search(text, session_id=session_id)
+    except Exception:
+        return None
+
+
 def _predict_with_search_fallback(
     text: str,
     *,
     session_id: str | None = None,
     force: bool = False,
 ) -> dict[str, Any]:
-    """Predict brain; auto-search deterministically when confidence drops below threshold."""
+    """Predict brain; fall back to web search when confidence is low or predict timed out."""
     result = _predict_with_timeout(text, session_id=session_id, force=force)
     confidence = float(result.get("confidence", 0) or 0) if result else 0.0
-    if confidence >= _SEARCH_CONFIDENCE_THRESHOLD:
-        return result
-    if result.get("rate_limited") or result.get("timed_out"):
+
+    if result.get("rate_limited"):
         return result
 
-    from brain.web_search import web_search_enabled
-
-    if not web_search_enabled():
+    answer = str(result.get("answer", "")).strip()
+    if (
+        confidence >= _SEARCH_CONFIDENCE_THRESHOLD
+        and not result.get("timed_out")
+        and not _is_weak_predict_answer(answer)
+    ):
         return result
-    try:
-        search_result = _predict_result_from_search(text, session_id=session_id)
-        if search_result:
-            return search_result
-    except Exception:
-        pass
+
+    search_result = _try_web_search_predict(text, session_id=session_id)
+    if search_result:
+        return search_result
+
     return result
 
 
 def _fallback_to_predict(question: str, *, session_id: str | None) -> str:
     """Re-route leaked taxonomy labels through predict + search."""
+    search_result = _try_web_search_predict(question, session_id=session_id)
+    if search_result:
+        answer = str(search_result.get("answer", "")).strip()
+        if answer and len(answer) > 20 and not _is_weak_predict_answer(answer):
+            return answer
+
     result = _predict_with_search_fallback(question, session_id=session_id, force=True)
     answer = str(result.get("answer", "")).strip() if result else ""
     if answer and len(answer) > 20 and not _is_classification_leak(answer):
-        return answer
+        if not _is_weak_predict_answer(answer):
+            return answer
+    if result and result.get("timed_out"):
+        return FALLBACK_TIMEOUT
     return FALLBACK_CORPUS
 
 
@@ -580,7 +603,7 @@ def _is_weak_predict_answer(answer: str) -> bool:
         return True
     if _is_classification_leak(answer):
         return True
-    for marker in (FALLBACK_CORPUS.lower(), FALLBACK_TRAINING.lower()):
+    for marker in (FALLBACK_CORPUS.lower(), FALLBACK_TIMEOUT.lower(), FALLBACK_TRAINING.lower()):
         if marker[:40] in text:
             return True
     return False
@@ -729,18 +752,19 @@ def _handle_named_entity(text: str, *, session_id: str | None) -> dict[str, Any]
     result = _predict_with_search_fallback(enriched, session_id=session_id, force=True)
 
     if result and result.get("answer") and len(str(result["answer"])) > 20:
-        citations = list(result.get("citations") or [])
-        if not citations and rag_citations:
-            citations = rag_citations[:3]
-        kind = "search_opinion" if result.get("search_opinion") else "named_entity"
-        return {
-            "reply": result["answer"],
-            "kind": kind,
-            "session_id": session_id,
-            "learning": learning_snapshot(),
-            "citations": citations,
-            "sources": result.get("sources", []),
-        }
+        if not _is_weak_predict_answer(str(result["answer"])):
+            citations = list(result.get("citations") or [])
+            if not citations and rag_citations:
+                citations = rag_citations[:3]
+            kind = "search_opinion" if result.get("search_opinion") else "named_entity"
+            return {
+                "reply": result["answer"],
+                "kind": kind,
+                "session_id": session_id,
+                "learning": learning_snapshot(),
+                "citations": citations,
+                "sources": result.get("sources", []),
+            }
 
     from brain.web_search import web_search_enabled
 
@@ -876,7 +900,7 @@ def _predict_with_timeout(
 
     if worker.is_alive():
         return {
-            "answer": FALLBACK_CORPUS,
+            "answer": FALLBACK_TIMEOUT,
             "abstained": False,
             "timed_out": True,
             "confidence": 0.1,
@@ -1766,7 +1790,7 @@ def chat(message: str, *, session_id: str | None = None) -> dict[str, Any]:
         result = _predict_with_search_fallback(enriched, session_id=session_id, force=True)
         if result and result.get("answer") and not result.get("abstained"):
             reply = str(result["answer"]).strip()
-            if len(reply) > 20 and not _is_classification_leak(reply):
+            if len(reply) > 20 and not _is_classification_leak(reply) and not _is_weak_predict_answer(reply):
                 kind = "search_opinion" if result.get("search_opinion") else "predict"
                 payload: dict[str, Any] = {
                     "reply": reply,

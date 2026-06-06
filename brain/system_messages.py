@@ -7,6 +7,12 @@ FALLBACK_CORPUS = (
     "Try again after auto-learn finishes, or ask `/mind` for what I know now."
 )
 
+FALLBACK_TIMEOUT = (
+    "I hit my compute time limit on that question — Railway is often busy during auto-learn. "
+    "I tried web search too but could not ground a full answer. "
+    "Try again in a moment, ask something shorter, or check `/status`."
+)
+
 FALLBACK_TRAINING = (
     "I need more training on this topic — ask me again after the next auto-learn cycle."
 )
@@ -41,6 +47,7 @@ SELF_ECHO_DETECTED_REPLY = (
 
 ECHO_PREFIXES = (
     "This question needs deeper corpus grounding",
+    "I hit my compute time limit",
     "I need more training on this topic",
     "Still training —",
     "Still training -",
@@ -57,6 +64,7 @@ ECHO_PREFIXES = (
 
 ALL_SYSTEM_MESSAGES: frozenset[str] = frozenset({
     FALLBACK_CORPUS,
+    FALLBACK_TIMEOUT,
     FALLBACK_TRAINING,
     FALLBACK_PHILOSOPHY,
     FALLBACK_CLASSIFICATION_LEAK,
