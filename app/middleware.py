@@ -185,4 +185,8 @@ class SecurityGatewayMiddleware(BaseHTTPMiddleware):
                 peer=ip,
                 detail=f"{method} {path} -> {response.status_code}",
             )
+            from app.nomad.chaos_entropy import chaos_response_headers
+
+            for header, value in chaos_response_headers(cid).items():
+                response.headers[header] = value
         return response

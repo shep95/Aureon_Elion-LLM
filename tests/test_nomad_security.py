@@ -27,8 +27,8 @@ def auth_headers(key: str = "test-secret-key") -> dict[str, str]:
     }
 
 
-def test_organ_registry_has_eleven_organs():
-    assert len(organ_activation_order()) == 11
+def test_organ_registry_has_fourteen_organs():
+    assert len(organ_activation_order()) == 14
 
 
 def test_supply_spleen_verifies():
@@ -58,7 +58,7 @@ def test_security_doctrine_public():
     body = response.json()
     assert "doctrine" in body
     assert body["adapted_for"] == "Aureon-LLM"
-    assert len(body["organs"]) == 11
+    assert len(body["organs"]) == 14
 
 
 def test_security_status_public():
@@ -66,7 +66,7 @@ def test_security_status_public():
     assert response.status_code == 200
     body = response.json()
     assert body["stack"] == "nomad_cyber_algorithm-adapted"
-    assert body["organ_count"] == 11
+    assert body["organ_count"] == 14
     assert "nomad_adaptations" in body
 
 
@@ -78,9 +78,9 @@ def test_security_audit_requires_api_key(monkeypatch):
     assert "entries" in response.json()
 
 
-def test_organism_eleven_organs():
+def test_organism_fourteen_organs():
     org = AureonOrganism()
     org.pulse()
     report = org.get_vitals_report()
-    assert len(report["organs"]) == 11
+    assert len(report["organs"]) == 14
     assert report["stack"] == "nomad_cyber_algorithm-adapted"

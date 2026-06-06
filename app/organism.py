@@ -38,7 +38,7 @@ def _is_production() -> bool:
 
 class AureonOrganism:
     """
-    Sovereign security organism — eleven interlocking organs (nomad_cyber_algorithm adapted).
+    Sovereign security organism — fourteen interlocking organs (nomad_cyber_algorithm adapted).
 
     Partial compromise triggers lockdown on mutating HTTP operations.
     Background auto-learn uses a narrower ``is_learning_allowed()`` gate.
@@ -91,6 +91,15 @@ class AureonOrganism:
         )
 
     def _check_organ(self, organ_id: OrganId) -> dict[str, Any]:
+        if organ_id == "crypto_core":
+            from app.nomad.crypto_core import verify_crypto_core
+
+            result = verify_crypto_core()
+            return {
+                "state": "vital" if result["ok"] else "critical",
+                "detail": str(result.get("detail", "")),
+            }
+
         if organ_id == "supply_spleen":
             result = verify_supply_chain()
             return {
@@ -195,6 +204,30 @@ class AureonOrganism:
                 return {"state": "vital", "detail": "AI activity logging active"}
             return {"state": "dormant", "detail": "Activity logging disabled"}
 
+        if organ_id == "occult_veil":
+            from app.nomad.occult_veil import occult_status, occult_veil_enabled
+
+            if not occult_veil_enabled():
+                return {"state": "dormant", "detail": "Occult veil disabled"}
+            status = occult_status()
+            return {
+                "state": "vital",
+                "detail": f"Planetary epoch {status['planetary_epoch']} active",
+            }
+
+        if organ_id == "chaos_entropy":
+            from app.nomad.chaos_entropy import chaos_master_key, chaos_status
+
+            status = chaos_status()
+            if not status["enabled"]:
+                return {"state": "dormant", "detail": "Chaos entropy disabled"}
+            if not chaos_master_key():
+                return {
+                    "state": "dormant",
+                    "detail": "Chaos entropy active — no master key (fingerprints optional)",
+                }
+            return {"state": "vital", "detail": "Chaos padding + fingerprint engine armed"}
+
         return {"state": "critical", "detail": "Unknown organ"}
 
     def is_vital(self) -> bool:
@@ -209,7 +242,15 @@ class AureonOrganism:
             return False
         if not self._organ_states:
             return True
-        skip = {"auth_gateway", "replay_guard", "gateway_skin", "activity_lungs", "training_lock"}
+        skip = {
+            "auth_gateway",
+            "replay_guard",
+            "gateway_skin",
+            "activity_lungs",
+            "training_lock",
+            "occult_veil",
+            "chaos_entropy",
+        }
         for organ_id, state in self._organ_states.items():
             if organ_id in skip:
                 continue
