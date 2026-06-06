@@ -1,4 +1,4 @@
-"""Tests for nomad_cyber_algorithm ports into Aureon-LLM."""
+"""Tests for nomad_cyber_algorithm ports into SOLIA."""
 
 from __future__ import annotations
 

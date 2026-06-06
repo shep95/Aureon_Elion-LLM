@@ -1,1 +1,1 @@
-"""Web application for Aureon-LLM."""
+"""Web application for SOLIA (Sovereign Organism with Living Intelligence Architecture)."""

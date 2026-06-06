@@ -49,10 +49,9 @@ def test_api_chat_post():
 
 def test_chat_simple_question():
     result = chat("What is Aureon?")
-    assert result["kind"] == "chat"
-    assert result.get("simple_qa") is True
-    assert len(result["reply"]) <= 160
-    assert "supervised" in result["reply"].lower()
+    assert result["kind"] == "identity"
+    assert "aureon" in result["reply"].lower()
+    assert "supervised" in result["reply"].lower() or "sovereign" in result["reply"].lower()
 
 
 def test_chat_prediction_brain(tmp_path, monkeypatch):

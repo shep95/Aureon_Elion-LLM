@@ -1,8 +1,8 @@
-# Aureon-LLM
+# SOLIA
 
-> **Supervised machine learning that trains itself across every human knowledge domain** — brain-inspired micro-agents, a 5-step training pipeline, and PostgreSQL on Railway. Funded & backed by **#HouseOfAsher**, **#ZophielIntelligenceAgency**, and **ZorakCorp**.
+> **Sovereign Organism with Living Intelligence Architecture** — supervised machine learning that trains itself across every human knowledge domain. Brain-inspired micro-agents, a 5-step training pipeline, and PostgreSQL on Railway. Funded & backed by **#HouseOfAsher**, **#ZophielIntelligenceAgency**, and **ZorakCorp**.
 
-Aureon-LLM is not mystical “AI.” It is a production-oriented system built on **supervised learning**, **backpropagation**, and an industrial **5-step training pipeline** — wrapped in a **brain-inspired micro-agent architecture** where each region collects, verifies, labels, trains, evaluates, and rewards domain by domain.
+SOLIA hosts **Aureon**, the supervised learning brain — not mystical “AI.” It is a production-oriented system built on **supervised learning**, **backpropagation**, and an industrial **5-step training pipeline** — wrapped in a **brain-inspired micro-agent architecture** where each region collects, verifies, labels, trains, evaluates, and rewards domain by domain.
 
 **Live app:** [https://aureonai.app/](https://aureonai.app/) — chat UI, learning status, and API.
 
@@ -137,7 +137,7 @@ The **Aureon Files** collection is the primary intellectual brain of this algori
 
 **Repositories**
 
-- [houseofasher/Aureon-LLM](https://github.com/houseofasher/Aureon-LLM)
+- [houseofasher/SOLIA](https://github.com/houseofasher/SOLIA)
 - [ZorakCorp/Aureon-LLM](https://github.com/ZorakCorp/Aureon-LLM)
 - [shep95/Aureon_Elion-LLM](https://github.com/shep95/Aureon_Elion-LLM)
 
@@ -149,7 +149,7 @@ The **Aureon Files** collection is the primary intellectual brain of this algori
 
 Most products labeled “AI” are **supervised machine learning** — not magic, not consciousness, not a deity. A human supplies **inputs**, **correct labels**, and a **measurable goal**; the computer adjusts internal **weights** until its predictions match those labels. That adjustment loop is **backpropagation** (often marketed as “deep learning”). The weight system is often called a **neural network**. The whole stack is often marketed simply as “AI.”
 
-Aureon-LLM is built on that honest foundation: collect data → verify → label → train with backpropagation → evaluate → reward. No mystery box required for the pipeline itself.
+SOLIA is built on that honest foundation: collect data → verify → label → train with backpropagation → evaluate → reward. No mystery box required for the pipeline itself.
 
 ### Traditional program vs supervised learning
 
@@ -601,8 +601,8 @@ python train.py --mode synthetic
 ### Install & run locally
 
 ```bash
-git clone https://github.com/ZorakCorp/Aureon-LLM.git
-cd Aureon-LLM
+git clone https://github.com/houseofasher/SOLIA.git
+cd SOLIA
 pip install -r requirements.txt
 
 # Initialize database + seed 30 domains
@@ -633,7 +633,7 @@ python run_brain.py --domain-limit 5 --subdomain-limit 2 --micro-subdomain-limit
 ### 1. Web service
 
 1. [railway.app](https://railway.app) → **New Project** → **Deploy from GitHub**  
-2. Connect [ZorakCorp/Aureon-LLM](https://github.com/ZorakCorp/Aureon-LLM) or [shep95/Aureon_Elion-LLM](https://github.com/shep95/Aureon_Elion-LLM)  
+2. Connect [houseofasher/SOLIA](https://github.com/houseofasher/SOLIA), [ZorakCorp/Aureon-LLM](https://github.com/ZorakCorp/Aureon-LLM), or [shep95/Aureon_Elion-LLM](https://github.com/shep95/Aureon_Elion-LLM)  
 3. Railway detects Python via `requirements.txt` and starts via `Procfile` / `railway.toml`  
 4. **Settings → Networking → Generate Domain**
 
@@ -689,7 +689,7 @@ Aureon **automatically pushes** everything it learns to GitHub on the **`learnin
 
 **Repos synced (default):**
 
-- [houseofasher/Aureon-LLM](https://github.com/houseofasher/Aureon-LLM) → `learning-data`
+- [houseofasher/SOLIA](https://github.com/houseofasher/SOLIA) → `learning-data`
 - [ZorakCorp/Aureon-LLM](https://github.com/ZorakCorp/Aureon-LLM) → `learning-data`
 - [shep95/Aureon_Elion-LLM](https://github.com/shep95/Aureon_Elion-LLM) → `learning-data`
 
@@ -698,7 +698,7 @@ Aureon **automatically pushes** everything it learns to GitHub on the **`learnin
 ```env
 AUREON_GITHUB_SYNC=1
 AUREON_GITHUB_TOKEN=<fine-grained PAT with Contents: Read and write>
-AUREON_GITHUB_REPOS=houseofasher/Aureon-LLM,ZorakCorp/Aureon-LLM,shep95/Aureon_Elion-LLM
+AUREON_GITHUB_REPOS=houseofasher/SOLIA,ZorakCorp/Aureon-LLM,shep95/Aureon_Elion-LLM
 AUREON_GITHUB_SYNC_BRANCH=learning-data
 AUREON_GITHUB_SYNC_ON_STARTUP=1
 AUREON_GITHUB_SYNC_ON_CYCLE=1
@@ -766,7 +766,7 @@ AUREON_GITHUB_SYNC_INTERVAL_SEC=3600
 ## Project structure
 
 ```text
-Aureon-LLM/
+SOLIA/
 ├── app/                    # FastAPI web app (Railway entry)
 │   ├── main.py
 │   ├── service.py          # Face ML demos
@@ -854,10 +854,10 @@ MIT — use, fork, and deploy freely. Attribution appreciated.
 ---
 
 <p align="center">
-  <strong>Aureon-LLM</strong> · supervised learning · brain micro-agents · every human domain<br/>
+  <strong>SOLIA</strong> · sovereign organism · Aureon supervised brain · every human domain<br/>
   Funded &amp; backed by <strong>#HouseOfAsher</strong> · <strong>#ZophielIntelligenceAgency</strong> · <strong>ZorakCorp</strong><br/>
   <a href="https://aureonai.app/">aureonai.app</a> ·
-  <a href="https://github.com/houseofasher/Aureon-LLM">houseofasher/Aureon-LLM</a> ·
+  <a href="https://github.com/houseofasher/SOLIA">houseofasher/SOLIA</a> ·
   <a href="https://github.com/ZorakCorp/Aureon-LLM">ZorakCorp/Aureon-LLM</a> ·
   <a href="https://github.com/shep95/Aureon_Elion-LLM">shep95/Aureon_Elion-LLM</a>
 </p>

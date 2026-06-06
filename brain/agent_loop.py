@@ -112,7 +112,7 @@ def run_agent_loop(
     Plan → execute tools → verify → synthesize answer.
     Shared ctx threads RAG/classify/predict results across steps.
     """
-    from app.session_memory import history_as_context
+    from brain.combinatorial_creation import is_creation_request, plan_combinatorial_creation
 
     q = question.strip()
     if q.lower().startswith("/agent"):
@@ -130,6 +130,27 @@ def run_agent_loop(
     citations: list[dict[str, Any]] = []
     answer: str | None = None
     confidence = 0.0
+
+    if is_creation_request(q):
+        plan = plan_combinatorial_creation(q)
+        from brain.combinatorial_creation import format_creation_reply
+
+        comb = plan.to_dict()
+        steps.append({"tool": "combinatorial_creation", "ok": comb["valid"], "plan": comb})
+        answer = format_creation_reply(plan)
+        citations = [p.citation for p in plan.precursors if p.citation]
+        return {
+            "answer": answer,
+            "plan": [s["tool"] for s in steps],
+            "steps": steps,
+            "citations": citations,
+            "confidence": 0.85 if comb["valid"] else 0.0,
+            "agent": True,
+            "combinatorial": comb,
+            "max_steps": max_steps,
+            "context": {"creation_doctrine": True},
+        }
+
     expr = _extract_math_expression(q)
 
     rag = _tool_rag_search(q, ctx=ctx)

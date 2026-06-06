@@ -23,7 +23,7 @@ STEP_RUNNERS = {
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Aureon-LLM automated training pipeline")
+    parser = argparse.ArgumentParser(description="SOLIA automated training pipeline")
     parser.add_argument(
         "--step",
         type=int,

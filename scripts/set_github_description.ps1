@@ -25,7 +25,7 @@ if (-not $gh) {
     exit 1
 }
 
-foreach ($repo in @("ZorakCorp/Aureon-LLM", "shep95/Aureon_Elion-LLM")) {
+foreach ($repo in @("houseofasher/SOLIA", "ZorakCorp/Aureon-LLM", "shep95/Aureon_Elion-LLM")) {
     Write-Host "Updating $repo ..."
     & $gh repo edit $repo --description $Description
     & $gh repo edit $repo --add-topic ($Topics -join ",")

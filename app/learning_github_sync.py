@@ -16,7 +16,7 @@ from app.learning_export import build_export_files
 logger = logging.getLogger(__name__)
 
 GITHUB_API = "https://api.github.com"
-DEFAULT_REPOS = "houseofasher/Aureon-LLM,ZorakCorp/Aureon-LLM,shep95/Aureon_Elion-LLM"
+DEFAULT_REPOS = "houseofasher/SOLIA,ZorakCorp/Aureon-LLM,shep95/Aureon_Elion-LLM"
 DEFAULT_BRANCH = "learning-data"
 
 _sync_scheduler_started = False

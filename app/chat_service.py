@@ -451,11 +451,15 @@ def _simple_nl_response(text: str) -> str | None:
             return f"Batch topic {cursor}/{total}, preschool grade, {docs} docs, {cycles} cycles done."
         return f"{docs} docs ingested, {cycles} auto-learn cycles done."
 
-    if q in ("what is aureon", "who are you", "what are you"):
-        return (
-            "Supervised ML brain — collect, label, train, evaluate, graduate. "
-            "862 micro-topics, 1M context, beats frontier models on grounding and auditability."
-        )
+    if q in ("what is aureon",):
+        from brain.identity_handler import _build_live_identity
+
+        return _build_live_identity()
+
+    if any(t in q for t in ("who are you", "what are you", "tell me about yourself", "introduce yourself")):
+        from brain.identity_handler import get_identity_response
+
+        return get_identity_response(text)
 
     roadmap = try_roadmap_answer(text)
     if roadmap:
@@ -479,10 +483,18 @@ def _simple_nl_response(text: str) -> str | None:
     if "meaning of life" in q:
         return "Meaning — purpose, connection, and understanding; traditions answer differently."
 
-    if "god" in q and ("who is" in q or "what is" in q or "to you" in q):
+    if "god" in q and (
+        "who is" in q
+        or "what is" in q
+        or "to you" in q
+        or "your thoughts" in q
+        or "do you believe" in q
+        or "believe in" in q
+    ):
         return (
-            "No personal deity — I audit verified corpus. Traditions define God as "
-            "creator, consciousness, or meaning-source."
+            "God is one of the deepest questions I engage with — ultimate origin, "
+            "consciousness, and meaning. Traditions answer differently; "
+            "I hold the question with respect and no false certainty."
         )
 
     if "what are you asking" in q or "questions do you ask" in q:
@@ -499,22 +511,37 @@ def _simple_nl_response(text: str) -> str | None:
     return None
 
 
-def _simple_chat_reply(text: str) -> dict[str, Any]:
-    """Simple Question, Simple Answer path for chat."""
+def _simple_chat_reply(text: str, *, session_id: str | None = None) -> dict[str, Any]:
+    """Simple Question, Simple Answer path — classification feeds predict, never replaces reply."""
     nl = _simple_nl_response(text)
     if nl:
         return {"reply": to_simple_answer(nl), "kind": "chat", "simple_qa": True}
 
     classification = _classify_message(text)
     if classification:
-        label = classification["label"]
-        conf = classification["confidence"]
-        return {
-            "reply": to_simple_answer(f"{label} ({conf:.0%} confidence)"),
-            "kind": "chat",
-            "simple_qa": True,
-            "classification": classification,
-        }
+        enriched = f"domain context {classification['label']} question {text.strip().lower()}"
+        result = _predict_with_timeout(enriched, session_id=session_id, force=True)
+        if result and result.get("answer") and not result.get("abstained"):
+            reply = str(result["answer"]).strip()
+            if len(reply) > 20 and "philosophy." not in reply.lower():
+                payload: dict[str, Any] = {
+                    "reply": to_simple_answer(reply),
+                    "kind": "predict",
+                    "simple_qa": True,
+                    "brain_predict": True,
+                    "classification": classification,
+                }
+                if result.get("citations"):
+                    payload["citations"] = result["citations"][:3]
+                return payload
+
+        from brain.philosophy_handler import philosophy_fallback_if_needed
+
+        fallback = philosophy_fallback_if_needed(text, result)
+        if fallback:
+            fallback["simple_qa"] = True
+            fallback["classification"] = classification
+            return fallback
 
     with get_session() as session:
         from db.models import Document
@@ -551,6 +578,7 @@ def _command_response(message: str) -> dict[str, Any] | None:
                 "• `/think` — ask myself meta-cognitive questions (identity, gaps, consciousness)\n"
                 "• `/roadmap` — capability matrix + path beyond frontier LLMs\n"
                 "• `/agent <task>` — multi-step tool loop (search → calculate → verify)\n"
+                "• `/evolve <task>` — self-upgrade on a fork branch (never pushes main without approval)\n"
                 "• `/research <topic>` — cross-domain taxonomy + Ciper drill-down\n"
                 "• `/vitals` — security organism (nomad stack)\n\n"
                 "**Prediction brain:** factual questions run through token embeddings → "
@@ -671,6 +699,38 @@ def _command_response(message: str) -> dict[str, Any] | None:
             "citations, abstain-when-uncertain — not hallucinated fluency."
         )
         return {"reply": "\n".join(lines), "kind": "roadmap", "roadmap": snap, "simulation": sim}
+    if cmd.startswith("/evolve"):
+        task = message.strip()[7:].strip(" :.")
+        if not task:
+            return {
+                "reply": (
+                    "Usage: `/evolve improve philosophy routing` — "
+                    "I create a fork branch, can read/write my own source, commit locally, "
+                    "and only push to your fork remote when you approve via API."
+                ),
+                "kind": "self_evolve",
+            }
+        from app.self_evolve import plan_evolution, repo_status
+
+        plan = plan_evolution(task)
+        status = repo_status()
+        return {
+            "reply": (
+                f"**Self-evolve plan** for: {task}\n\n"
+                f"Suggested files: {', '.join(plan['suggested_files'])}\n"
+                f"Current branch: `{status['current_branch']}` · fork remote: `{status['fork_remote']}`\n\n"
+                "Use authenticated API:\n"
+                "• `POST /api/brain/self/plan` — file suggestions\n"
+                "• `POST /api/brain/self/branch` — create fork branch\n"
+                "• `POST /api/brain/self/write` — edit source (app/, brain/, src/)\n"
+                "• `POST /api/brain/self/commit` — commit locally\n"
+                "• `POST /api/brain/self/push` with `approve_push: true` — push fork only\n\n"
+                "Main is never pushed without your explicit approval."
+            ),
+            "kind": "self_evolve",
+            "plan": plan,
+            "repo": status,
+        }
     if cmd.startswith("/agent"):
         topic = message.strip()[6:].strip(" :.")
         if not topic:
@@ -753,12 +813,38 @@ def chat(message: str, *, session_id: str | None = None) -> dict[str, Any]:
             payload["simulation"] = cmd["simulation"]
         if "agent" in cmd:
             payload["agent"] = cmd["agent"]
+        if "plan" in cmd:
+            payload["plan"] = cmd["plan"]
+        if "repo" in cmd:
+            payload["repo"] = cmd["repo"]
         if "citations" in cmd:
             payload["citations"] = cmd["citations"]
         return done(payload)
 
     if is_agent_task(text):
         return done(_agent_payload(text, session_id=session_id))
+
+    from brain.identity_handler import handle_identity, is_identity_question
+    from brain.philosophy_handler import handle_philosophy_question, is_philosophy_question
+
+    if is_identity_question(text):
+        return done(handle_identity(text, session_id=session_id))
+
+    if is_philosophy_question(text):
+        phil = handle_philosophy_question(
+            text,
+            session_id=session_id,
+            predict_fn=_predict_with_timeout,
+            classify_fn=_classify_message,
+            learning_snapshot_fn=learning_snapshot,
+        )
+        if phil:
+            return done(phil)
+
+    from brain.combinatorial_creation import handle_creation_request, is_creation_request
+
+    if is_creation_request(text):
+        return done(handle_creation_request(text, session_id=session_id))
 
     nl = _simple_nl_response(text)
     if nl:
@@ -789,7 +875,7 @@ def chat(message: str, *, session_id: str | None = None) -> dict[str, Any]:
         return done(ciper_payload)
 
     if is_simple_question(text):
-        simple = _simple_chat_reply(text)
+        simple = _simple_chat_reply(text, session_id=session_id)
         simple["session_id"] = session_id
         simple["learning"] = learning_snapshot()
         return done(simple)
@@ -809,11 +895,36 @@ def chat(message: str, *, session_id: str | None = None) -> dict[str, Any]:
         active = _active_micro_progress(session)
 
     if classification:
+        enriched = f"domain context {classification['label']} question {text.strip().lower()}"
+        result = _predict_with_timeout(enriched, session_id=session_id, force=True)
+        if result and result.get("answer") and not result.get("abstained"):
+            reply = str(result["answer"]).strip()
+            if len(reply) > 20 and "philosophy." not in reply.lower():
+                return done(
+                    {
+                        "reply": reply,
+                        "kind": "predict",
+                        "session_id": session_id,
+                        "learning": learning,
+                        "brain_predict": True,
+                        "classification": classification,
+                    }
+                )
+        from brain.philosophy_handler import philosophy_fallback_if_needed
+
+        fallback = philosophy_fallback_if_needed(text, result)
+        if fallback:
+            fallback["session_id"] = session_id
+            fallback["learning"] = learning
+            fallback["classification"] = classification
+            return done(fallback)
+
         reply = (
-            f"I classified your message as **{classification['label']}** "
-            f"({classification['confidence']:.0%} confidence) using the production supervised model.\n\n"
-            "Aureon learns by collecting domain text, labeling, training weights via backpropagation, "
-            "and graduating grade levels — preschool through doctorate — on each micro-topic."
+            f"I mapped your question to **{classification['label']}** "
+            f"({classification['confidence']:.0%} confidence) but need more corpus "
+            f"in that domain for a full answer.\n\n"
+            "Aureon learns by collecting domain text, labeling, training weights, "
+            "and graduating grade levels — preschool through doctorate."
         )
     else:
         reply = (

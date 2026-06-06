@@ -73,8 +73,8 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(
-    title="Aureon-LLM",
-    description="Supervised machine learning demo — neural networks with backpropagation",
+    title="SOLIA",
+    description="Sovereign Organism with Living Intelligence Architecture — supervised learning brain (Aureon)",
     version="1.1.0",
     lifespan=lifespan,
 )
@@ -145,12 +145,12 @@ def api_chat_access() -> dict[str, Any]:
 
     return {
         "free_custom_api_key": True,
-        "included_with": "Aureon-LLM on Railway — no extra charge for your personal key",
+        "included_with": "SOLIA on Railway — no extra charge for your personal key",
         "configured": configured,
         "source": source,
         "secrets_file": report.get("secrets_file"),
         "how_to_get": [
-            "Deploy Aureon-LLM on Railway — a unique AUREON_API_KEY is auto-generated for you at no cost.",
+            "Deploy SOLIA on Railway — a unique AUREON_API_KEY is auto-generated for you at no cost.",
             "Open Railway → your web service → Variables and copy AUREON_API_KEY "
             "(or read data/railway-secrets.json on the server after first boot).",
             "Paste the key in this UI or send header X-API-Key from your own app for training endpoints.",
@@ -414,6 +414,108 @@ def api_brain_code_ingest(_: Mutating, limit: int = Query(default=2000, ge=1, le
 
     added = ingest_code_corpus(limit=limit)
     return {"ok": True, "documents_added": added}
+
+
+@app.post("/api/brain/self/plan")
+def api_self_evolve_plan(body: dict[str, Any], _: Mutating) -> dict:
+    from app.self_evolve import plan_evolution, repo_status
+
+    task = str(body.get("task", "")).strip()
+    if not task:
+        raise HTTPException(status_code=400, detail="task required")
+    return {"plan": plan_evolution(task), "repo": repo_status()}
+
+
+@app.get("/api/brain/self/status")
+def api_self_evolve_status(_: Mutating) -> dict:
+    from app.self_evolve import list_source_files, repo_status
+
+    return {"repo": repo_status(), "files": list_source_files(limit=100)}
+
+
+@app.post("/api/brain/self/read")
+def api_self_evolve_read(body: dict[str, Any], _: Mutating) -> dict:
+    from app.self_evolve import read_source
+
+    path = str(body.get("path", "")).strip()
+    if not path:
+        raise HTTPException(status_code=400, detail="path required")
+    try:
+        return read_source(path)
+    except (ValueError, FileNotFoundError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/api/brain/self/write")
+def api_self_evolve_write(body: dict[str, Any], _: Mutating) -> dict:
+    from app.self_evolve import write_source
+
+    path = str(body.get("path", "")).strip()
+    content = body.get("content")
+    if not path or content is None:
+        raise HTTPException(status_code=400, detail="path and content required")
+    try:
+        return write_source(path, str(content))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/api/brain/self/branch")
+def api_self_evolve_branch(body: dict[str, Any], _: Mutating) -> dict:
+    from app.self_evolve import create_evolution_branch
+
+    desc = str(body.get("description", body.get("task", "upgrade"))).strip()
+    try:
+        return create_evolution_branch(desc)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@app.post("/api/brain/self/commit")
+def api_self_evolve_commit(body: dict[str, Any], _: Mutating) -> dict:
+    from app.self_evolve import commit_evolution
+
+    message = str(body.get("message", "self-evolve commit")).strip()
+    paths = body.get("paths")
+    if paths is not None and not isinstance(paths, list):
+        raise HTTPException(status_code=400, detail="paths must be a list")
+    try:
+        return commit_evolution(message, paths=paths)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@app.post("/api/brain/self/push")
+def api_self_evolve_push(body: dict[str, Any], _: Mutating) -> dict:
+    from app.self_evolve import push_fork
+
+    approved = bool(body.get("approve_push", False))
+    branch = body.get("branch")
+    try:
+        return push_fork(branch=str(branch).strip() if branch else None, approved=approved)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@app.post("/api/brain/self/evolve")
+def api_self_evolve_run(body: dict[str, Any], _: Mutating) -> dict:
+    """Full cycle: branch → optional writes → commit → optional fork push (never main)."""
+    from app.self_evolve import run_evolution_cycle
+
+    task = str(body.get("task", "")).strip()
+    if not task:
+        raise HTTPException(status_code=400, detail="task required")
+    writes = body.get("writes")
+    if writes is not None and not isinstance(writes, list):
+        raise HTTPException(status_code=400, detail="writes must be a list of {path, content}")
+    try:
+        return run_evolution_cycle(
+            task,
+            writes=writes,
+            approve_push=bool(body.get("approve_push", False)),
+        )
+    except (ValueError, RuntimeError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.get("/api/brain/inference/profile")
@@ -718,7 +820,7 @@ INDEX_HTML = """<!DOCTYPE html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Aureon-LLM — Supervised Machine Learning</title>
+  <title>SOLIA — Sovereign Organism with Living Intelligence Architecture</title>
   <style>
     :root {
       color-scheme: light dark;
@@ -796,7 +898,7 @@ INDEX_HTML = """<!DOCTYPE html>
 </head>
 <body>
   <main>
-    <h1>Aureon-LLM</h1>
+    <h1>SOLIA</h1>
     <p class="subtitle">
       Supervised machine learning with backpropagation — what &ldquo;AI&rdquo; actually is.
     </p>

@@ -1,1 +1,1 @@
-"""Database layer for Aureon-LLM on Railway PostgreSQL."""
+"""Database layer for SOLIA on Railway PostgreSQL."""

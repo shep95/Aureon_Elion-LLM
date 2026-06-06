@@ -57,7 +57,7 @@ def test_security_doctrine_public():
     assert response.status_code == 200
     body = response.json()
     assert "doctrine" in body
-    assert body["adapted_for"] == "Aureon-LLM"
+    assert body["adapted_for"] == "SOLIA"
     assert len(body["organs"]) == 14
 
 

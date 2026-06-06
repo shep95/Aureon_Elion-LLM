@@ -15,6 +15,7 @@ from app.nomad.organ_registry import NOMAD_DOCTRINE, ORGAN_META
 from app.nomad.organism_pulse import pulse_interval_sec
 from app.nomad.shamir import ShamirShare, combine_shares, split_secret
 from app.nomad.supply_spleen import compute_requirements_hash
+from brain.combinatorial_creation import COMBINATORIAL_CREATION_DOCTRINE
 from app.organism import get_organism
 from app.security import get_api_key_from_request, require_mutating_access, verify_api_key
 
@@ -40,7 +41,8 @@ def security_doctrine() -> dict:
     return {
         "doctrine": NOMAD_DOCTRINE,
         "source": "https://github.com/houseofasher/nomad_cyber_algorithm",
-        "adapted_for": "Aureon-LLM",
+        "adapted_for": "SOLIA",
+        "combinatorial_creation": COMBINATORIAL_CREATION_DOCTRINE,
         "organs": {oid: meta["role"] for oid, meta in ORGAN_META.items()},
     }
 
