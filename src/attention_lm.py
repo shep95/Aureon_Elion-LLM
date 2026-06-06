@@ -27,6 +27,7 @@ from src.efficient_inference import (
     speculative_draft_tokens,
     truncate_tokens_for_inference,
 )
+from src.multi_head_attention import MultiHeadAttention
 from src.neural_network import relu, relu_derivative, softmax
 from src.tokenizer import WordTokenizer
 
@@ -71,11 +72,12 @@ class KVCache:
 class AttentionLMConfig:
     d_model: int = 128
     n_layers: int = 6
+    n_heads: int = 4
     d_ff: int = 512
     max_seq_len: int = 1_000_000
     learning_rate: float = 0.05
     seed: int = 42
-    model_version: int = 6
+    model_version: int = 7
 
 
 @dataclass
@@ -114,6 +116,7 @@ class StackedAttentionLM:
     w_out: np.ndarray
     b_out: np.ndarray
     layers: list[FeedForwardBlock] = field(default_factory=list)
+    attn_layers: list[MultiHeadAttention] = field(default_factory=list)
     _kv_cache: KVCache = field(default_factory=KVCache, repr=False)
     _quantized: bool = field(default=False, repr=False)
 
@@ -123,11 +126,17 @@ class StackedAttentionLM:
         rng = np.random.default_rng(cfg.seed)
         vocab = max(tokenizer.vocab_size, 4)
         emb_scale = 0.02
+        n_heads = max(1, cfg.n_heads)
+        if cfg.d_model % n_heads != 0:
+            n_heads = 1
         model = cls(
             config=cfg,
             tokenizer=tokenizer,
             embeddings=rng.normal(0, emb_scale, (vocab, cfg.d_model)),
             layers=[FeedForwardBlock.create(cfg.d_model, cfg.d_ff, rng) for _ in range(cfg.n_layers)],
+            attn_layers=[
+                MultiHeadAttention.create(cfg.d_model, n_heads, rng) for _ in range(cfg.n_layers)
+            ],
             w_out=rng.normal(0, emb_scale, (cfg.d_model, vocab)),
             b_out=np.zeros((1, vocab)),
         )
@@ -253,8 +262,11 @@ class StackedAttentionLM:
         cache.embeddings = x.copy()
         cache.hidden = []
 
-        for block in self.layers:
-            attn_out, _ = self._self_attention(x, return_weights=False)
+        for li, block in enumerate(self.layers):
+            if li < len(self.attn_layers):
+                attn_out, _, _ = self.attn_layers[li].forward(x, return_weights=False)
+            else:
+                attn_out, _ = self._self_attention(x, return_weights=False)
             x = x + attn_out
             ffn_out, _, _ = block.forward(x, compute_dtype=self._compute_dtype())
             x = x + ffn_out
@@ -282,7 +294,11 @@ class StackedAttentionLM:
                 past = cache.hidden[li - 1]
                 x_in = np.concatenate([past, x], axis=1)
 
-            attn_out = self._self_attention_last_only(x_in)
+            attn_out = (
+                self.attn_layers[li].forward_last(x_in, window=attention_window())
+                if li < len(self.attn_layers)
+                else self._self_attention_last_only(x_in)
+            )
             x = x + attn_out
             ffn_out, _, _ = block.forward(x, compute_dtype=self._compute_dtype())
             x = x + ffn_out
@@ -567,14 +583,18 @@ class StackedAttentionLM:
 
                 x = self._embed(x_ids)
                 layer_caches: list[tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]] = []
-                attentions: list[np.ndarray] = []
+                attn_caches: list[dict[str, np.ndarray]] = []
 
-                for block in self.layers:
-                    attn_out, attn_w = self._self_attention(x, return_weights=True)
-                    attentions.append(attn_w)
+                for li, block in enumerate(self.layers):
+                    if li < len(self.attn_layers):
+                        attn_out, attn_w, attn_cache = self.attn_layers[li].forward(x, return_weights=True)
+                        attn_caches.append(attn_cache)
+                    else:
+                        attn_out, attn_w = self._self_attention(x, return_weights=True)
+                        attn_caches.append({})
                     x_attn = x + attn_out
                     ffn_out, z1, h1 = block.forward(x_attn, compute_dtype=np.float64)
-                    layer_caches.append((x, attn_w, x_attn, z1, h1))
+                    layer_caches.append((x, attn_w if attn_w is not None else np.zeros((1, seq_len, seq_len)), x_attn, z1, h1))
                     x = x_attn + ffn_out
 
                 logits = self._output_logits(x)
@@ -628,6 +648,9 @@ class StackedAttentionLM:
                     ).astype(block.b1.dtype)
                     d_layer = ((d_h1 * relu_derivative(z1[0])) @ block.w1.astype(np.float64).T)[np.newaxis, :, :]
 
+                    if li < len(self.attn_layers) and attn_caches[li]:
+                        d_layer = self.attn_layers[li].backward(attn_caches[li], d_layer, lr)
+
             acc = total_correct / max(total_tokens, 1)
             metrics = {"epoch": float(epoch), "loss": total_loss / len(sequences), "accuracy": acc}
             history.append(metrics)
@@ -658,14 +681,36 @@ class StackedAttentionLM:
                 }
                 for layer in self.layers
             ],
+            "attn_layers": [
+                {
+                    "n_heads": a.n_heads,
+                    "d_model": a.d_model,
+                    "w_q": a.w_q.tolist(),
+                    "b_q": a.b_q.tolist(),
+                    "w_k": a.w_k.tolist(),
+                    "b_k": a.b_k.tolist(),
+                    "w_v": a.w_v.tolist(),
+                    "b_v": a.b_v.tolist(),
+                    "w_o": a.w_o.tolist(),
+                    "b_o": a.b_o.tolist(),
+                }
+                for a in self.attn_layers
+            ],
         }
         (path / "model.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
     @classmethod
     def load(cls, directory: str | Path) -> StackedAttentionLM:
         path = Path(directory)
-        tokenizer = WordTokenizer.load(path / "tokenizer.json")
-        payload = json.loads((path / "model.json").read_text(encoding="utf-8"))
+        tok_path = path / "tokenizer.json"
+        payload_raw = json.loads((path / "model.json").read_text(encoding="utf-8"))
+        if payload_raw.get("config", {}).get("model_version", 1) >= 7:
+            from src.bpe_tokenizer import BPETokenizer
+
+            tokenizer = BPETokenizer.load(tok_path)
+        else:
+            tokenizer = WordTokenizer.load(tok_path)
+        payload = payload_raw
         cfg_raw = dict(payload["config"])
         cfg_raw.setdefault("model_version", 1)
         allowed = {f.name for f in AttentionLMConfig.__dataclass_fields__.values()}
@@ -686,6 +731,22 @@ class StackedAttentionLM:
             )
             for layer in payload["layers"]
         ]
+        model.attn_layers = []
+        for attn in payload.get("attn_layers", []):
+            model.attn_layers.append(
+                MultiHeadAttention(
+                    n_heads=int(attn["n_heads"]),
+                    d_model=int(attn["d_model"]),
+                    w_q=np.array(attn["w_q"], dtype=float),
+                    b_q=np.array(attn["b_q"], dtype=float),
+                    w_k=np.array(attn["w_k"], dtype=float),
+                    b_k=np.array(attn["b_k"], dtype=float),
+                    w_v=np.array(attn["w_v"], dtype=float),
+                    b_v=np.array(attn["b_v"], dtype=float),
+                    w_o=np.array(attn["w_o"], dtype=float),
+                    b_o=np.array(attn["b_o"], dtype=float),
+                )
+            )
         model._quantized = bool(payload.get("quantized", False))
         if model.embeddings.dtype == np.float16:
             model._quantized = True

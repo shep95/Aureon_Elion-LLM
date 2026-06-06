@@ -18,17 +18,17 @@ MBPP_PATH = ROOT / "data" / "code" / "mbpp.jsonl"
 
 
 def extract_python_code(text: str) -> str:
-    """Pull executable Python from model output."""
+    """Pull executable Python from model output — preserves leading imports."""
     if not text:
         return ""
     lowered = text.lower()
     if " answer " in lowered:
         idx = lowered.rfind(" answer ")
         text = text[idx + len(" answer ") :]
-    for kw in ("def ", "class ", "for ", "import ", "while "):
-        pos = text.find(kw)
-        if pos != -1:
-            return text[pos:].strip()
+    markers = ("from ", "import ", "def ", "class ", "for ", "while ")
+    positions = [text.find(m) for m in markers if text.find(m) != -1]
+    if positions:
+        return text[min(positions) :].strip()
     return text.strip()
 
 

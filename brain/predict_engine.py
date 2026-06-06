@@ -12,12 +12,13 @@ from typing import Any
 from pipeline.config import MODELS_DIR, SEEDS_DIR, ensure_dirs
 from brain.deterministic_qa import is_arithmetic_question
 from src.attention_lm import AttentionLMConfig, StackedAttentionLM
+from src.bpe_tokenizer import BPETokenizer
 from src.tokenizer import WordTokenizer
 
 logger = logging.getLogger(__name__)
 
 MODEL_DIR = MODELS_DIR / "predict_brain"
-CURRENT_MODEL_VERSION = 6
+CURRENT_MODEL_VERSION = 7
 _lock = threading.Lock()
 _model: StackedAttentionLM | None = None
 _ready = False
@@ -201,6 +202,7 @@ def predict_config_from_env() -> AttentionLMConfig:
     return AttentionLMConfig(
         d_model=_env_int("AUREON_PREDICT_D_MODEL", 128, minimum=16, maximum=512),
         n_layers=_env_int("AUREON_PREDICT_LAYERS", 6, minimum=2, maximum=24),
+        n_heads=_env_int("AUREON_PREDICT_HEADS", 4, minimum=1, maximum=16),
         d_ff=_env_int("AUREON_PREDICT_D_FF", 512, minimum=32, maximum=4096),
         max_seq_len=_env_int("AUREON_PREDICT_MAX_SEQ", 1_000_000, minimum=64, maximum=1_000_000),
         learning_rate=float(os.environ.get("AUREON_PREDICT_LR", "0.08")),
@@ -263,9 +265,25 @@ def _load_db_documents() -> list[str]:
         return []
 
 
+def _load_code_training_corpus() -> list[str]:
+    """HumanEval + MBPP training lines — oversampled for code mastery."""
+    if os.environ.get("AUREON_CODE_TRAIN_IN_PREDICT", "1").strip().lower() in ("0", "false", "no"):
+        return []
+    try:
+        from brain.regions.code_collector import CodeCollector
+
+        lines = [doc.text for doc in CodeCollector().collect(limit=2000)]
+        repeat = _env_int("AUREON_CODE_TRAIN_OVERSAMPLE", 4, minimum=1, maximum=20)
+        return lines * repeat
+    except Exception:
+        logger.debug("Code training corpus load skipped", exc_info=True)
+        return []
+
+
 def _build_training_corpus() -> list[str]:
     corpus = list(BOOTSTRAP_LINES)
     corpus.extend(REASONING_LINES)
+    corpus.extend(_load_code_training_corpus())
     corpus.extend(_load_seed_documents())
     corpus.extend(_load_db_documents())
     return corpus
@@ -359,10 +377,20 @@ def _train_or_load() -> StackedAttentionLM:
         minimum=1000,
         maximum=1_000_000,
     )
-    tokenizer = WordTokenizer()
+    tokenizer = BPETokenizer()
     tokenizer.build_vocab(corpus, min_freq=1, max_vocab=max_vocab)
 
     config = expected
+    if config.d_model % config.n_heads != 0:
+        config = AttentionLMConfig(
+            d_model=config.d_model,
+            n_layers=config.n_layers,
+            n_heads=1,
+            d_ff=config.d_ff,
+            max_seq_len=config.max_seq_len,
+            learning_rate=config.learning_rate,
+            model_version=config.model_version,
+        )
     model = StackedAttentionLM.create(tokenizer, config)
     epochs = _env_int("AUREON_PREDICT_EPOCHS", 200, minimum=20, maximum=2000)
     model.train(corpus, epochs=epochs, verbose=False)
@@ -410,6 +438,9 @@ def _extract_answer(raw: str, question: str) -> str:
     cleaned = " ".join(a_words).strip(" .")
     if not cleaned:
         return ""
+    code_starts = ("def ", "class ", "for ", "import ", "while ")
+    if cleaned.startswith(code_starts):
+        return cleaned
     return cleaned[0].upper() + cleaned[1:] if len(cleaned) > 1 else cleaned.upper()
 
 

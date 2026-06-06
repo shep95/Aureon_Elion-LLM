@@ -367,32 +367,27 @@ def is_code_question(text: str) -> bool:
 
 
 def _code_payload(text: str, *, session_id: str | None) -> dict[str, Any] | None:
-    from brain.code_evaluator import evaluate_code_response, extract_python_code
+    from brain.code_evaluator import extract_python_code
+    from brain.code_master import generate_master_code
 
-    result = _predict_with_timeout(text, session_id=session_id, force=True)
-    if not result or not result.get("answer"):
+    def _predict(q: str) -> dict[str, Any] | None:
+        return _predict_with_timeout(q, session_id=session_id, force=True)
+
+    master = generate_master_code(text, predict_fn=_predict)
+    if not master.get("answer"):
         return None
 
-    code = extract_python_code(result.get("answer", ""))
-    test: str | None = None
-    for cite in result.get("citations") or []:
-        extra = cite.get("extra") or cite.get("metadata") or {}
-        if extra.get("test"):
-            test = str(extra["test"])
-            break
+    code = extract_python_code(master["answer"])
+    evaluation = master.get("code_eval") or {}
 
-    evaluation = evaluate_code_response(code, test)
-
-    answer = result["answer"]
-    if not evaluation["syntax_valid"]:
+    answer = code
+    if not evaluation.get("syntax_valid"):
         answer = (
             f"{code}\n\n"
-            f"# Note: syntax check flagged an issue — {evaluation['error']}"
+            f"# Note: syntax check flagged an issue — {evaluation.get('error', 'invalid syntax')}"
         )
     elif evaluation.get("passed_tests") is False:
         answer = f"{code}\n\n# Note: unit tests did not pass."
-    elif evaluation.get("passed_tests") is True:
-        answer = code
 
     return {
         "reply": answer,
@@ -400,13 +395,15 @@ def _code_payload(text: str, *, session_id: str | None) -> dict[str, Any] | None
         "session_id": session_id,
         "learning": learning_snapshot(),
         "code_eval": evaluation,
-        "brain_predict": True,
-        "citations": result.get("citations", []),
-        "prediction": {
-            "model": result.get("model"),
-            "confidence": result.get("confidence"),
-            "citations": result.get("citations", []),
+        "brain_predict": master.get("method") == "neural_synthesis",
+        "code_master": {
+            "method": master.get("method"),
+            "match_score": master.get("match_score"),
+            "problem_id": master.get("problem_id"),
+            "confidence": master.get("confidence"),
         },
+        "citations": master.get("citations", []),
+        "prediction": master.get("prediction"),
     }
 
 

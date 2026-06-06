@@ -349,6 +349,14 @@ def get_brain_benchmark() -> dict:
     return run_frontier_benchmark(use_chat=True)
 
 
+@app.get("/api/brain/benchmark/humaneval")
+def get_humaneval_benchmark(limit: int = Query(default=20, ge=1, le=164)) -> dict:
+    """HumanEval pass@1 — retrieval + verification pipeline."""
+    from brain.code_master import benchmark_humaneval
+
+    return benchmark_humaneval(limit=limit, use_retrieval=True)
+
+
 @app.post("/api/brain/rag/rebuild")
 def rebuild_rag_index(_: Mutating) -> dict:
     """Force-rebuild the vector RAG index from PostgreSQL corpus."""

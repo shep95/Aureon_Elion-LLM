@@ -195,6 +195,15 @@ def _deferred_startup() -> None:
 
         from brain.predict_engine import warm_up_predict_brain
 
+        try:
+            from brain.code_corpus_ingest import ingest_code_corpus
+
+            code_added = ingest_code_corpus()
+            if code_added:
+                logger.info("Code corpus ingested on startup — %s new documents", code_added)
+        except Exception:
+            logger.debug("Code corpus startup ingest skipped", exc_info=True)
+
         warm_stats = warm_up_predict_brain()
         with _lock:
             _state.details["predict_warmup"] = warm_stats

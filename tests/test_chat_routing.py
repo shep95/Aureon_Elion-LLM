@@ -21,15 +21,17 @@ def test_is_code_question():
 
 def test_code_payload_bootstrap_syntax_valid(monkeypatch):
     import app.chat_service as cs
+    import brain.code_master as cm
 
     monkeypatch.setattr(
-        cs,
-        "_predict_with_timeout",
-        lambda question, session_id=None, seconds=None, force=False: {
+        cm,
+        "generate_master_code",
+        lambda question, predict_fn=None: {
             "answer": "def add(a, b): return a + b",
-            "confidence": 0.9,
-            "model": "stacked_attention_lm",
+            "code_eval": {"syntax_valid": True, "score": 1.0, "passed_tests": True},
+            "method": "retrieval_verified",
             "citations": [],
+            "confidence": 0.95,
         },
     )
     payload = cs._code_payload("write a python function to add two numbers", session_id="code-test")
