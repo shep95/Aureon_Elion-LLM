@@ -723,6 +723,3 @@ def retrain_predict_brain_background(*, reason: str = "auto_learn") -> None:
             logger.exception("Predict brain retrain failed (reason=%s)", reason)
 
     threading.Thread(target=_job, name="aureon-predict-retrain", daemon=True).start()
-
-# SOLIA auto-evolve (2026-06-06)
-# Task: docstring stamp only

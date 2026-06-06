@@ -322,6 +322,22 @@ def is_opinion_or_identity(text: str) -> bool:
 def is_deep_concept_question(text: str) -> bool:
     """Single-concept 'what is X' questions need RAG + full predict — not one-liners."""
     q = text.strip().lower().rstrip("?").strip()
+    factual_markers = (
+        "capital of",
+        "population of",
+        "currency of",
+        "president of",
+        "prime minister of",
+        "located in",
+        "found in",
+        "how many",
+        "how old is",
+        "how tall is",
+        "when was",
+        "when did",
+    )
+    if any(m in q for m in factual_markers):
+        return False
     deep_starters = ("what is ", "what are ", "explain ", "define ")
     if not any(q.startswith(s) for s in deep_starters):
         return False
