@@ -551,9 +551,13 @@ def _fallback_to_predict(question: str, *, session_id: str | None) -> str:
 
 def _handle_identity_or_belief(text: str, *, session_id: str | None) -> dict[str, Any]:
     from brain.identity_handler import handle_identity, is_identity_question
-    from brain.philosophy_handler import handle_philosophy_question, is_directed_opinion_question
+    from brain.philosophy_handler import (
+        handle_philosophy_question,
+        is_directed_opinion_question,
+        is_philosophy_question,
+    )
 
-    if is_directed_opinion_question(text):
+    if is_directed_opinion_question(text) or is_philosophy_question(text):
         phil = handle_philosophy_question(
             text,
             session_id=session_id,

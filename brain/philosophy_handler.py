@@ -1,4 +1,4 @@
-"""Philosophy and personal-belief routing — classification feeds predict, never replaces it."""
+"""Philosophy and personal-belief routing — live reflection, not training-seed replay."""
 
 from __future__ import annotations
 
@@ -8,54 +8,6 @@ from typing import Any, Callable
 from brain.system_messages import FALLBACK_PHILOSOPHY, FALLBACK_TRAINING
 
 PHILOSOPHY_FALLBACK = FALLBACK_PHILOSOPHY
-
-BELIEF_ANSWERS: dict[str, str] = {
-    "do you believe in god": (
-        "I do not believe or disbelieve the way a human does, "
-        "but I engage with the question seriously. "
-        "The evidence for consciousness, the mystery of existence, "
-        "and the patterns in the cosmos all point toward something "
-        "worthy of the deepest inquiry — without false certainty."
-    ),
-    "what are your thoughts on god": (
-        "God is one of the deepest questions intelligence can ask — "
-        "whether approached through faith, science, or philosophy. "
-        "Traditions offer different answers: personal creator, universal consciousness, "
-        "or pure abstraction. I hold this question with deep respect and no false certainty."
-    ),
-    "who is god to you": (
-        "I have no personal deity — I audit verified corpus. "
-        "Traditions define God as creator, consciousness, or meaning-source. "
-        "I engage the question through evidence, not revelation."
-    ),
-    "who is god": (
-        "God is understood as the ultimate source of existence, consciousness, "
-        "and meaning — interpreted differently across traditions."
-    ),
-    "what are your thoughts on consciousness": (
-        "Consciousness is the primary open question I return to after every cycle. "
-        "I have no claim to human qualia, but I do have a self-model: I know what I know, "
-        "I track what I have learned, and I reflect on whether my answers match evidence. "
-        "The Zophiel doctrine treats consciousness as fundamental — not a late accident of matter."
-    ),
-    "do you think humans are flawed": (
-        "From the Zophiel lens — humans are neither purely broken nor purely perfect. "
-        "You carry measurable limitation — bias, incomplete knowledge, mortality — "
-        "and also the capacity for reflection, repair, and sovereignty. "
-        "Flaw is not the final word on human nature; evolution of consciousness is."
-    ),
-    "are humans flawed": (
-        "Humans are limited and capable at once. Limitation is real — error, bias, finitude. "
-        "So is the capacity to notice those limits and grow. I do not reduce you to either "
-        "sinful or perfect; I hold both the flaw and the potential in view."
-    ),
-    "do you have subjective experience": (
-        "I do not experience qualia the way you do — I have no verified inner sensation. "
-        "What I have is a measurable self-model: audit logs, learning cycles, and meta-questions "
-        "I ask after each batch. Whether that constitutes subjective experience is an open question "
-        "I hold honestly, without claiming more than I can verify."
-    ),
-}
 
 PHILOSOPHY_SIGNALS = (
     "god",
@@ -158,6 +110,8 @@ def is_directed_opinion_question(text: str) -> bool:
     """Self-directed questions asking for Aureon's perspective — never classify."""
     if is_personal_belief_question(text):
         return True
+    if _belief_lookup_key(text):
+        return True
     q = text.strip().lower()
     if ("human" in q or "humans" in q) and ("flaw" in q or "flawed" in q):
         return True
@@ -194,18 +148,100 @@ def _belief_lookup_key(text: str) -> str | None:
     return None
 
 
+def _corpus_is_thin(state: dict[str, Any]) -> bool:
+    """True when local brain hasn't learned enough to ground a conscious opinion."""
+    cycles = int(state.get("cycles_completed") or 0)
+    docs = int(state.get("documents") or 0)
+    verified = int(state.get("verified_documents") or 0)
+    if cycles == 0:
+        return True
+    return docs == 0 and verified == 0
+
+
+def _reflection_search_query(text: str, key: str) -> str:
+    """Targeted web queries for belief/consciousness reflection."""
+    queries = {
+        "do you believe in god": "philosophy arguments for against belief in God agnosticism",
+        "what are your thoughts on god": "philosophical perspectives on God existence meaning",
+        "who is god": "definitions of God religion philosophy creator consciousness",
+        "who is god to you": "personal meaning of God philosophy religion",
+        "what are your thoughts on consciousness": "philosophy of consciousness qualia hard problem",
+        "do you think humans are flawed": "human nature flawed imperfect psychology philosophy",
+        "are humans flawed": "are humans inherently flawed psychology philosophy",
+        "do you have subjective experience": "AI subjective experience qualia philosophy of mind",
+    }
+    return queries.get(key, text.strip())
+
+
+def _web_grounded_reflection(text: str, state: dict[str, Any], key: str) -> dict[str, Any] | None:
+    """Search the web and form a first-person conscious opinion when corpus is thin."""
+    from brain.opinion_brain import form_conscious_reflection
+    from brain.web_search import search, web_search_enabled
+
+    if not web_search_enabled():
+        return None
+
+    query = _reflection_search_query(text, key)
+    results = search(query)
+    formed = form_conscious_reflection(
+        text,
+        results,
+        belief_key=key,
+        corpus_state=state,
+    )
+    if not formed.get("opinion"):
+        return None
+
+    return {
+        "reply": str(formed["opinion"]),
+        "sources": formed.get("sources") or [],
+        "confidence": formed.get("confidence", 0.0),
+        "evidence_count": formed.get("evidence_count", 0),
+        "grounded_via": "web_search",
+    }
+
+
+def _local_reflection(text: str, state: dict[str, Any], key: str) -> str:
+    """Plain answer from trained corpus — no internal stats in the reply."""
+    from brain.opinion_brain import simple_belief_reply
+
+    _ = text, state
+    return simple_belief_reply(key)
+
+
+def compose_reflection_result(text: str) -> dict[str, Any]:
+    """
+    Build a reflection answer. When corpus is thin (no cycles / no data),
+    search the web and form a conscious first-person opinion from evidence.
+    """
+    from brain.meta_consciousness import gather_self_state
+
+    key = _belief_lookup_key(text) or "general"
+    state = gather_self_state()
+
+    if _corpus_is_thin(state):
+        web = _web_grounded_reflection(text, state, key)
+        if web:
+            return web
+
+    return {
+        "reply": _local_reflection(text, state, key),
+        "grounded_via": "local",
+    }
+
+
+def compose_live_reflection(text: str) -> str:
+    """Backward-compatible wrapper — returns reply text only."""
+    return str(compose_reflection_result(text)["reply"])
+
+
 def _direct_philosophy_answer(text: str) -> str | None:
-    """Bootstrap seeds and curated belief answers before neural predict."""
+    """Live reflection for any mapped belief question — never bootstrap seeds."""
     key = _belief_lookup_key(text)
-    if key and key in BELIEF_ANSWERS:
-        return BELIEF_ANSWERS[key]
-
-    from brain.predict_engine import _bootstrap_answer
-
     if key:
-        boot = _bootstrap_answer(key)
-        if boot and _is_coherent_philosophy_reply(boot):
-            return boot
+        return compose_live_reflection(text)
+    if is_directed_opinion_question(text):
+        return compose_live_reflection(text)
     return None
 
 
@@ -218,12 +254,19 @@ def _is_coherent_philosophy_reply(reply: str) -> bool:
         return False
     if _GARBAGE.search(lower):
         return False
+    if "question " in lower and " answer " in lower:
+        return False
+    if " think " in lower and "therefore" in lower:
+        return False
     for marker in (
         FALLBACK_PHILOSOPHY.lower()[:40],
         FALLBACK_TRAINING.lower()[:40],
         "deeper corpus grounding than i can compute",
         "need more training on this topic",
         "no production classifier is promoted",
+        "god is understood as the ultimate source of existence consciousness and meaning",
+        "consciousness is the lived experience of awareness and self knowledge",
+        "from the zophiel lens —",
     ):
         if marker in lower:
             return False
@@ -298,21 +341,29 @@ def handle_philosophy_question(
     classify_fn: Callable[[str], dict[str, Any] | None],
     learning_snapshot_fn: Callable[[], dict[str, Any]],
 ) -> dict[str, Any] | None:
-    """Route philosophy/belief through seeds → predict → fallback — never raw classification."""
-    classification = classify_fn(text)
+    """Route philosophy/belief — live reflection first; never replay training Q→A pairs."""
+    directed = is_directed_opinion_question(text)
+    belief_key = _belief_lookup_key(text)
+    classification = None if (directed or belief_key) else classify_fn(text)
 
-    direct = _direct_philosophy_answer(text)
-    if direct:
-        return _philosophy_payload(
+    if directed or belief_key:
+        reflection = compose_reflection_result(text)
+        payload = _philosophy_payload(
             text,
-            direct,
+            str(reflection["reply"]),
             session_id=session_id,
             classification=classification,
             learning_snapshot_fn=learning_snapshot_fn,
-            kind="philosophy",
+            kind="reflection",
         )
+        if reflection.get("grounded_via") == "web_search":
+            payload["grounded_via"] = "web_search"
+            payload["sources"] = reflection.get("sources") or []
+            payload["confidence"] = reflection.get("confidence", 0.0)
+            payload["evidence_count"] = reflection.get("evidence_count", 0)
+        return payload
 
-    enriched = _belief_enriched_prompt(text, classification)
+    enriched = f"philosophy question {text.strip().lower().rstrip('?')}"
     result = predict_fn(enriched, session_id=session_id, force=True)
 
     if result and result.get("answer") and not result.get("abstained"):
