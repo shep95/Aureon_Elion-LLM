@@ -17,6 +17,19 @@
       "metadata": {"domain": "computer_science", "source_type": "primary"}
     },
     {
+      "doc_id": "seed_cs_ai_algorithm_001",
+      "title": "Artificial Intelligence Algorithms — Machine Learning",
+      "text": "An artificial intelligence algorithm is usually a machine learning algorithm: a procedure that learns patterns from data and uses those learned parameters to make predictions, classifications, recommendations, or decisions. Common AI algorithm families include supervised learning, unsupervised learning, reinforcement learning, search, planning, and neural networks. In supervised learning, the measurable goal is matching labeled examples; in reinforcement learning, the measurable goal is maximizing reward.",
+      "url": "seed://cs/ai-algorithm-types",
+      "language": "en",
+      "metadata": {
+        "domain": "technology_and_engineering",
+        "subdomain": "computer_science",
+        "micro_subdomain": "artificial_intelligence",
+        "source_type": "primary"
+      }
+    },
+    {
       "doc_id": "seed_physics_001",
       "title": "Newton's Laws of Motion",
       "text": "Newton's first law states that an object remains at rest or in uniform motion unless acted upon by a net external force. The second law relates force, mass, and acceleration: F equals m times a. The third law states that every action has an equal and opposite reaction. These principles form the foundation of classical mechanics and enable prediction of planetary orbits and engineering structures.",

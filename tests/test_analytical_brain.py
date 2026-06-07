@@ -44,6 +44,24 @@ def test_chat_quantum_computer_question_answers_directly():
     assert "compute time limit" not in reply
 
 
+def test_chat_ai_algorithm_type_routes_to_knowledge_not_ciper_or_code():
+    result = chat(
+        "What type of algorithm is an artificial intelligence algorithm",
+        session_id="analytical-ai-algorithm-type",
+    )
+    assert result["kind"] == "analytical"
+    assert result["human_understanding"]["subject"] == "artificial intelligence algorithm"
+    assert result["analytical_route"]["taxonomy_paths"] == [
+        "technology_and_engineering.computer_science.artificial_intelligence",
+        "technology_and_engineering.computer_science.machine_learning",
+    ]
+    assert "ciper" not in result
+    assert "code_eval" not in result
+    reply = result["reply"].lower()
+    assert "machine learning algorithm" in reply
+    assert result["relevance"]["passed"] is True
+
+
 def test_quantum_computer_abstains_when_relevance_gate_fails(monkeypatch):
     class Hit:
         title = "Silicon Valley"

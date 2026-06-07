@@ -18,7 +18,7 @@ from brain.domains.taxonomy import total_micro_subdomains
 from brain.grades import GRADE_CURRICULUM, curriculum_public, epochs_for_grade, get_grade
 from brain.graduation import current_grade, progress_report
 from brain.cipher_logic import ciper_research
-from brain.agent_loop import is_agent_task, run_agent_loop
+from brain.agent_loop import classify_intent, is_agent_task, run_agent_loop
 from brain.brain_classifiers import classify_moe
 from brain.capability_roadmap import roadmap_snapshot, simulate_future_timeline, try_roadmap_answer
 from brain.chat_reward import apply_chat_reward
@@ -820,6 +820,30 @@ def _handle_deep_concept(
     if rag_context:
         context_parts.append(rag_context)
     enriched = f"{' '.join(context_parts)} question {algorithm_query}" if context_parts else algorithm_query
+
+    if retrieval_paths and hits:
+        answer = _rag_answer_from_hit(hits[0], subject=subject)
+        score = _answer_relevance_score(subject, answer)
+        if score >= _relevance_threshold(subject):
+            payload = {
+                "reply": answer,
+                "kind": "deep_concept",
+                "session_id": session_id,
+                "learning": learning_snapshot(),
+                "brain_predict": False,
+                "grounded": True,
+                "citations": rag_citations[:3],
+                "relevance": {
+                    "subject": subject,
+                    "score": round(score, 4),
+                    "threshold": _relevance_threshold(subject),
+                    "passed": True,
+                },
+            }
+            if understanding:
+                payload["human_understanding"] = understanding.to_dict()
+            return payload
+
     result = _predict_with_search_fallback(enriched, session_id=session_id, force=True)
 
     if result and result.get("answer"):
@@ -1764,6 +1788,12 @@ def _command_response(message: str) -> dict[str, Any] | None:
         from app.self_evolve import plan_evolution, repo_status
 
         plan = plan_evolution(task)
+        if plan.get("blocked"):
+            return {
+                "reply": plan.get("reason", "Not an evolution command. Blocked."),
+                "kind": "self_evolve_blocked",
+                "plan": plan,
+            }
         status = repo_status()
         return {
             "reply": (
@@ -2031,7 +2061,7 @@ def chat(message: str, *, session_id: str | None = None) -> dict[str, Any]:
             cont["learning"] = learning_snapshot()
             return done(cont)
 
-    if is_code_question(text):
+    if classify_intent(text) == "CODE" and is_code_question(text):
         code_payload = _code_payload(text, session_id=session_id)
         if code_payload:
             return done(code_payload)

@@ -111,6 +111,17 @@ _ROUTE_RULES: tuple[_RouteRule, ...] = (
         ),
     ),
     _RouteRule(
+        "technology_and_engineering",
+        "artificial intelligence algorithm",
+        "artificial intelligence algorithm supervised learning machine learning",
+        ("artificial intelligence", "algorithm"),
+        ("what type", "type of", "what is", "what are"),
+        (
+            "technology_and_engineering.computer_science.artificial_intelligence",
+            "technology_and_engineering.computer_science.machine_learning",
+        ),
+    ),
+    _RouteRule(
         "science_and_physics",
         "entropy and the universe",
         "entropy universe thermodynamics heat death",
