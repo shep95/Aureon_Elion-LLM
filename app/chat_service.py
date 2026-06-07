@@ -334,7 +334,13 @@ def _analytical_payload(text: str, *, session_id: str | None) -> dict[str, Any] 
     route = route_analytical_question(text)
     if not route:
         return None
-    payload = _handle_deep_concept(f"explain {route.subject}", session_id=session_id)
+    payload = _handle_deep_concept(
+        f"explain {route.subject}",
+        session_id=session_id,
+        locked_paths=list(route.taxonomy_paths),
+        normalized_query=route.normalized_query,
+        routed_subject=route.subject,
+    )
     payload["analytical_route"] = route.to_dict()
     payload["human_understanding"] = {
         "intent": "analytical_question",
@@ -704,18 +710,67 @@ def _subject_terms(subject: str) -> list[str]:
     return [
         term
         for term in re.findall(r"[a-z]{4,}", subject.lower())
-        if term not in {"this", "that", "about", "with", "from"}
+        if term
+        not in {
+            "this",
+            "that",
+            "about",
+            "with",
+            "from",
+            "what",
+            "does",
+            "work",
+            "works",
+            "explain",
+        }
     ]
 
 
 def _answer_addresses_subject(answer: str, subject: str) -> bool:
+    return _answer_relevance_score(subject, answer) >= _relevance_threshold(subject)
+
+
+def _answer_relevance_score(subject: str, answer: str) -> float:
     terms = _subject_terms(subject)
     if not terms:
-        return True
+        return 1.0 if len(answer.strip()) >= 20 else 0.0
     answer_lower = answer.lower()
     hits = sum(1 for term in terms if term in answer_lower)
-    needed = len(terms) if len(terms) <= 2 else max(2, len(terms) // 2)
-    return hits >= needed
+    return hits / max(len(terms), 1)
+
+
+def _relevance_threshold(subject: str) -> float:
+    terms = _subject_terms(subject)
+    if len(terms) <= 1:
+        return 1.0
+    if len(terms) == 2:
+        return 0.5
+    return 0.45
+
+
+def _relevance_abstain_payload(
+    *,
+    session_id: str | None,
+    subject: str,
+    score: float,
+    citations: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    return {
+        "reply": (
+            f"I found candidate material, but it did not pass my relevance gate for `{subject}`. "
+            "I should not answer from weak or cross-domain evidence."
+        ),
+        "kind": "relevance_abstain",
+        "session_id": session_id,
+        "learning": learning_snapshot(),
+        "relevance": {
+            "subject": subject,
+            "score": round(score, 4),
+            "threshold": _relevance_threshold(subject),
+            "passed": False,
+        },
+        "citations": citations or [],
+    }
 
 
 def _rag_answer_from_hit(hit: Any, *, subject: str) -> str:
@@ -731,19 +786,36 @@ def _rag_answer_from_hit(hit: Any, *, subject: str) -> str:
     return cleaned
 
 
-def _handle_deep_concept(text: str, *, session_id: str | None) -> dict[str, Any]:
+def _handle_deep_concept(
+    text: str,
+    *,
+    session_id: str | None,
+    locked_paths: list[str] | None = None,
+    locked_domain: str | None = None,
+    normalized_query: str | None = None,
+    routed_subject: str | None = None,
+) -> dict[str, Any]:
     """Deep single-concept questions — RAG + predict + auto-search fallback."""
     from brain.vector_rag import retrieve_with_citations
     from brain.web_search import web_search_enabled
 
     understanding = interpret_user_question(text)
-    algorithm_query = understanding.normalized_query if understanding else text
-    rag_context, hits, rag_citations = retrieve_with_citations(algorithm_query)
+    subject = routed_subject or (understanding.subject if understanding else text)
+    algorithm_query = normalized_query or (understanding.normalized_query if understanding else text)
+    retrieval_paths = locked_paths or (understanding.taxonomy_paths if understanding else None)
+    retrieval_domain = locked_domain
+    if not retrieval_domain and retrieval_paths:
+        retrieval_domain = retrieval_paths[0].split(".", 1)[0]
+    rag_context, hits, rag_citations = retrieve_with_citations(
+        algorithm_query,
+        domain=retrieval_domain,
+        paths=retrieval_paths,
+    )
     context_parts: list[str] = []
-    if understanding and understanding.taxonomy_paths:
+    if retrieval_paths:
         context_parts.append(
             "human intent explanation "
-            f"subject {understanding.subject} taxonomy_path {understanding.taxonomy_paths[0]}"
+            f"subject {subject} taxonomy_path {retrieval_paths[0]}"
         )
     if rag_context:
         context_parts.append(rag_context)
@@ -752,8 +824,8 @@ def _handle_deep_concept(text: str, *, session_id: str | None) -> dict[str, Any]
 
     if result and result.get("answer"):
         answer = str(result["answer"]).strip()
-        subject = understanding.subject if understanding else algorithm_query
-        if not _is_weak_predict_answer(answer) and _answer_addresses_subject(answer, subject):
+        score = _answer_relevance_score(subject, answer)
+        if not _is_weak_predict_answer(answer) and score >= _relevance_threshold(subject):
             citations = list(result.get("citations") or [])
             if not citations and rag_citations:
                 citations = rag_citations[:3]
@@ -765,6 +837,12 @@ def _handle_deep_concept(text: str, *, session_id: str | None) -> dict[str, Any]
                 "learning": learning_snapshot(),
                 "brain_predict": not result.get("search_opinion"),
                 "citations": citations,
+                "relevance": {
+                    "subject": subject,
+                    "score": round(score, 4),
+                    "threshold": _relevance_threshold(subject),
+                    "passed": True,
+                },
             }
             if understanding:
                 payload["human_understanding"] = understanding.to_dict()
@@ -774,7 +852,8 @@ def _handle_deep_concept(text: str, *, session_id: str | None) -> dict[str, Any]
 
     if understanding and hits:
         answer = _rag_answer_from_hit(hits[0], subject=understanding.subject)
-        if _answer_addresses_subject(answer, understanding.subject):
+        score = _answer_relevance_score(subject, answer)
+        if score >= _relevance_threshold(subject):
             return {
                 "reply": answer,
                 "kind": "deep_concept",
@@ -784,7 +863,19 @@ def _handle_deep_concept(text: str, *, session_id: str | None) -> dict[str, Any]
                 "grounded": True,
                 "citations": rag_citations[:3],
                 "human_understanding": understanding.to_dict(),
+                "relevance": {
+                    "subject": subject,
+                    "score": round(score, 4),
+                    "threshold": _relevance_threshold(subject),
+                    "passed": True,
+                },
             }
+        return _relevance_abstain_payload(
+            session_id=session_id,
+            subject=subject,
+            score=score,
+            citations=rag_citations[:3],
+        )
 
     if web_search_enabled():
         search_payload = _search_and_opine(algorithm_query, session_id=session_id)
@@ -796,11 +887,20 @@ def _handle_deep_concept(text: str, *, session_id: str | None) -> dict[str, Any]
 
     fallback = _fallback_to_predict(algorithm_query, session_id=session_id)
     if not _is_weak_predict_answer(fallback):
+        score = _answer_relevance_score(subject, fallback)
+        if score < _relevance_threshold(subject):
+            return _relevance_abstain_payload(session_id=session_id, subject=subject, score=score)
         payload = {
             "reply": fallback,
             "kind": "deep_concept",
             "session_id": session_id,
             "learning": learning_snapshot(),
+            "relevance": {
+                "subject": subject,
+                "score": round(score, 4),
+                "threshold": _relevance_threshold(subject),
+                "passed": True,
+            },
         }
         if understanding:
             payload["human_understanding"] = understanding.to_dict()

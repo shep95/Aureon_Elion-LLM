@@ -12,6 +12,9 @@ from typing import Any
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
+from app.security import load_json_file_bounded
+from pipeline.config import SEEDS_DIR
+
 logger = logging.getLogger(__name__)
 
 _lock = threading.Lock()
@@ -28,6 +31,7 @@ class RagHit:
     text: str
     source: str
     score: float
+    metadata: dict[str, Any] | None = None
 
     def citation(self) -> dict[str, Any]:
         return {
@@ -36,6 +40,9 @@ class RagHit:
             "title": self.title,
             "source": self.source,
             "score": round(self.score, 4),
+            "domain": (self.metadata or {}).get("domain"),
+            "subdomain": (self.metadata or {}).get("subdomain"),
+            "micro_subdomain": (self.metadata or {}).get("micro_subdomain"),
         }
 
     def snippet(self, max_chars: int = 800) -> str:
@@ -61,8 +68,36 @@ class VectorRAGIndex:
     def document_count(self) -> int:
         return len(self._hits)
 
+    @staticmethod
+    def _hit_path(hit: RagHit) -> str | None:
+        meta = hit.metadata or {}
+        domain = str(meta.get("domain") or "").strip()
+        subdomain = str(meta.get("subdomain") or "").strip()
+        micro = str(meta.get("micro_subdomain") or "").strip()
+        if domain and subdomain and micro:
+            return f"{domain}.{subdomain}.{micro}"
+        return None
+
+    @classmethod
+    def _hit_allowed(
+        cls,
+        hit: RagHit,
+        *,
+        domain: str | None,
+        paths: set[str] | None,
+    ) -> bool:
+        if not domain and not paths:
+            return True
+        meta = hit.metadata or {}
+        hit_domain = str(meta.get("domain") or "").strip()
+        hit_path = cls._hit_path(hit)
+        if paths and hit_path in paths:
+            return True
+        if domain and hit_domain == domain and not paths:
+            return True
+        return False
+
     def rebuild(self) -> int:
-        from brain.predict_engine import _load_seed_documents
         from sqlalchemy import select
 
         from db.models import Document
@@ -86,22 +121,39 @@ class VectorRAGIndex:
                             text=row.text,
                             source=row.source,
                             score=0.0,
+                            metadata=row.extra or {},
                         )
                     )
         except Exception:
             logger.debug("RAG DB load skipped", exc_info=True)
 
-        for i, seed_text in enumerate(_load_seed_documents()):
-            hits.append(
-                RagHit(
-                    document_id=-(i + 1),
-                    content_hash=f"seed_{i}",
-                    title=seed_text[:80],
-                    text=seed_text,
-                    source="seeds",
-                    score=0.0,
+        seed_index = 0
+        for name in ("corpus_seed.json", "corpus_seed_extra.json"):
+            path = SEEDS_DIR / name
+            if not path.is_file():
+                continue
+            try:
+                payload = load_json_file_bounded(path)
+            except Exception:
+                logger.debug("RAG seed load skipped for %s", path, exc_info=True)
+                continue
+            for doc in payload.get("documents", []):
+                title = str(doc.get("title", "")).strip()
+                body = str(doc.get("text", "")).strip()
+                if not title or not body:
+                    continue
+                hits.append(
+                    RagHit(
+                        document_id=-(seed_index + 1),
+                        content_hash=f"seed_{seed_index}",
+                        title=title,
+                        text=body,
+                        source="seeds",
+                        score=0.0,
+                        metadata=doc.get("metadata", {}),
+                    )
                 )
-            )
+                seed_index += 1
 
         if not hits:
             self._matrix = None
@@ -116,17 +168,28 @@ class VectorRAGIndex:
         logger.info("Vector RAG index rebuilt — %s documents", len(hits))
         return len(hits)
 
-    def retrieve(self, query: str, *, top_k: int = 8, min_score: float = 0.05) -> list[RagHit]:
+    def retrieve(
+        self,
+        query: str,
+        *,
+        top_k: int = 8,
+        min_score: float = 0.05,
+        domain: str | None = None,
+        paths: list[str] | None = None,
+    ) -> list[RagHit]:
         if self._matrix is None or not self._hits:
             return []
         q_vec = self._vectorizer.transform([query])
         scores = cosine_similarity(q_vec, self._matrix)[0]
         ranked = sorted(enumerate(scores), key=lambda item: item[1], reverse=True)
         out: list[RagHit] = []
-        for idx, score in ranked[:top_k]:
+        allowed_paths = set(paths or [])
+        for idx, score in ranked:
             if score < min_score:
                 break
             base = self._hits[idx]
+            if not self._hit_allowed(base, domain=domain, paths=allowed_paths):
+                continue
             out.append(
                 RagHit(
                     document_id=base.document_id,
@@ -135,8 +198,11 @@ class VectorRAGIndex:
                     text=base.text,
                     source=base.source,
                     score=float(score),
+                    metadata=base.metadata or {},
                 )
             )
+            if len(out) >= top_k:
+                break
         return out
 
 
@@ -189,6 +255,8 @@ def retrieve_with_citations(
     *,
     top_k: int | None = None,
     max_words: int | None = None,
+    domain: str | None = None,
+    paths: list[str] | None = None,
 ) -> tuple[str, list[RagHit], list[dict[str, Any]]]:
     """Return context text, hits, and citation dicts for chat/predict."""
     if top_k is None:
@@ -197,7 +265,7 @@ def retrieve_with_citations(
         max_words = int(os.environ.get("AUREON_PREDICT_CONTEXT_WORDS", "1000000"))
         max_words = max(50, min(max_words, 1_000_000))
 
-    hits = get_rag_index().retrieve(query, top_k=top_k)
+    hits = get_rag_index().retrieve(query, top_k=top_k, domain=domain, paths=paths)
     citations = [h.citation() for h in hits]
 
     words: list[str] = []

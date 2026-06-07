@@ -44,6 +44,32 @@ def test_chat_quantum_computer_question_answers_directly():
     assert "compute time limit" not in reply
 
 
+def test_quantum_computer_abstains_when_relevance_gate_fails(monkeypatch):
+    class Hit:
+        title = "Silicon Valley"
+        text = "Startup funding news from Silicon Valley and India."
+
+    monkeypatch.setattr(
+        "app.chat_service._predict_with_search_fallback",
+        lambda *a, **kw: {"answer": "Silicon Valley startup funding news.", "confidence": 0.9},
+    )
+    monkeypatch.setattr(
+        "brain.vector_rag.retrieve_with_citations",
+        lambda *a, **kw: (
+            "",
+            [Hit()],
+            [{"title": "Silicon Valley", "source": "test", "score": 0.9}],
+        ),
+    )
+    result = chat(
+        "what is a quantum computer and how does it work",
+        session_id="analytical-relevance-abstain",
+    )
+    assert result["kind"] == "relevance_abstain"
+    assert result["relevance"]["passed"] is False
+    assert "Silicon Valley startup funding news" not in result["reply"]
+
+
 def test_analytical_brain_routes_narcissism_without_answering():
     route = route_analytical_question(
         "What is the difference between narcissism and dark triad personality - "
