@@ -171,6 +171,8 @@ def _response_mode(payload: dict[str, Any], user_message: str) -> str:
     kind = payload.get("kind", "chat")
     if kind == "search_opinion":
         return "live_briefing"
+    if kind == "analytical":
+        return "analytical_direct"
     if kind in ("status", "grades", "help", "research", "mind", "think"):
         return "technical_report"
     return "conversational"
@@ -236,6 +238,10 @@ def shape_human_reply(
             shaped = f"That spans a few domains — {shaped[0].lower()}{shaped[1:]}" if shaped else shaped
         register = "conversational"
         traits.extend(["cross_domain_curiosity", "agi_style_linking"])
+    elif mode == "analytical_direct":
+        shaped = reply
+        register = "analytical"
+        traits.extend(["deep_question_detection", "mechanism_evidence_answering"])
     elif mode == "simple_direct":
         shaped = _match_user_length(reply, user_message)
         register = "conversational"

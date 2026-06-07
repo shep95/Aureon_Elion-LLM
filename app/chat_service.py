@@ -122,6 +122,7 @@ _SKIP_QUALITY_RECOVERY_KINDS = frozenset({
     "self_audit",
     "curiosity",
     "agent",
+    "identity",
     "research",
     "vitals",
     "continuation_clarify",
@@ -322,6 +323,31 @@ def _deterministic_payload(text: str, *, session_id: str | None) -> dict[str, An
         "deterministic": {
             "evaluator": result["evaluator"],
             "expression": result["expression"],
+        },
+    }
+
+
+def _analytical_payload(text: str, *, session_id: str | None) -> dict[str, Any] | None:
+    """Structured deep-question answers before weak classifier/Ciper routes."""
+    from brain.analytical_brain import answer_analytical_question
+
+    result = answer_analytical_question(text)
+    if not result:
+        return None
+    paths = list(result.taxonomy_paths)
+    return {
+        "reply": result.answer,
+        "kind": "analytical",
+        "session_id": session_id,
+        "learning": learning_snapshot(),
+        "analytical": result.to_dict(),
+        "human_understanding": {
+            "intent": "analytical_question",
+            "action": "answer",
+            "subject": result.subject,
+            "normalized_query": text.strip(),
+            "taxonomy_paths": paths,
+            "traits": ["deep_question_detection", "cause_mechanism_evidence_mapping"],
         },
     }
 
@@ -1838,6 +1864,10 @@ def chat(message: str, *, session_id: str | None = None) -> dict[str, Any]:
         is_philosophy_question,
     )
     from brain.web_search import web_search_enabled
+
+    analytical = _analytical_payload(text, session_id=session_id)
+    if analytical:
+        return done(analytical)
 
     # Rule 2 — self-directed identity / belief before simple_qa
     if is_self_directed(text) and is_opinion_or_identity(text):
