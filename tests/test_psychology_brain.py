@@ -44,6 +44,13 @@ def test_interpret_user_question_strips_how_it_works_suffix():
     assert understanding.normalized_query == "explain Quantum Artificial intelligence"
 
 
+def test_interpret_user_question_strips_how_does_it_work_suffix():
+    understanding = interpret_user_question("what is a quantum computer and how does it work")
+    assert understanding is not None
+    assert understanding.subject == "a quantum computer"
+    assert understanding.normalized_query == "explain a quantum computer"
+
+
 def test_finalize_adds_brains_metadata():
     out = finalize_chat_payload(
         {"reply": "Hello.", "kind": "chat", "simple_qa": True},

@@ -134,6 +134,25 @@ _RULES: tuple[_Rule, ...] = (
     ),
     _Rule(
         "science_and_physics",
+        "quantum computer",
+        ("quantum", "computer"),
+        ("work", "works", "explain"),
+        (
+            "A quantum computer is a machine that computes with qubits instead of ordinary bits. A normal bit is 0 or 1; "
+            "a qubit can be prepared in a superposition, meaning its state carries amplitudes for 0 and 1 until measured. "
+            "Quantum gates change those amplitudes, entanglement links qubits into one shared state, and interference "
+            "amplifies useful answer paths while canceling others. When you measure, you get classical bits out. It only "
+            "beats a normal computer for certain problem types, such as some factoring, simulation, optimization, and "
+            "sampling tasks."
+        ),
+        (
+            "science_and_natural_philosophy.physics.quantum_mechanics",
+            "technology_and_engineering.computer_science.quantum_computing",
+        ),
+        0.76,
+    ),
+    _Rule(
+        "science_and_physics",
         "entropy and the universe",
         ("entropy", "universe"),
         ("mean", "end", "context"),

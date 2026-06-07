@@ -28,6 +28,19 @@ def test_chat_quantum_artificial_intelligence_question_answers_directly():
     assert "compute time limit" not in reply
 
 
+def test_chat_quantum_computer_question_answers_directly():
+    result = chat(
+        "what is a quantum computer and how does it work",
+        session_id="analytical-quantum-computer",
+    )
+    assert result["kind"] == "analytical"
+    assert result["human_understanding"]["subject"] == "quantum computer"
+    reply = result["reply"].lower()
+    assert "qubit" in reply
+    assert "superposition" in reply
+    assert "compute time limit" not in reply
+
+
 def test_chat_narcissism_question_not_identity():
     result = chat(
         "What is the difference between narcissism and dark triad personality - "
