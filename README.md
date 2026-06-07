@@ -304,7 +304,7 @@ flowchart TB
 | **GitHub sync** | Exports corpus to `learning-data` branch | After each auto-learn cycle |
 | **Label review** (`GET/POST /api/labels/review`) | Human approves teacher-model flags (~5–10%) | On demand |
 
-Auto-learn runs 24/7 (`AUREON_AUTO_LEARN_CONTINUOUS=1`), rotates all 862 micro-topics, syncs to GitHub, and retrains the predict brain so chat answers reflect the latest corpus.
+Auto-learn is off by default. When enabled with `AUREON_AUTO_LEARN=1` and `AUREON_AUTO_LEARN_CONTINUOUS=1`, it rotates all 862 micro-topics, syncs to GitHub, and retrains the predict brain so chat answers reflect the latest corpus.
 
 **Response rules**
 
@@ -325,9 +325,10 @@ Each **micro-subdomain** (862 total) progresses through **7 grades**: Pre-School
 
 Training epochs scale per grade (preschool ≈ 60 epochs, doctorate ≈ 195 at base 150). Failed grades retry; trainer needs **≥2 label classes** before accuracy gates fully apply.
 
-**24/7 continuous mode (default on Railway):**
+**24/7 continuous mode (opt-in):**
 
 ```env
+AUREON_AUTO_LEARN=1
 AUREON_AUTO_LEARN_CONTINUOUS=1
 AUREON_AUTO_LEARN_CYCLE_PAUSE_SEC=5
 ```
@@ -659,17 +660,17 @@ Without Postgres, the app falls back to SQLite at `data/aureon.db`.
 
 ### Automated learning on Railway
 
-When deployed on Railway, **auto-learn runs 24/7 automatically** (unless `AUREON_AUTO_LEARN=0`):
+When deployed on Railway, **auto-learn is off by default**. Enable it explicitly with `AUREON_AUTO_LEARN=1` when you want background training:
 
-1. **On boot** — runs the first batch immediately (preschool grade across the next micro-subdomains).
-2. **Continuous** (default) — starts the next batch after a short pause (~5s), rotating through all 862 micro-topics.
+1. **On boot** — if `AUREON_AUTO_LEARN_ON_STARTUP=1`, runs the first batch immediately (preschool grade across the next micro-subdomains).
+2. **Continuous** — if `AUREON_AUTO_LEARN_CONTINUOUS=1`, starts the next batch after a short pause (~5s), rotating through all 862 micro-topics.
 3. **Status** — `GET /api/brain/auto-learn` shows last run, next run, and current target.
 
 | Variable | Default on Railway | Purpose |
 |----------|-------------------|---------|
-| `AUREON_AUTO_LEARN` | `1` (auto on Railway) | Enable background learning |
-| `AUREON_AUTO_LEARN_ON_STARTUP` | `1` | Run first cycle immediately after deploy |
-| `AUREON_AUTO_LEARN_CONTINUOUS` | `1` | Back-to-back cycles (24/7 learning) |
+| `AUREON_AUTO_LEARN` | `0` | Enable background learning |
+| `AUREON_AUTO_LEARN_ON_STARTUP` | `0` | Run first cycle immediately after deploy |
+| `AUREON_AUTO_LEARN_CONTINUOUS` | `0` | Back-to-back cycles (24/7 learning) |
 | `AUREON_AUTO_LEARN_CYCLE_PAUSE_SEC` | `5` | Brief pause between continuous cycles |
 | `AUREON_AUTO_LEARN_INTERVAL_SEC` | — | Fixed interval instead of continuous (min 60) |
 | `AUREON_AUTO_LEARN_EPOCHS` | `150` | Training epochs per cycle |

@@ -37,7 +37,7 @@ def test_auto_learn_config_defaults_off_local(monkeypatch):
     assert cfg.enabled is False
 
 
-def test_auto_learn_config_railway_default(monkeypatch):
+def test_auto_learn_config_railway_default_off(monkeypatch):
     monkeypatch.setenv("RAILWAY_ENVIRONMENT", "production")
     monkeypatch.delenv("AUREON_AUTO_LEARN", raising=False)
     monkeypatch.delenv("AUREON_AUTO_LEARN_ALL", raising=False)
@@ -45,7 +45,25 @@ def test_auto_learn_config_railway_default(monkeypatch):
     monkeypatch.delenv("AUREON_AUTO_LEARN_INTERVAL_SEC", raising=False)
     monkeypatch.delenv("AUREON_AUTO_LEARN_CONTINUOUS", raising=False)
     cfg = AutoLearnConfig.from_env()
+    assert cfg.enabled is False
+    assert cfg.on_startup is False
+    assert cfg.train_all is False
+    assert cfg.continuous is False
+    assert cfg.interval_sec == 3600
+    assert cfg.domain_limit == 30
+    assert cfg.batch_size is None
+
+
+def test_auto_learn_config_explicit_enable_on_railway(monkeypatch):
+    monkeypatch.setenv("RAILWAY_ENVIRONMENT", "production")
+    monkeypatch.setenv("AUREON_AUTO_LEARN", "1")
+    monkeypatch.setenv("AUREON_AUTO_LEARN_ON_STARTUP", "1")
+    monkeypatch.setenv("AUREON_AUTO_LEARN_ALL", "1")
+    monkeypatch.setenv("AUREON_AUTO_LEARN_CONTINUOUS", "1")
+    monkeypatch.setenv("AUREON_AUTO_LEARN_BATCH_SIZE", "25")
+    cfg = AutoLearnConfig.from_env()
     assert cfg.enabled is True
+    assert cfg.on_startup is True
     assert cfg.train_all is True
     assert cfg.continuous is True
     assert cfg.interval_sec == 0
@@ -96,12 +114,12 @@ def test_auto_learn_config_train_all(monkeypatch):
     assert cfg.micro_limit is None
 
 
-def test_auto_learn_config_railway_defaults_train_all(monkeypatch):
+def test_auto_learn_config_railway_defaults_do_not_train_all(monkeypatch):
     monkeypatch.setenv("RAILWAY_ENVIRONMENT", "production")
     monkeypatch.delenv("AUREON_AUTO_LEARN_ALL", raising=False)
     cfg = AutoLearnConfig.from_env()
-    assert cfg.train_all is True
-    assert cfg.domain_limit is None
+    assert cfg.train_all is False
+    assert cfg.domain_limit == 30
 
 
 def test_auto_learn_config_railway_via_postgres(monkeypatch):
@@ -111,7 +129,7 @@ def test_auto_learn_config_railway_via_postgres(monkeypatch):
     monkeypatch.setenv("PORT", "8080")
     monkeypatch.setenv("DATABASE_URL", "postgresql://user:pass@host/db")
     cfg = AutoLearnConfig.from_env()
-    assert cfg.enabled is True
+    assert cfg.enabled is False
 
 
 def test_iter_training_targets_full_taxonomy():

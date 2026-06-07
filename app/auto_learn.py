@@ -119,10 +119,8 @@ class AutoLearnConfig:
 
     @classmethod
     def from_env(cls) -> AutoLearnConfig:
-        from app.startup import is_railway
-
-        enabled = _env_bool("AUREON_AUTO_LEARN", default=is_railway())
-        train_all = _env_bool("AUREON_AUTO_LEARN_ALL", default=is_railway())
+        enabled = _env_bool("AUREON_AUTO_LEARN", default=False)
+        train_all = _env_bool("AUREON_AUTO_LEARN_ALL", default=False)
         if train_all:
             limits = {"domain_limit": None, "subdomain_limit": None, "micro_limit": None}
         else:
@@ -137,12 +135,10 @@ class AutoLearnConfig:
             batch_size: int | None = None
         elif batch_raw:
             batch_size = _env_int("AUREON_AUTO_LEARN_BATCH_SIZE", 25, minimum=1, maximum=500)
-        elif train_all and is_railway():
-            batch_size = 25
         else:
             batch_size = None
 
-        continuous = _env_bool("AUREON_AUTO_LEARN_CONTINUOUS", default=is_railway())
+        continuous = _env_bool("AUREON_AUTO_LEARN_CONTINUOUS", default=False)
         interval_raw = os.environ.get("AUREON_AUTO_LEARN_INTERVAL_SEC", "").strip().lower()
         if interval_raw in ("0", "continuous"):
             interval_sec = 0
@@ -157,7 +153,7 @@ class AutoLearnConfig:
 
         return cls(
             enabled=enabled,
-            on_startup=_env_bool("AUREON_AUTO_LEARN_ON_STARTUP", default=True),
+            on_startup=_env_bool("AUREON_AUTO_LEARN_ON_STARTUP", default=False),
             continuous=continuous,
             interval_sec=interval_sec,
             cycle_pause_sec=_env_int("AUREON_AUTO_LEARN_CYCLE_PAUSE_SEC", 5, minimum=0, maximum=120),
@@ -225,7 +221,7 @@ class AutoLearnScheduler:
     def start(self) -> None:
         if not self.config.enabled:
             logger.info(
-                "Auto-learn disabled (set AUREON_AUTO_LEARN=1 to enable, or deploy on Railway)."
+                "Auto-learn disabled (set AUREON_AUTO_LEARN=1 to enable background learning)."
             )
             return
         if self._thread and self._thread.is_alive():
