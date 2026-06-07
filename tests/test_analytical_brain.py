@@ -62,6 +62,64 @@ def test_chat_ai_algorithm_type_routes_to_knowledge_not_ciper_or_code():
     assert result["relevance"]["passed"] is True
 
 
+def test_chat_quantum_computer_algorithm_type_routes_to_knowledge_not_ciper():
+    result = chat(
+        "What type of algorithm is an is quantum computer algorithm",
+        session_id="analytical-quantum-computer-algorithm-type",
+    )
+    assert result["kind"] == "analytical"
+    assert result["human_understanding"]["subject"] == "quantum computer algorithm"
+    assert "ciper" not in result
+    reply = result["reply"].lower()
+    assert "quantum algorithm" in reply
+    assert result["relevance"]["passed"] is True
+
+
+def test_chat_uses_trusted_live_context_when_locked_rag_empty(monkeypatch):
+    monkeypatch.setattr(
+        "brain.vector_rag.retrieve_with_citations",
+        lambda *a, **kw: ("", [], []),
+    )
+    monkeypatch.setattr(
+        "brain.web_search.trusted_search",
+        lambda *a, **kw: [
+            {
+                "title": "Trusted AI Algorithms",
+                "url": "https://arxiv.org/abs/ai",
+                "source": "arxiv.org",
+                "text": (
+                    "An artificial intelligence algorithm is a machine learning algorithm that learns "
+                    "from data for predictions and classifications."
+                ),
+            }
+        ],
+    )
+    monkeypatch.setattr(
+        "app.chat_service._persist_trusted_live_docs",
+        lambda docs, **kw: [
+            {
+                "document_id": 1,
+                "content_hash": "trusted",
+                "title": docs[0]["title"],
+                "source": "trusted_live",
+                "score": 1.0,
+                "domain": "technology_and_engineering",
+                "subdomain": "computer_science",
+                "micro_subdomain": "artificial_intelligence",
+            }
+        ],
+    )
+    result = chat(
+        "What type of algorithm is an artificial intelligence algorithm",
+        session_id="trusted-live-ai-algorithm",
+    )
+    assert result["kind"] == "analytical"
+    assert result["trusted_live"] is True
+    assert result["relevance"]["passed"] is True
+    assert result["citations"][0]["source"] == "trusted_live"
+    assert "machine learning algorithm" in result["reply"].lower()
+
+
 def test_quantum_computer_abstains_when_relevance_gate_fails(monkeypatch):
     class Hit:
         title = "Silicon Valley"

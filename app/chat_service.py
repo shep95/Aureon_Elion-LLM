@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import re
+import hashlib
 import threading
 import time
 from typing import Any
@@ -773,6 +774,97 @@ def _relevance_abstain_payload(
     }
 
 
+def _persist_trusted_live_docs(
+    docs: list[dict[str, Any]],
+    *,
+    paths: list[str] | None,
+    domain: str | None,
+) -> list[dict[str, Any]]:
+    if not docs:
+        return []
+    from db.models import Document
+    from db.seed import get_domain_by_slug, get_micro_subdomain
+
+    persisted: list[dict[str, Any]] = []
+    primary_path = (paths or [""])[0]
+    parts = primary_path.split(".") if primary_path else []
+    domain_slug = parts[0] if len(parts) == 3 else (domain or "")
+    sub_slug = parts[1] if len(parts) == 3 else ""
+    micro_slug = parts[2] if len(parts) == 3 else ""
+
+    try:
+        with get_session() as session:
+            domain_row = get_domain_by_slug(session, domain_slug) if domain_slug else None
+            micro_row = (
+                get_micro_subdomain(session, domain_slug, sub_slug, micro_slug)
+                if domain_slug and sub_slug and micro_slug
+                else None
+            )
+            for doc in docs:
+                title = str(doc.get("title") or doc.get("source") or "Trusted source").strip()
+                text = str(doc.get("text") or "").strip()
+                if not text:
+                    continue
+                digest = hashlib.sha256(f"{title}\n{text}".encode("utf-8")).hexdigest()
+                if session.scalar(select(Document).where(Document.content_hash == digest)):
+                    continue
+                row = Document(
+                    domain_id=domain_row.id if domain_row else None,
+                    subdomain_id=micro_row.subdomain_id if micro_row else None,
+                    micro_subdomain_id=micro_row.id if micro_row else None,
+                    source="trusted_live",
+                    title=title[:512],
+                    text=text,
+                    url=str(doc.get("url") or "")[:1024],
+                    language="en",
+                    quality_score=0.82,
+                    verified=True,
+                    content_hash=digest,
+                    extra={
+                        "domain": domain_slug,
+                        "subdomain": sub_slug,
+                        "micro_subdomain": micro_slug,
+                        "trusted_source": doc.get("source"),
+                        "url": doc.get("url"),
+                    },
+                )
+                session.add(row)
+                session.flush()
+                persisted.append(
+                    {
+                        "document_id": row.id,
+                        "content_hash": digest,
+                        "title": row.title,
+                        "source": row.source,
+                        "score": 1.0,
+                        "domain": domain_slug,
+                        "subdomain": sub_slug,
+                        "micro_subdomain": micro_slug,
+                    }
+                )
+        if persisted:
+            from brain.vector_rag import invalidate_rag_index
+
+            invalidate_rag_index()
+    except Exception:
+        return persisted
+    return persisted
+
+
+def _trusted_live_context(
+    query: str,
+    *,
+    domain: str | None,
+    paths: list[str] | None,
+) -> tuple[str, list[dict[str, Any]]]:
+    from brain.web_search import trusted_search
+
+    docs = trusted_search(query, domain=domain, max_results=2)
+    persisted = _persist_trusted_live_docs(docs, paths=paths, domain=domain)
+    context = " ".join(str(doc.get("text", "")) for doc in docs).strip()
+    return context, persisted
+
+
 def _rag_answer_from_hit(hit: Any, *, subject: str) -> str:
     text = str(getattr(hit, "text", "") or "")
     title = str(getattr(hit, "title", "") or "")
@@ -811,6 +903,26 @@ def _handle_deep_concept(
         domain=retrieval_domain,
         paths=retrieval_paths,
     )
+    live_context = ""
+    best_score = 0.0
+    if hits:
+        best_score = float(
+            getattr(
+                hits[0],
+                "score",
+                (rag_citations[0].get("score", 0.0) if rag_citations else 0.0),
+            )
+            or 0.0
+        )
+    if not hits or best_score < float(os.environ.get("AUREON_RAG_TRUSTED_MIN_SCORE", "0.12")):
+        live_context, live_citations = _trusted_live_context(
+            algorithm_query,
+            domain=retrieval_domain,
+            paths=retrieval_paths,
+        )
+        if live_context:
+            rag_context = f"{live_context} {rag_context}".strip()
+            rag_citations = live_citations + rag_citations
     context_parts: list[str] = []
     if retrieval_paths:
         context_parts.append(
@@ -843,6 +955,30 @@ def _handle_deep_concept(
             if understanding:
                 payload["human_understanding"] = understanding.to_dict()
             return payload
+
+    if live_context:
+        answer = live_context[:320].rsplit(" ", 1)[0].strip()
+        if answer and answer[-1] not in ".?!":
+            answer += "."
+        score = _answer_relevance_score(subject, answer)
+        if score >= _relevance_threshold(subject):
+            return {
+                "reply": answer,
+                "kind": "deep_concept",
+                "session_id": session_id,
+                "learning": learning_snapshot(),
+                "brain_predict": False,
+                "grounded": True,
+                "citations": rag_citations[:3],
+                "relevance": {
+                    "subject": subject,
+                    "score": round(score, 4),
+                    "threshold": _relevance_threshold(subject),
+                    "passed": True,
+                },
+                "human_understanding": understanding.to_dict() if understanding else None,
+                "trusted_live": True,
+            }
 
     result = _predict_with_search_fallback(enriched, session_id=session_id, force=True)
 

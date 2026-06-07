@@ -111,6 +111,17 @@ _ROUTE_RULES: tuple[_RouteRule, ...] = (
         ),
     ),
     _RouteRule(
+        "science_and_physics",
+        "quantum computer algorithm",
+        "quantum computer algorithm quantum algorithms qubits gates measurement",
+        ("quantum", "computer", "algorithm"),
+        ("what type", "type of", "what is", "what are"),
+        (
+            "technology_and_engineering.computer_science.quantum_computing",
+            "science_and_natural_philosophy.physics.quantum_mechanics",
+        ),
+    ),
+    _RouteRule(
         "technology_and_engineering",
         "artificial intelligence algorithm",
         "artificial intelligence algorithm supervised learning machine learning",

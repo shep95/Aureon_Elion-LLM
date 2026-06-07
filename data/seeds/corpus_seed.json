@@ -64,6 +64,19 @@
       }
     },
     {
+      "doc_id": "seed_cs_quantum_algorithms_001",
+      "title": "Quantum Algorithms — Quantum Computing",
+      "text": "A quantum computer algorithm is a quantum algorithm: a step-by-step procedure designed to run on qubits and quantum gates. Quantum algorithms use superposition, entanglement, interference, and measurement to transform probability amplitudes before producing classical output. They are not general replacements for all classical algorithms; they are useful for specific tasks such as factoring, quantum simulation, search speedups, sampling, and some optimization subroutines.",
+      "url": "seed://cs/quantum-algorithms",
+      "language": "en",
+      "metadata": {
+        "domain": "technology_and_engineering",
+        "subdomain": "computer_science",
+        "micro_subdomain": "quantum_computing",
+        "source_type": "primary"
+      }
+    },
+    {
       "doc_id": "seed_cs_quantum_ai_001",
       "title": "Quantum Artificial Intelligence — Hybrid Approach",
       "text": "Quantum artificial intelligence uses quantum-computing methods inside AI workflows. Classical AI still handles data preparation, model control, training loops, and decisions, while quantum circuits may help with optimization, sampling, search, or kernel-style pattern comparison. A quantum AI system encodes part of a problem into qubits, applies quantum gates, measures the result, and feeds that measurement back into a classical learning loop. The field is useful only when the quantum step gives a measurable advantage.",
