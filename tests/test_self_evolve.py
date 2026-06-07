@@ -7,6 +7,7 @@ import pytest
 from app.self_evolve import (
     analyze_file_for_task,
     commit_evolution,
+    is_evolution_command,
     list_source_files,
     plan_evolution,
     repo_status,
@@ -32,8 +33,19 @@ def test_validate_repo_path_rejects_traversal():
 
 
 def test_plan_evolution_suggests_files():
-    plan = plan_evolution("improve philosophy god routing")
+    plan = plan_evolution("fix philosophy god routing")
     assert "brain/philosophy_handler.py" in plan["suggested_files"]
+
+
+def test_plan_evolution_blocks_knowledge_question():
+    plan = plan_evolution("what type of algorithm is an artificial intelligence algorithm")
+    assert plan["blocked"] is True
+    assert plan["reason"] == "Not an evolution command. Blocked."
+
+
+def test_is_evolution_command_requires_trigger():
+    assert is_evolution_command("fix chat routing") is True
+    assert is_evolution_command("what is artificial intelligence") is False
 
 
 def test_repo_status():
@@ -80,7 +92,7 @@ def test_verify_before_commit_fails_invalid_python(tmp_path, monkeypatch):
 
 
 def test_plan_evolution_includes_analysis():
-    plan = plan_evolution("improve philosophy god routing")
+    plan = plan_evolution("fix philosophy god routing")
     assert "analysis" in plan
     assert len(plan["analysis"]) >= 1
     assert "capabilities" in plan

@@ -17,12 +17,77 @@
       "metadata": {"domain": "computer_science", "source_type": "primary"}
     },
     {
+      "doc_id": "seed_cs_ai_algorithm_001",
+      "title": "Artificial Intelligence Algorithms — Machine Learning",
+      "text": "An artificial intelligence algorithm is usually a machine learning algorithm: a procedure that learns patterns from data and uses those learned parameters to make predictions, classifications, recommendations, or decisions. Common AI algorithm families include supervised learning, unsupervised learning, reinforcement learning, search, planning, and neural networks. In supervised learning, the measurable goal is matching labeled examples; in reinforcement learning, the measurable goal is maximizing reward.",
+      "url": "seed://cs/ai-algorithm-types",
+      "language": "en",
+      "metadata": {
+        "domain": "technology_and_engineering",
+        "subdomain": "computer_science",
+        "micro_subdomain": "artificial_intelligence",
+        "source_type": "primary"
+      }
+    },
+    {
       "doc_id": "seed_physics_001",
       "title": "Newton's Laws of Motion",
       "text": "Newton's first law states that an object remains at rest or in uniform motion unless acted upon by a net external force. The second law relates force, mass, and acceleration: F equals m times a. The third law states that every action has an equal and opposite reaction. These principles form the foundation of classical mechanics and enable prediction of planetary orbits and engineering structures.",
       "url": "seed://physics/newton",
       "language": "en",
       "metadata": {"domain": "physics", "source_type": "primary"}
+    },
+    {
+      "doc_id": "seed_physics_quantum_001",
+      "title": "Quantum Mechanics — Core Idea",
+      "text": "Quantum mechanics explains matter and energy at atomic and subatomic scales. Particles are described by wavefunctions, measurements return probabilities, and energy often appears in discrete quanta. Superposition means a system can be represented as a combination of possible states until measurement selects an outcome. Entanglement links measurements between systems in ways classical physics cannot fully reproduce.",
+      "url": "seed://physics/quantum-mechanics",
+      "language": "en",
+      "metadata": {
+        "domain": "science_and_natural_philosophy",
+        "subdomain": "physics",
+        "micro_subdomain": "quantum_mechanics",
+        "source_type": "primary"
+      }
+    },
+    {
+      "doc_id": "seed_cs_quantum_computing_001",
+      "title": "Quantum Computing — Qubits and Gates",
+      "text": "A quantum computer computes with qubits instead of ordinary bits. Qubits can be prepared in superposition, quantum gates change their amplitudes, entanglement links multiple qubits into a shared state, and interference can amplify useful answer paths while canceling others. Measurement converts the quantum state back into classical bits. Quantum computers are useful only for problem classes where these effects create a measurable advantage over classical hardware.",
+      "url": "seed://cs/quantum-computing",
+      "language": "en",
+      "metadata": {
+        "domain": "technology_and_engineering",
+        "subdomain": "computer_science",
+        "micro_subdomain": "quantum_computing",
+        "source_type": "primary"
+      }
+    },
+    {
+      "doc_id": "seed_cs_quantum_algorithms_001",
+      "title": "Quantum Algorithms — Quantum Computing",
+      "text": "A quantum computer algorithm is a quantum algorithm: a step-by-step procedure designed to run on qubits and quantum gates. Quantum algorithms use superposition, entanglement, interference, and measurement to transform probability amplitudes before producing classical output. They are not general replacements for all classical algorithms; they are useful for specific tasks such as factoring, quantum simulation, search speedups, sampling, and some optimization subroutines.",
+      "url": "seed://cs/quantum-algorithms",
+      "language": "en",
+      "metadata": {
+        "domain": "technology_and_engineering",
+        "subdomain": "computer_science",
+        "micro_subdomain": "quantum_computing",
+        "source_type": "primary"
+      }
+    },
+    {
+      "doc_id": "seed_cs_quantum_ai_001",
+      "title": "Quantum Artificial Intelligence — Hybrid Approach",
+      "text": "Quantum artificial intelligence uses quantum-computing methods inside AI workflows. Classical AI still handles data preparation, model control, training loops, and decisions, while quantum circuits may help with optimization, sampling, search, or kernel-style pattern comparison. A quantum AI system encodes part of a problem into qubits, applies quantum gates, measures the result, and feeds that measurement back into a classical learning loop. The field is useful only when the quantum step gives a measurable advantage.",
+      "url": "seed://cs/quantum-ai",
+      "language": "en",
+      "metadata": {
+        "domain": "technology_and_engineering",
+        "subdomain": "computer_science",
+        "micro_subdomain": "quantum_computing",
+        "source_type": "primary"
+      }
     },
     {
       "doc_id": "seed_history_001",

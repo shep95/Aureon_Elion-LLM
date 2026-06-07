@@ -72,6 +72,18 @@ def test_generate_questions_for_physics():
     assert all("?" in q for q in qs)
 
 
+def test_quantum_mechanics_target_asks_seeded_prompt():
+    qs = generate_questions(
+        domain_slug="science_and_natural_philosophy",
+        subdomain_slug="physics",
+        micro_slug="quantum_mechanics",
+        grade_slug="preschool",
+        count=2,
+    )
+    assert qs[0] == "explain quantum mechanics to me"
+    assert len(qs) == 2
+
+
 def test_self_inquiry_runs_after_cycle(tmp_path, monkeypatch):
     monkeypatch.setenv("AUREON_SELF_INQUIRY", "1")
     monkeypatch.setenv("AUREON_DATA_DIR", str(tmp_path))
@@ -159,6 +171,30 @@ def test_answer_uses_collected_documents(tmp_path, monkeypatch):
     assert "Newton" in answer
     assert len(answer) <= 90
     assert "Passed" in cycle
+
+
+def test_quantum_prompt_uses_grounded_explanation():
+    learning = {
+        "documents": [
+            {
+                "title": "Quantum Mechanics — Core Idea",
+                "text": (
+                    "Quantum mechanics explains matter and energy at atomic and subatomic scales. "
+                    "Particles are described by wavefunctions and measurements return probabilities."
+                ),
+                "source": "seeds",
+            }
+        ],
+        "labels": [],
+    }
+    answer, _cycle = answer_question(
+        "explain quantum mechanics to me",
+        outcome={"grade": "elementary", "graduation": {"passed": True}, "regions": []},
+        learning=learning,
+        ctx={"micro_display": "Quantum Mechanics", "topic": "Quantum Mechanics"},
+    )
+    assert "Quantum mechanics explains" in answer
+    assert len(answer) <= 120
 
 
 def test_collector_question_lists_document_titles():

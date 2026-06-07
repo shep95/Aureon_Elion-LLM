@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from brain.psychology_brain import finalize_chat_payload, shape_human_reply
+from brain.psychology_brain import finalize_chat_payload, interpret_user_question, shape_human_reply
 
 
 def test_curious_clarifier_keeps_question():
@@ -25,6 +25,30 @@ def test_grounded_direct_no_source_prefix():
     assert "from what i've collected" not in reply.lower()
     assert reply.startswith("Botany")
     assert ctx.mode == "grounded_direct"
+
+
+def test_interpret_user_question_strips_social_suffix_and_maps_taxonomy():
+    understanding = interpret_user_question("explain quantum mechanics to me")
+    assert understanding is not None
+    assert understanding.intent == "explanation"
+    assert understanding.subject == "quantum mechanics"
+    assert understanding.normalized_query == "explain quantum mechanics"
+    assert "science_and_natural_philosophy.physics.quantum_mechanics" in understanding.taxonomy_paths
+    assert "intent_subject_mapping" in understanding.traits
+
+
+def test_interpret_user_question_strips_how_it_works_suffix():
+    understanding = interpret_user_question("Explain Quantum Artificial intelligence to me and how it works")
+    assert understanding is not None
+    assert understanding.subject == "Quantum Artificial intelligence"
+    assert understanding.normalized_query == "explain Quantum Artificial intelligence"
+
+
+def test_interpret_user_question_strips_how_does_it_work_suffix():
+    understanding = interpret_user_question("what is a quantum computer and how does it work")
+    assert understanding is not None
+    assert understanding.subject == "a quantum computer"
+    assert understanding.normalized_query == "explain a quantum computer"
 
 
 def test_finalize_adds_brains_metadata():

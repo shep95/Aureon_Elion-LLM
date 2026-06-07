@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import re
+import hashlib
 import threading
 import time
 from typing import Any
@@ -18,13 +19,13 @@ from brain.domains.taxonomy import total_micro_subdomains
 from brain.grades import GRADE_CURRICULUM, curriculum_public, epochs_for_grade, get_grade
 from brain.graduation import current_grade, progress_report
 from brain.cipher_logic import ciper_research
-from brain.agent_loop import is_agent_task, run_agent_loop
+from brain.agent_loop import classify_intent, is_agent_task, run_agent_loop
 from brain.brain_classifiers import classify_moe
 from brain.capability_roadmap import roadmap_snapshot, simulate_future_timeline, try_roadmap_answer
 from brain.chat_reward import apply_chat_reward
 from brain.deterministic_qa import try_arithmetic_answer
 from brain.predict_engine import is_prediction_question, predict_with_steps
-from brain.psychology_brain import finalize_chat_payload
+from brain.psychology_brain import finalize_chat_payload, interpret_user_question
 from brain.meta_consciousness import (
     combined_recent_inquiries,
     is_meta_consciousness_enabled,
@@ -122,6 +123,7 @@ _SKIP_QUALITY_RECOVERY_KINDS = frozenset({
     "self_audit",
     "curiosity",
     "agent",
+    "identity",
     "research",
     "vitals",
     "continuation_clarify",
@@ -326,6 +328,34 @@ def _deterministic_payload(text: str, *, session_id: str | None) -> dict[str, An
     }
 
 
+def _analytical_payload(text: str, *, session_id: str | None) -> dict[str, Any] | None:
+    """Route deep questions before weak classifier/Ciper routes; do not answer here."""
+    from brain.analytical_brain import route_analytical_question
+
+    route = route_analytical_question(text)
+    if not route:
+        return None
+    payload = _handle_deep_concept(
+        f"explain {route.subject}",
+        session_id=session_id,
+        locked_paths=list(route.taxonomy_paths),
+        normalized_query=route.normalized_query,
+        routed_subject=route.subject,
+    )
+    payload["analytical_route"] = route.to_dict()
+    payload["human_understanding"] = {
+        "intent": "analytical_question",
+        "action": "route",
+        "subject": route.subject,
+        "normalized_query": route.normalized_query,
+        "taxonomy_paths": list(route.taxonomy_paths),
+        "traits": ["deep_question_detection", "cause_mechanism_evidence_mapping"],
+    }
+    if payload.get("kind") == "deep_concept":
+        payload["kind"] = "analytical"
+    return payload
+
+
 def _resolve_followup(text: str, session_id: str | None) -> str:
     """Map vague follow-ups to the prior user question (legacy hook)."""
     from brain.conversation_engine import resolve_message
@@ -492,6 +522,11 @@ def is_deep_concept_question(text: str) -> bool:
     )
     if any(m in q for m in factual_markers):
         return False
+
+    understanding = interpret_user_question(text)
+    if understanding and understanding.intent == "explanation" and understanding.taxonomy_paths:
+        return True
+
     deep_starters = ("what is ", "what are ", "explain ", "define ")
     if not any(q.startswith(s) for s in deep_starters):
         return False
@@ -672,18 +707,285 @@ def _is_weak_predict_answer(answer: str) -> bool:
     return False
 
 
-def _handle_deep_concept(text: str, *, session_id: str | None) -> dict[str, Any]:
+def _subject_terms(subject: str) -> list[str]:
+    return [
+        term
+        for term in re.findall(r"[a-z]{4,}", subject.lower())
+        if term
+        not in {
+            "this",
+            "that",
+            "about",
+            "with",
+            "from",
+            "what",
+            "does",
+            "work",
+            "works",
+            "explain",
+        }
+    ]
+
+
+def _answer_addresses_subject(answer: str, subject: str) -> bool:
+    return _answer_relevance_score(subject, answer) >= _relevance_threshold(subject)
+
+
+def _answer_relevance_score(subject: str, answer: str) -> float:
+    terms = _subject_terms(subject)
+    if not terms:
+        return 1.0 if len(answer.strip()) >= 20 else 0.0
+    answer_lower = answer.lower()
+    hits = sum(1 for term in terms if term in answer_lower)
+    return hits / max(len(terms), 1)
+
+
+def _relevance_threshold(subject: str) -> float:
+    terms = _subject_terms(subject)
+    if len(terms) <= 1:
+        return 1.0
+    if len(terms) == 2:
+        return 0.5
+    return 0.45
+
+
+def _relevance_abstain_payload(
+    *,
+    session_id: str | None,
+    subject: str,
+    score: float,
+    citations: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    return {
+        "reply": (
+            f"I found candidate material, but it did not pass my relevance gate for `{subject}`. "
+            "I should not answer from weak or cross-domain evidence."
+        ),
+        "kind": "relevance_abstain",
+        "session_id": session_id,
+        "learning": learning_snapshot(),
+        "relevance": {
+            "subject": subject,
+            "score": round(score, 4),
+            "threshold": _relevance_threshold(subject),
+            "passed": False,
+        },
+        "citations": citations or [],
+    }
+
+
+def _persist_trusted_live_docs(
+    docs: list[dict[str, Any]],
+    *,
+    paths: list[str] | None,
+    domain: str | None,
+) -> list[dict[str, Any]]:
+    if not docs:
+        return []
+    from db.models import Document
+    from db.seed import get_domain_by_slug, get_micro_subdomain
+
+    persisted: list[dict[str, Any]] = []
+    primary_path = (paths or [""])[0]
+    parts = primary_path.split(".") if primary_path else []
+    domain_slug = parts[0] if len(parts) == 3 else (domain or "")
+    sub_slug = parts[1] if len(parts) == 3 else ""
+    micro_slug = parts[2] if len(parts) == 3 else ""
+
+    try:
+        with get_session() as session:
+            domain_row = get_domain_by_slug(session, domain_slug) if domain_slug else None
+            micro_row = (
+                get_micro_subdomain(session, domain_slug, sub_slug, micro_slug)
+                if domain_slug and sub_slug and micro_slug
+                else None
+            )
+            for doc in docs:
+                title = str(doc.get("title") or doc.get("source") or "Trusted source").strip()
+                text = str(doc.get("text") or "").strip()
+                if not text:
+                    continue
+                digest = hashlib.sha256(f"{title}\n{text}".encode("utf-8")).hexdigest()
+                if session.scalar(select(Document).where(Document.content_hash == digest)):
+                    continue
+                row = Document(
+                    domain_id=domain_row.id if domain_row else None,
+                    subdomain_id=micro_row.subdomain_id if micro_row else None,
+                    micro_subdomain_id=micro_row.id if micro_row else None,
+                    source="trusted_live",
+                    title=title[:512],
+                    text=text,
+                    url=str(doc.get("url") or "")[:1024],
+                    language="en",
+                    quality_score=0.82,
+                    verified=True,
+                    content_hash=digest,
+                    extra={
+                        "domain": domain_slug,
+                        "subdomain": sub_slug,
+                        "micro_subdomain": micro_slug,
+                        "trusted_source": doc.get("source"),
+                        "url": doc.get("url"),
+                    },
+                )
+                session.add(row)
+                session.flush()
+                persisted.append(
+                    {
+                        "document_id": row.id,
+                        "content_hash": digest,
+                        "title": row.title,
+                        "source": row.source,
+                        "score": 1.0,
+                        "domain": domain_slug,
+                        "subdomain": sub_slug,
+                        "micro_subdomain": micro_slug,
+                    }
+                )
+        if persisted:
+            from brain.vector_rag import invalidate_rag_index
+
+            invalidate_rag_index()
+    except Exception:
+        return persisted
+    return persisted
+
+
+def _trusted_live_context(
+    query: str,
+    *,
+    domain: str | None,
+    paths: list[str] | None,
+) -> tuple[str, list[dict[str, Any]]]:
+    from brain.web_search import trusted_search
+
+    docs = trusted_search(query, domain=domain, max_results=2)
+    persisted = _persist_trusted_live_docs(docs, paths=paths, domain=domain)
+    context = " ".join(str(doc.get("text", "")) for doc in docs).strip()
+    return context, persisted
+
+
+def _rag_answer_from_hit(hit: Any, *, subject: str) -> str:
+    text = str(getattr(hit, "text", "") or "")
+    title = str(getattr(hit, "title", "") or "")
+    combined = text if subject.lower() in text.lower() else f"{title} {text}".strip()
+    cleaned = re.sub(r"\s+", " ", combined).strip()
+    if len(cleaned) > 320:
+        cut = cleaned[:320].rsplit(" ", 1)[0]
+        cleaned = (cut or cleaned[:320]).rstrip(".,;:")
+    if cleaned and cleaned[-1] not in ".?!":
+        cleaned += "."
+    return cleaned
+
+
+def _handle_deep_concept(
+    text: str,
+    *,
+    session_id: str | None,
+    locked_paths: list[str] | None = None,
+    locked_domain: str | None = None,
+    normalized_query: str | None = None,
+    routed_subject: str | None = None,
+) -> dict[str, Any]:
     """Deep single-concept questions — RAG + predict + auto-search fallback."""
     from brain.vector_rag import retrieve_with_citations
     from brain.web_search import web_search_enabled
 
-    rag_context, _hits, rag_citations = retrieve_with_citations(text)
-    enriched = f"{rag_context} question {text}" if rag_context else text
+    understanding = interpret_user_question(text)
+    subject = routed_subject or (understanding.subject if understanding else text)
+    algorithm_query = normalized_query or (understanding.normalized_query if understanding else text)
+    retrieval_paths = locked_paths or (understanding.taxonomy_paths if understanding else None)
+    retrieval_domain = locked_domain
+    if not retrieval_domain and retrieval_paths:
+        retrieval_domain = retrieval_paths[0].split(".", 1)[0]
+    rag_context, hits, rag_citations = retrieve_with_citations(
+        algorithm_query,
+        domain=retrieval_domain,
+        paths=retrieval_paths,
+    )
+    live_context = ""
+    best_score = 0.0
+    if hits:
+        best_score = float(
+            getattr(
+                hits[0],
+                "score",
+                (rag_citations[0].get("score", 0.0) if rag_citations else 0.0),
+            )
+            or 0.0
+        )
+    if not hits or best_score < float(os.environ.get("AUREON_RAG_TRUSTED_MIN_SCORE", "0.12")):
+        live_context, live_citations = _trusted_live_context(
+            algorithm_query,
+            domain=retrieval_domain,
+            paths=retrieval_paths,
+        )
+        if live_context:
+            rag_context = f"{live_context} {rag_context}".strip()
+            rag_citations = live_citations + rag_citations
+    context_parts: list[str] = []
+    if retrieval_paths:
+        context_parts.append(
+            "human intent explanation "
+            f"subject {subject} taxonomy_path {retrieval_paths[0]}"
+        )
+    if rag_context:
+        context_parts.append(rag_context)
+    enriched = f"{' '.join(context_parts)} question {algorithm_query}" if context_parts else algorithm_query
+
+    if retrieval_paths and hits:
+        answer = _rag_answer_from_hit(hits[0], subject=subject)
+        score = _answer_relevance_score(subject, answer)
+        if score >= _relevance_threshold(subject):
+            payload = {
+                "reply": answer,
+                "kind": "deep_concept",
+                "session_id": session_id,
+                "learning": learning_snapshot(),
+                "brain_predict": False,
+                "grounded": True,
+                "citations": rag_citations[:3],
+                "relevance": {
+                    "subject": subject,
+                    "score": round(score, 4),
+                    "threshold": _relevance_threshold(subject),
+                    "passed": True,
+                },
+            }
+            if understanding:
+                payload["human_understanding"] = understanding.to_dict()
+            return payload
+
+    if live_context:
+        answer = live_context[:320].rsplit(" ", 1)[0].strip()
+        if answer and answer[-1] not in ".?!":
+            answer += "."
+        score = _answer_relevance_score(subject, answer)
+        if score >= _relevance_threshold(subject):
+            return {
+                "reply": answer,
+                "kind": "deep_concept",
+                "session_id": session_id,
+                "learning": learning_snapshot(),
+                "brain_predict": False,
+                "grounded": True,
+                "citations": rag_citations[:3],
+                "relevance": {
+                    "subject": subject,
+                    "score": round(score, 4),
+                    "threshold": _relevance_threshold(subject),
+                    "passed": True,
+                },
+                "human_understanding": understanding.to_dict() if understanding else None,
+                "trusted_live": True,
+            }
+
     result = _predict_with_search_fallback(enriched, session_id=session_id, force=True)
 
     if result and result.get("answer"):
         answer = str(result["answer"]).strip()
-        if not _is_weak_predict_answer(answer):
+        score = _answer_relevance_score(subject, answer)
+        if not _is_weak_predict_answer(answer) and score >= _relevance_threshold(subject):
             citations = list(result.get("citations") or [])
             if not citations and rag_citations:
                 citations = rag_citations[:3]
@@ -695,32 +997,84 @@ def _handle_deep_concept(text: str, *, session_id: str | None) -> dict[str, Any]
                 "learning": learning_snapshot(),
                 "brain_predict": not result.get("search_opinion"),
                 "citations": citations,
+                "relevance": {
+                    "subject": subject,
+                    "score": round(score, 4),
+                    "threshold": _relevance_threshold(subject),
+                    "passed": True,
+                },
             }
+            if understanding:
+                payload["human_understanding"] = understanding.to_dict()
             if result.get("sources"):
                 payload["sources"] = result["sources"]
             return payload
 
+    if understanding and hits:
+        answer = _rag_answer_from_hit(hits[0], subject=understanding.subject)
+        score = _answer_relevance_score(subject, answer)
+        if score >= _relevance_threshold(subject):
+            return {
+                "reply": answer,
+                "kind": "deep_concept",
+                "session_id": session_id,
+                "learning": learning_snapshot(),
+                "brain_predict": False,
+                "grounded": True,
+                "citations": rag_citations[:3],
+                "human_understanding": understanding.to_dict(),
+                "relevance": {
+                    "subject": subject,
+                    "score": round(score, 4),
+                    "threshold": _relevance_threshold(subject),
+                    "passed": True,
+                },
+            }
+        return _relevance_abstain_payload(
+            session_id=session_id,
+            subject=subject,
+            score=score,
+            citations=rag_citations[:3],
+        )
+
     if web_search_enabled():
-        search_payload = _search_and_opine(text, session_id=session_id)
+        search_payload = _search_and_opine(algorithm_query, session_id=session_id)
         if search_payload.get("kind") == "search_opinion":
             search_payload["kind"] = "deep_concept_search"
+            if understanding:
+                search_payload["human_understanding"] = understanding.to_dict()
             return search_payload
 
-    fallback = _fallback_to_predict(text, session_id=session_id)
+    fallback = _fallback_to_predict(algorithm_query, session_id=session_id)
     if not _is_weak_predict_answer(fallback):
-        return {
+        score = _answer_relevance_score(subject, fallback)
+        if score < _relevance_threshold(subject):
+            return _relevance_abstain_payload(session_id=session_id, subject=subject, score=score)
+        payload = {
             "reply": fallback,
             "kind": "deep_concept",
             "session_id": session_id,
             "learning": learning_snapshot(),
+            "relevance": {
+                "subject": subject,
+                "score": round(score, 4),
+                "threshold": _relevance_threshold(subject),
+                "passed": True,
+            },
         }
+        if understanding:
+            payload["human_understanding"] = understanding.to_dict()
+        return payload
 
-    return {
+    payload = {
         "reply": fallback,
         "kind": "deep_concept_thin",
         "session_id": session_id,
         "learning": learning_snapshot(),
     }
+    if understanding:
+        payload["human_understanding"] = understanding.to_dict()
+    return payload
 
 
 def is_named_entity_question(text: str) -> bool:
@@ -1070,7 +1424,12 @@ def _code_payload(text: str, *, session_id: str | None) -> dict[str, Any] | None
     def _predict(q: str) -> dict[str, Any] | None:
         return _predict_with_timeout(q, session_id=session_id, force=True)
 
-    master = generate_master_code(text, predict_fn=_predict, language=language)
+    try:
+        master = generate_master_code(text, predict_fn=_predict, language=language)
+    except TypeError as exc:
+        if "unexpected keyword argument 'language'" not in str(exc):
+            raise
+        master = generate_master_code(text, predict_fn=_predict)
     if not master.get("answer"):
         return None
 
@@ -1565,6 +1924,12 @@ def _command_response(message: str) -> dict[str, Any] | None:
         from app.self_evolve import plan_evolution, repo_status
 
         plan = plan_evolution(task)
+        if plan.get("blocked"):
+            return {
+                "reply": plan.get("reason", "Not an evolution command. Blocked."),
+                "kind": "self_evolve_blocked",
+                "plan": plan,
+            }
         status = repo_status()
         return {
             "reply": (
@@ -1769,6 +2134,10 @@ def chat(message: str, *, session_id: str | None = None) -> dict[str, Any]:
     )
     from brain.web_search import web_search_enabled
 
+    analytical = _analytical_payload(text, session_id=session_id)
+    if analytical:
+        return done(analytical)
+
     # Rule 2 — self-directed identity / belief before simple_qa
     if is_self_directed(text) and is_opinion_or_identity(text):
         return done(_handle_identity_or_belief(text, session_id=session_id))
@@ -1828,7 +2197,7 @@ def chat(message: str, *, session_id: str | None = None) -> dict[str, Any]:
             cont["learning"] = learning_snapshot()
             return done(cont)
 
-    if is_code_question(text):
+    if classify_intent(text) == "CODE" and is_code_question(text):
         code_payload = _code_payload(text, session_id=session_id)
         if code_payload:
             return done(code_payload)

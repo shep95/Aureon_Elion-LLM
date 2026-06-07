@@ -4,17 +4,17 @@ from __future__ import annotations
 
 FALLBACK_CORPUS = (
     "This question needs deeper corpus grounding than I can compute in time. "
-    "Try again after auto-learn finishes, or ask `/mind` for what I know now."
+    "Ask a narrower version, or use `/mind` for what I know now."
 )
 
 FALLBACK_TIMEOUT = (
-    "I hit my compute time limit on that question — Railway is often busy during auto-learn. "
-    "I tried web search too but could not ground a full answer. "
-    "Try again in a moment, ask something shorter, or check `/status`."
+    "I hit my compute time limit on that question. "
+    "I could not ground a full answer before the local timeout. "
+    "Ask a narrower version, or check `/status`."
 )
 
 FALLBACK_TRAINING = (
-    "I need more training on this topic — ask me again after the next auto-learn cycle."
+    "I need more grounded training data on this topic before I can answer it well."
 )
 
 FALLBACK_PHILOSOPHY = (
@@ -22,14 +22,12 @@ FALLBACK_PHILOSOPHY = (
     "My corpus is still growing in this domain. "
     "What I can say is that the question you are asking "
     "sits at the intersection of consciousness, existence, and meaning — "
-    "domains I take seriously. Ask me again after my next learning cycle "
-    "and I will have more to offer."
+    "domains I take seriously. Ask a narrower version and I can go deeper."
 )
 
 FALLBACK_CLASSIFICATION_LEAK = (
     "I classified that question but my predict brain needs more "
-    "training to generate a full answer. Ask me again after the "
-    "next auto-learn cycle."
+    "grounded training data to generate a full answer."
 )
 
 RATE_LIMIT_PREDICT = "Too many predict requests — wait a minute and try again."

@@ -13,9 +13,69 @@ from app.session_memory import history_as_context
 
 ToolFn = Callable[..., dict[str, Any]]
 
+KNOWLEDGE_WORDS = [
+    "what",
+    "explain",
+    "how does",
+    "why",
+    "who",
+    "when",
+    "define",
+    "describe",
+    "tell me",
+    "what is",
+    "what are",
+]
+
+CODE_WORDS = [
+    "write code",
+    "write a function",
+    "write a python",
+    "write a javascript",
+    "write a typescript",
+    "write a java",
+    "write a go",
+    "write a rust",
+    "build",
+    "create a function",
+    "debug",
+    "fix this code",
+    "refactor",
+    "generate",
+    "script",
+    "python function",
+    "javascript function",
+    "typescript function",
+]
+
+EVOLVE_WORDS = [
+    "update",
+    "modify",
+    "add feature",
+    "improve yourself",
+    "change your code",
+    "refactor yourself",
+    "edit",
+]
+
+
+def classify_intent(message: str) -> str:
+    msg = (message or "").lower()
+    if any(w in msg for w in EVOLVE_WORDS):
+        return "EVOLVE"
+    if any(w in msg for w in CODE_WORDS):
+        return "CODE"
+    if any(w in msg for w in KNOWLEDGE_WORDS):
+        return "KNOWLEDGE"
+    return "KNOWLEDGE"
+
 
 def _tool_rag_search(query: str, *, ctx: dict[str, Any]) -> dict[str, Any]:
-    context, hits, citations = retrieve_with_citations(query, top_k=6)
+    context, hits, citations = retrieve_with_citations(
+        query,
+        top_k=6,
+        paths=ctx.get("locked_paths") or None,
+    )
     ctx["rag_context"] = context
     ctx["citations"] = list(citations[:5])
     ctx["rag_hits"] = len(hits)
@@ -119,8 +179,11 @@ def run_agent_loop(
     if q.lower().startswith("/agent"):
         q = q[6:].strip(" :")
 
+    intent = classify_intent(q)
     ctx: dict[str, Any] = {
         "question": q,
+        "intent": intent,
+        "locked_paths": [],
         "citations": [],
         "rag_context": "",
         "classification": None,
@@ -131,6 +194,40 @@ def run_agent_loop(
     citations: list[dict[str, Any]] = []
     answer: str | None = None
     confidence = 0.0
+
+    if intent == "EVOLVE":
+        return {
+            "answer": "Evolution commands must use the explicit self-evolve route.",
+            "plan": [],
+            "steps": [{"tool": "intent_classifier", "ok": False, "intent": intent}],
+            "citations": [],
+            "confidence": 0.0,
+            "agent": True,
+            "max_steps": max_steps,
+            "context": {"intent": intent},
+        }
+
+    if intent == "CODE":
+        return {
+            "answer": "Code commands must use the code engine route.",
+            "plan": [],
+            "steps": [{"tool": "intent_classifier", "ok": True, "intent": intent}],
+            "citations": [],
+            "confidence": 0.0,
+            "agent": True,
+            "max_steps": max_steps,
+            "context": {"intent": intent},
+        }
+
+    try:
+        from brain.analytical_brain import route_analytical_question
+
+        route = route_analytical_question(q)
+        if route:
+            ctx["locked_paths"] = list(route.taxonomy_paths)
+            ctx["analytical_route"] = route.to_dict()
+    except Exception:
+        ctx["locked_paths"] = []
 
     if is_creation_request(q):
         plan = plan_combinatorial_creation(q)
@@ -211,6 +308,9 @@ def run_agent_loop(
         "agent": True,
         "max_steps": max_steps,
         "context": {
+            "intent": intent,
+            "locked_paths": ctx.get("locked_paths", []),
+            "analytical_route": ctx.get("analytical_route"),
             "rag_hits": ctx.get("rag_hits", 0),
             "classification": ctx.get("classification"),
         },

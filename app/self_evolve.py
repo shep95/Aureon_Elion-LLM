@@ -7,6 +7,7 @@ import logging
 import os
 import re
 import subprocess
+import sys
 import time
 from pathlib import Path
 from typing import Any
@@ -17,6 +18,16 @@ ROOT = Path(__file__).resolve().parents[1]
 FORBIDDEN_BRANCHES = frozenset({"main", "master", "HEAD"})
 ALLOWED_PREFIXES = ("app/", "brain/", "src/", "tests/", "scripts/", "pipeline/")
 BLOCKED_SEGMENTS = ("..", ".env", "secrets", "credentials", ".git/")
+EVOLVE_TRIGGER_WORDS = {
+    "update",
+    "modify",
+    "fix",
+    "refactor",
+    "add feature",
+    "edit",
+    "change",
+    "improve yourself",
+}
 
 
 def _env(name: str, default: str = "") -> str:
@@ -37,6 +48,24 @@ def skip_syntax_verify() -> bool:
 
 def skip_test_gate() -> bool:
     return _env("AUREON_SELF_EVOLVE_SKIP_TESTS", "").lower() in ("1", "true", "yes")
+
+
+def is_evolution_command(message: str) -> bool:
+    return any(word in (message or "").lower() for word in EVOLVE_TRIGGER_WORDS)
+
+
+def _blocked_evolution_response() -> dict[str, Any]:
+    return {
+        "blocked": True,
+        "ok": False,
+        "reason": "Not an evolution command. Blocked.",
+    }
+
+
+def _require_evolution_command(message: str) -> dict[str, Any] | None:
+    if is_evolution_command(message):
+        return None
+    return _blocked_evolution_response()
 
 
 def validate_repo_path(rel_path: str) -> Path:
@@ -233,7 +262,7 @@ def run_tests_before_commit(*, timeout: int = 120) -> dict[str, Any]:
     """Run the test suite — block commit if tests fail."""
     try:
         result = subprocess.run(
-            ["python", "-m", "pytest", "tests/", "-x", "-q", "--tb=short"],
+            [sys.executable, "-m", "pytest", "tests/", "-x", "-q", "--tb=short"],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -339,6 +368,16 @@ def push_fork(*, branch: str | None = None, approved: bool = False) -> dict[str,
 
 def plan_evolution(task: str) -> dict[str, Any]:
     """Suggest files likely relevant to a self-upgrade task."""
+    blocked = _require_evolution_command(task)
+    if blocked:
+        return {
+            **blocked,
+            "task": task,
+            "suggested_files": [],
+            "analysis": [],
+            "capabilities": {"brain": "self_evolve_guard"},
+            "workflow": [],
+        }
     task_l = task.lower()
     suggestions: list[str] = []
     keywords: dict[str, list[str]] = {
@@ -405,6 +444,9 @@ def run_evolution_cycle(
     algorithmic: bool = True,
 ) -> dict[str, Any]:
     """Full cycle: branch → algorithmic or manual writes → verify → commit → optional fork push."""
+    blocked = _require_evolution_command(task)
+    if blocked:
+        return {**blocked, "task": task, "written": [], "push": {"pushed": False}}
     plan = plan_evolution(task)
     branch_info = create_evolution_branch(task)
     written: list[str] = []

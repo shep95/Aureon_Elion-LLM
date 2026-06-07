@@ -60,6 +60,102 @@ class PsychologyContext:
         }
 
 
+@dataclass
+class HumanQuestionUnderstanding:
+    """Human-pattern parse used before the algorithm brain chooses a route."""
+
+    intent: str
+    action: str
+    subject: str
+    normalized_query: str
+    taxonomy_paths: list[str]
+    traits: list[str]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "intent": self.intent,
+            "action": self.action,
+            "subject": self.subject,
+            "normalized_query": self.normalized_query,
+            "taxonomy_paths": self.taxonomy_paths,
+            "traits": self.traits,
+            "sources": list(PSYCHOLOGY_CORPUS_SOURCES),
+        }
+
+
+_UNDERSTANDING_RE = re.compile(
+    r"^\s*(?:please\s+)?(?:(?:can|could|would)\s+you\s+)?"
+    r"(?P<action>explain|define|describe|teach(?:\s+me)?(?:\s+about)?|tell\s+me\s+about|"
+    r"what\s+is|what\s+are)\s+"
+    r"(?P<subject>.+?)\s*(?:[?.!]+)?\s*$",
+    re.IGNORECASE,
+)
+
+_SOCIAL_SUFFIX_RE = re.compile(
+    r"\s+(?:to|for)\s+me\b|\s+please\b|\s+in\s+simple\s+terms\b|"
+    r"\s+like\s+i(?:'| a)m\s+\w+\b|\s+and\s+how\s+it\s+works\b|"
+    r"\s+and\s+how\s+(?:does\s+)?it\s+work\b|"
+    r"\s+and\s+how\s+.+?\s+works\b",
+    re.IGNORECASE,
+)
+
+
+def _clean_subject(raw: str) -> str:
+    subject = re.sub(r"\s+", " ", (raw or "").strip(" ?.!"))
+    while True:
+        cleaned = _SOCIAL_SUFFIX_RE.sub("", subject).strip(" ?.! ")
+        if cleaned == subject:
+            break
+        subject = cleaned
+    return subject
+
+
+def interpret_user_question(user_message: str) -> HumanQuestionUnderstanding | None:
+    """
+    Use human-pattern language cues to understand what the user is asking for.
+
+    Example: "explain quantum mechanics to me" means action=explain and
+    subject=quantum mechanics; "to me" is social phrasing, not the topic.
+    """
+    cleaned = re.sub(r"\s+", " ", (user_message or "").strip())
+    if not cleaned or cleaned.startswith("/"):
+        return None
+
+    match = _UNDERSTANDING_RE.match(cleaned)
+    if not match:
+        return None
+
+    action = match.group("action").lower()
+    subject = _clean_subject(match.group("subject"))
+    if not subject:
+        return None
+
+    from brain.cipher_logic import cross_domain_hits, search_taxonomy
+
+    hits = search_taxonomy(subject, limit=6)
+    if not hits:
+        hits = cross_domain_hits(subject, limit=6)
+
+    taxonomy_paths: list[str] = []
+    seen: set[str] = set()
+    for hit in hits:
+        if hit.path.endswith(".*.*") or hit.path in seen:
+            continue
+        seen.add(hit.path)
+        taxonomy_paths.append(hit.path)
+
+    normalized_action = "explain" if action.startswith(("what ", "tell ", "teach", "describe")) else action
+    normalized_query = f"{normalized_action} {subject}".strip()
+    return HumanQuestionUnderstanding(
+        intent="explanation",
+        action=normalized_action,
+        subject=subject,
+        normalized_query=normalized_query,
+        taxonomy_paths=taxonomy_paths[:4],
+        traits=["text_human_patterns", "intent_subject_mapping", "taxonomy_mapping"],
+    )
+
+
 def _response_mode(payload: dict[str, Any], user_message: str) -> str:
     if _DISTRESS_RE.search(user_message):
         return "crisis_honest"
@@ -77,6 +173,8 @@ def _response_mode(payload: dict[str, Any], user_message: str) -> str:
     kind = payload.get("kind", "chat")
     if kind == "search_opinion":
         return "live_briefing"
+    if kind == "analytical":
+        return "analytical_direct"
     if kind in ("status", "grades", "help", "research", "mind", "think"):
         return "technical_report"
     return "conversational"
@@ -142,6 +240,10 @@ def shape_human_reply(
             shaped = f"That spans a few domains — {shaped[0].lower()}{shaped[1:]}" if shaped else shaped
         register = "conversational"
         traits.extend(["cross_domain_curiosity", "agi_style_linking"])
+    elif mode == "analytical_direct":
+        shaped = reply
+        register = "analytical"
+        traits.extend(["deep_question_detection", "mechanism_evidence_answering"])
     elif mode == "simple_direct":
         shaped = _match_user_length(reply, user_message)
         register = "conversational"
@@ -150,6 +252,10 @@ def shape_human_reply(
         shaped = _match_user_length(reply, user_message)
         register = "conversational"
         traits.extend(["pattern_recognition", "measurable_confidence"])
+    elif payload.get("human_understanding"):
+        shaped = reply
+        register = "conversational"
+        traits.extend(["intent_subject_mapping", "human_pattern_understanding"])
     elif mode == "live_briefing":
         shaped = re.sub(r"\n\nSources:.*$", "", reply.strip(), flags=re.DOTALL | re.IGNORECASE)
         register = "conversational"
