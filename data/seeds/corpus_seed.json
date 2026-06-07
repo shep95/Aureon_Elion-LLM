@@ -38,6 +38,32 @@
       }
     },
     {
+      "doc_id": "seed_cs_quantum_computing_001",
+      "title": "Quantum Computing — Qubits and Gates",
+      "text": "A quantum computer computes with qubits instead of ordinary bits. Qubits can be prepared in superposition, quantum gates change their amplitudes, entanglement links multiple qubits into a shared state, and interference can amplify useful answer paths while canceling others. Measurement converts the quantum state back into classical bits. Quantum computers are useful only for problem classes where these effects create a measurable advantage over classical hardware.",
+      "url": "seed://cs/quantum-computing",
+      "language": "en",
+      "metadata": {
+        "domain": "technology_and_engineering",
+        "subdomain": "computer_science",
+        "micro_subdomain": "quantum_computing",
+        "source_type": "primary"
+      }
+    },
+    {
+      "doc_id": "seed_cs_quantum_ai_001",
+      "title": "Quantum Artificial Intelligence — Hybrid Approach",
+      "text": "Quantum artificial intelligence uses quantum-computing methods inside AI workflows. Classical AI still handles data preparation, model control, training loops, and decisions, while quantum circuits may help with optimization, sampling, search, or kernel-style pattern comparison. A quantum AI system encodes part of a problem into qubits, applies quantum gates, measures the result, and feeds that measurement back into a classical learning loop. The field is useful only when the quantum step gives a measurable advantage.",
+      "url": "seed://cs/quantum-ai",
+      "language": "en",
+      "metadata": {
+        "domain": "technology_and_engineering",
+        "subdomain": "computer_science",
+        "micro_subdomain": "quantum_computing",
+        "source_type": "primary"
+      }
+    },
+    {
       "doc_id": "seed_history_001",
       "title": "The Scientific Revolution",
       "text": "The Scientific Revolution of the sixteenth and seventeenth centuries shifted European inquiry from authority-based reasoning to empirical observation and mathematical modeling. Figures such as Galileo, Kepler, and Newton established methods requiring reproducible experiments and peer scrutiny. Institutions like the Royal Society formalized peer review. This transformation accelerated technological progress and changed how knowledge was validated across domains.",

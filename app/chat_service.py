@@ -328,28 +328,25 @@ def _deterministic_payload(text: str, *, session_id: str | None) -> dict[str, An
 
 
 def _analytical_payload(text: str, *, session_id: str | None) -> dict[str, Any] | None:
-    """Structured deep-question answers before weak classifier/Ciper routes."""
-    from brain.analytical_brain import answer_analytical_question
+    """Route deep questions before weak classifier/Ciper routes; do not answer here."""
+    from brain.analytical_brain import route_analytical_question
 
-    result = answer_analytical_question(text)
-    if not result:
+    route = route_analytical_question(text)
+    if not route:
         return None
-    paths = list(result.taxonomy_paths)
-    return {
-        "reply": result.answer,
-        "kind": "analytical",
-        "session_id": session_id,
-        "learning": learning_snapshot(),
-        "analytical": result.to_dict(),
-        "human_understanding": {
-            "intent": "analytical_question",
-            "action": "answer",
-            "subject": result.subject,
-            "normalized_query": text.strip(),
-            "taxonomy_paths": paths,
-            "traits": ["deep_question_detection", "cause_mechanism_evidence_mapping"],
-        },
+    payload = _handle_deep_concept(f"explain {route.subject}", session_id=session_id)
+    payload["analytical_route"] = route.to_dict()
+    payload["human_understanding"] = {
+        "intent": "analytical_question",
+        "action": "route",
+        "subject": route.subject,
+        "normalized_query": route.normalized_query,
+        "taxonomy_paths": list(route.taxonomy_paths),
+        "traits": ["deep_question_detection", "cause_mechanism_evidence_mapping"],
     }
+    if payload.get("kind") == "deep_concept":
+        payload["kind"] = "analytical"
+    return payload
 
 
 def _resolve_followup(text: str, session_id: str | None) -> str:
@@ -725,7 +722,13 @@ def _rag_answer_from_hit(hit: Any, *, subject: str) -> str:
     text = str(getattr(hit, "text", "") or "")
     title = str(getattr(hit, "title", "") or "")
     combined = text if subject.lower() in text.lower() else f"{title} {text}".strip()
-    return to_simple_answer(combined, max_len=220)
+    cleaned = re.sub(r"\s+", " ", combined).strip()
+    if len(cleaned) > 320:
+        cut = cleaned[:320].rsplit(" ", 1)[0]
+        cleaned = (cut or cleaned[:320]).rstrip(".,;:")
+    if cleaned and cleaned[-1] not in ".?!":
+        cleaned += "."
+    return cleaned
 
 
 def _handle_deep_concept(text: str, *, session_id: str | None) -> dict[str, Any]:

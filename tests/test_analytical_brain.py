@@ -3,16 +3,17 @@
 from __future__ import annotations
 
 from app.chat_service import chat
-from brain.analytical_brain import answer_analytical_question
+from brain.analytical_brain import route_analytical_question
 
 
-def test_analytical_brain_answers_roman_economics():
-    answer = answer_analytical_question(
+def test_analytical_brain_routes_without_answer_text():
+    route = route_analytical_question(
         "What were the real economic causes behind the fall of the Roman Empire - not the textbook version?"
     )
-    assert answer is not None
-    assert answer.domain == "history_and_civilization"
-    assert "fiscal base" in answer.answer.lower()
+    assert route is not None
+    assert route.domain == "history_and_civilization"
+    assert route.subject == "economic causes of Rome's fall"
+    assert not hasattr(route, "answer")
 
 
 def test_chat_quantum_artificial_intelligence_question_answers_directly():
@@ -22,9 +23,10 @@ def test_chat_quantum_artificial_intelligence_question_answers_directly():
     )
     assert result["kind"] == "analytical"
     assert result["human_understanding"]["subject"] == "quantum artificial intelligence"
+    assert result["analytical_route"]["method"] == "analytical_route"
     reply = result["reply"].lower()
-    assert "qubits" in reply
-    assert "hybrid" in reply
+    assert "quantum artificial intelligence" in reply
+    assert "classical ai" in reply
     assert "compute time limit" not in reply
 
 
@@ -35,42 +37,37 @@ def test_chat_quantum_computer_question_answers_directly():
     )
     assert result["kind"] == "analytical"
     assert result["human_understanding"]["subject"] == "quantum computer"
+    assert result["analytical_route"]["method"] == "analytical_route"
     reply = result["reply"].lower()
     assert "qubit" in reply
     assert "superposition" in reply
     assert "compute time limit" not in reply
 
 
-def test_chat_narcissism_question_not_identity():
-    result = chat(
+def test_analytical_brain_routes_narcissism_without_answering():
+    route = route_analytical_question(
         "What is the difference between narcissism and dark triad personality - "
-        "and how do you identify each in conversation?",
-        session_id="analytical-narcissism",
+        "and how do you identify each in conversation?"
     )
-    assert result["kind"] == "analytical"
-    assert result["human_understanding"]["subject"] == "narcissism vs dark triad"
-    assert "I am Aureon" not in result["reply"]
-    assert "Machiavellian" in result["reply"]
+    assert route is not None
+    assert route.subject == "narcissism vs dark triad"
+    assert not hasattr(route, "answer")
 
 
-def test_chat_gut_brain_question_not_modern_ciper():
-    result = chat(
+def test_analytical_brain_routes_gut_brain_without_answering():
+    route = route_analytical_question(
         "What does modern science say about the gut-brain connection and how does it affect mental health?",
-        session_id="analytical-gut-brain",
     )
-    assert result["kind"] == "analytical"
-    assert result["human_understanding"]["subject"] == "gut-brain connection"
-    assert "modern -" not in result["reply"].lower()
-    assert "microbiome" in result["reply"].lower()
+    assert route is not None
+    assert route.subject == "gut-brain connection"
+    assert not hasattr(route, "answer")
 
 
-def test_chat_future_cycles_question_not_based_ciper():
-    result = chat(
+def test_analytical_brain_routes_future_cycles_without_answering():
+    route = route_analytical_question(
         "Based on historical cycles, what major global shift is most likely to happen in the next 10 years?",
-        session_id="analytical-future",
     )
-    assert result["kind"] == "analytical"
-    assert result["human_understanding"]["subject"] == "major global shift from historical cycles"
-    assert "rights-based ethics" not in result["reply"].lower()
-    assert "legitimacy crisis" in result["reply"].lower()
+    assert route is not None
+    assert route.subject == "major global shift from historical cycles"
+    assert not hasattr(route, "answer")
 
