@@ -24,7 +24,7 @@ from brain.capability_roadmap import roadmap_snapshot, simulate_future_timeline,
 from brain.chat_reward import apply_chat_reward
 from brain.deterministic_qa import try_arithmetic_answer
 from brain.predict_engine import is_prediction_question, predict_with_steps
-from brain.psychology_brain import finalize_chat_payload
+from brain.psychology_brain import finalize_chat_payload, interpret_user_question
 from brain.meta_consciousness import (
     combined_recent_inquiries,
     is_meta_consciousness_enabled,
@@ -492,6 +492,11 @@ def is_deep_concept_question(text: str) -> bool:
     )
     if any(m in q for m in factual_markers):
         return False
+
+    understanding = interpret_user_question(text)
+    if understanding and understanding.intent == "explanation" and understanding.taxonomy_paths:
+        return True
+
     deep_starters = ("what is ", "what are ", "explain ", "define ")
     if not any(q.startswith(s) for s in deep_starters):
         return False
@@ -672,18 +677,54 @@ def _is_weak_predict_answer(answer: str) -> bool:
     return False
 
 
+def _subject_terms(subject: str) -> list[str]:
+    return [
+        term
+        for term in re.findall(r"[a-z]{4,}", subject.lower())
+        if term not in {"this", "that", "about", "with", "from"}
+    ]
+
+
+def _answer_addresses_subject(answer: str, subject: str) -> bool:
+    terms = _subject_terms(subject)
+    if not terms:
+        return True
+    answer_lower = answer.lower()
+    hits = sum(1 for term in terms if term in answer_lower)
+    needed = len(terms) if len(terms) <= 2 else max(2, len(terms) // 2)
+    return hits >= needed
+
+
+def _rag_answer_from_hit(hit: Any, *, subject: str) -> str:
+    text = str(getattr(hit, "text", "") or "")
+    title = str(getattr(hit, "title", "") or "")
+    combined = text if subject.lower() in text.lower() else f"{title} {text}".strip()
+    return to_simple_answer(combined, max_len=220)
+
+
 def _handle_deep_concept(text: str, *, session_id: str | None) -> dict[str, Any]:
     """Deep single-concept questions — RAG + predict + auto-search fallback."""
     from brain.vector_rag import retrieve_with_citations
     from brain.web_search import web_search_enabled
 
-    rag_context, _hits, rag_citations = retrieve_with_citations(text)
-    enriched = f"{rag_context} question {text}" if rag_context else text
+    understanding = interpret_user_question(text)
+    algorithm_query = understanding.normalized_query if understanding else text
+    rag_context, hits, rag_citations = retrieve_with_citations(algorithm_query)
+    context_parts: list[str] = []
+    if understanding and understanding.taxonomy_paths:
+        context_parts.append(
+            "human intent explanation "
+            f"subject {understanding.subject} taxonomy_path {understanding.taxonomy_paths[0]}"
+        )
+    if rag_context:
+        context_parts.append(rag_context)
+    enriched = f"{' '.join(context_parts)} question {algorithm_query}" if context_parts else algorithm_query
     result = _predict_with_search_fallback(enriched, session_id=session_id, force=True)
 
     if result and result.get("answer"):
         answer = str(result["answer"]).strip()
-        if not _is_weak_predict_answer(answer):
+        subject = understanding.subject if understanding else algorithm_query
+        if not _is_weak_predict_answer(answer) and _answer_addresses_subject(answer, subject):
             citations = list(result.get("citations") or [])
             if not citations and rag_citations:
                 citations = rag_citations[:3]
@@ -696,31 +737,55 @@ def _handle_deep_concept(text: str, *, session_id: str | None) -> dict[str, Any]
                 "brain_predict": not result.get("search_opinion"),
                 "citations": citations,
             }
+            if understanding:
+                payload["human_understanding"] = understanding.to_dict()
             if result.get("sources"):
                 payload["sources"] = result["sources"]
             return payload
 
+    if understanding and hits:
+        answer = _rag_answer_from_hit(hits[0], subject=understanding.subject)
+        if _answer_addresses_subject(answer, understanding.subject):
+            return {
+                "reply": answer,
+                "kind": "deep_concept",
+                "session_id": session_id,
+                "learning": learning_snapshot(),
+                "brain_predict": False,
+                "grounded": True,
+                "citations": rag_citations[:3],
+                "human_understanding": understanding.to_dict(),
+            }
+
     if web_search_enabled():
-        search_payload = _search_and_opine(text, session_id=session_id)
+        search_payload = _search_and_opine(algorithm_query, session_id=session_id)
         if search_payload.get("kind") == "search_opinion":
             search_payload["kind"] = "deep_concept_search"
+            if understanding:
+                search_payload["human_understanding"] = understanding.to_dict()
             return search_payload
 
-    fallback = _fallback_to_predict(text, session_id=session_id)
+    fallback = _fallback_to_predict(algorithm_query, session_id=session_id)
     if not _is_weak_predict_answer(fallback):
-        return {
+        payload = {
             "reply": fallback,
             "kind": "deep_concept",
             "session_id": session_id,
             "learning": learning_snapshot(),
         }
+        if understanding:
+            payload["human_understanding"] = understanding.to_dict()
+        return payload
 
-    return {
+    payload = {
         "reply": fallback,
         "kind": "deep_concept_thin",
         "session_id": session_id,
         "learning": learning_snapshot(),
     }
+    if understanding:
+        payload["human_understanding"] = understanding.to_dict()
+    return payload
 
 
 def is_named_entity_question(text: str) -> bool:
@@ -1070,7 +1135,12 @@ def _code_payload(text: str, *, session_id: str | None) -> dict[str, Any] | None
     def _predict(q: str) -> dict[str, Any] | None:
         return _predict_with_timeout(q, session_id=session_id, force=True)
 
-    master = generate_master_code(text, predict_fn=_predict, language=language)
+    try:
+        master = generate_master_code(text, predict_fn=_predict, language=language)
+    except TypeError as exc:
+        if "unexpected keyword argument 'language'" not in str(exc):
+            raise
+        master = generate_master_code(text, predict_fn=_predict)
     if not master.get("answer"):
         return None
 

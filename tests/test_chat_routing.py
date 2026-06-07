@@ -76,6 +76,43 @@ def test_predict_timeout_fallback(monkeypatch):
     assert FALLBACK_TIMEOUT in result.get("answer", "")
 
 
+def test_explain_quantum_mechanics_uses_human_understanding_not_silicon_valley(monkeypatch):
+    class Hit:
+        title = "Quantum Mechanics — Core Idea"
+        text = (
+            "Quantum mechanics explains matter and energy at atomic and subatomic scales. "
+            "Particles are described by wavefunctions and measurements return probabilities."
+        )
+
+    monkeypatch.setattr(
+        "app.chat_service._predict_with_search_fallback",
+        lambda *a, **kw: {
+            "answer": "Silicon Valley is a technology startup region in California.",
+            "confidence": 0.9,
+            "abstained": False,
+        },
+    )
+    monkeypatch.setattr(
+        "brain.vector_rag.retrieve_with_citations",
+        lambda q, **kw: (
+            "quantum mechanics context",
+            [Hit()],
+            [{"title": "Quantum Mechanics — Core Idea", "source": "seeds", "score": 0.99}],
+        ),
+    )
+
+    result = chat("explain quantum mechanics to me", session_id="quantum-human-1")
+    reply = result["reply"].lower()
+    assert result["kind"] == "deep_concept"
+    assert "quantum mechanics" in reply
+    assert "silicon valley" not in reply
+    assert result["human_understanding"]["subject"] == "quantum mechanics"
+    assert (
+        result["human_understanding"]["taxonomy_paths"][0]
+        == "science_and_natural_philosophy.physics.quantum_mechanics"
+    )
+
+
 def test_is_named_entity_question_positive():
     assert is_named_entity_question("who is Adam and Eve") is True
     assert is_named_entity_question("who was John Snow") is True
