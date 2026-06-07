@@ -37,6 +37,13 @@ def test_interpret_user_question_strips_social_suffix_and_maps_taxonomy():
     assert "intent_subject_mapping" in understanding.traits
 
 
+def test_interpret_user_question_strips_how_it_works_suffix():
+    understanding = interpret_user_question("Explain Quantum Artificial intelligence to me and how it works")
+    assert understanding is not None
+    assert understanding.subject == "Quantum Artificial intelligence"
+    assert understanding.normalized_query == "explain Quantum Artificial intelligence"
+
+
 def test_finalize_adds_brains_metadata():
     out = finalize_chat_payload(
         {"reply": "Hello.", "kind": "chat", "simple_qa": True},

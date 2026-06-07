@@ -15,6 +15,19 @@ def test_analytical_brain_answers_roman_economics():
     assert "fiscal base" in answer.answer.lower()
 
 
+def test_chat_quantum_artificial_intelligence_question_answers_directly():
+    result = chat(
+        "Explain Quantum Artificial intelligence to me and how it works",
+        session_id="analytical-quantum-ai",
+    )
+    assert result["kind"] == "analytical"
+    assert result["human_understanding"]["subject"] == "quantum artificial intelligence"
+    reply = result["reply"].lower()
+    assert "qubits" in reply
+    assert "hybrid" in reply
+    assert "compute time limit" not in reply
+
+
 def test_chat_narcissism_question_not_identity():
     result = chat(
         "What is the difference between narcissism and dark triad personality - "

@@ -93,7 +93,8 @@ _UNDERSTANDING_RE = re.compile(
 
 _SOCIAL_SUFFIX_RE = re.compile(
     r"\s+(?:to|for)\s+me\b|\s+please\b|\s+in\s+simple\s+terms\b|"
-    r"\s+like\s+i(?:'| a)m\s+\w+\b",
+    r"\s+like\s+i(?:'| a)m\s+\w+\b|\s+and\s+how\s+it\s+works\b|"
+    r"\s+and\s+how\s+.+?\s+works\b",
     re.IGNORECASE,
 )
 

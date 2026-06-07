@@ -113,6 +113,27 @@ _RULES: tuple[_Rule, ...] = (
     ),
     _Rule(
         "science_and_physics",
+        "quantum artificial intelligence",
+        ("quantum", "artificial intelligence"),
+        ("works", "explain", "intelligence"),
+        (
+            "Quantum artificial intelligence means using quantum-computing ideas to speed up or reshape parts of AI, "
+            "not replacing intelligence with magic. Classical AI learns patterns by adjusting weights from data; "
+            "quantum AI would encode information into qubits, use superposition and interference to explore many "
+            "possible states, and use measurement to extract useful probability patterns. In practice, the near-term "
+            "use is hybrid: a normal computer handles data, training loops, and decisions, while a quantum circuit may "
+            "help with optimization, sampling, search, or kernel-style pattern comparison. It works only when the "
+            "quantum part gives a measurable advantage over classical hardware, which is still an open engineering problem."
+        ),
+        (
+            "science_and_natural_philosophy.physics.quantum_mechanics",
+            "technology_and_engineering.computer_science.artificial_intelligence",
+            "technology_and_engineering.computer_science.quantum_computing",
+        ),
+        0.72,
+    ),
+    _Rule(
+        "science_and_physics",
         "entropy and the universe",
         ("entropy", "universe"),
         ("mean", "end", "context"),
