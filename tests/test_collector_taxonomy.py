@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from brain.base import AgentContext
 from brain.grades import get_grade
-from brain.regions.collector import CollectorAgent, _topic_seed_text
+from brain.regions.collector import CollectorAgent, _seed_matches_context, _topic_seed_text
 from db.models import Base, Document, KnowledgeDomain, KnowledgeMicroSubdomain, KnowledgeSubdomain
 
 
@@ -58,6 +58,35 @@ def test_topic_seed_text_meets_min_length():
         },
     )
     assert len(text) >= 120
+
+
+def test_seed_metadata_can_target_micro_subdomain():
+    ctx = AgentContext(
+        domain_slug="science_and_natural_philosophy",
+        subdomain_slug="physics",
+        micro_subdomain_slug="quantum_mechanics",
+        domain_id=1,
+        subdomain_id=2,
+        micro_subdomain_id=3,
+    )
+
+    assert _seed_matches_context(
+        {
+            "domain": "science_and_natural_philosophy",
+            "subdomain": "physics",
+            "micro_subdomain": "quantum_mechanics",
+        },
+        ctx,
+    )
+    assert not _seed_matches_context(
+        {
+            "domain": "science_and_natural_philosophy",
+            "subdomain": "physics",
+            "micro_subdomain": "classical_mechanics",
+        },
+        ctx,
+    )
+    assert _seed_matches_context({"domain": "physics"}, ctx)
 
 
 def test_collector_ingests_taxonomy_topics():

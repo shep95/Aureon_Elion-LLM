@@ -37,6 +37,14 @@ _GRADE_SNIPPET_LIMITS: dict[str, int] = {
     "doctorate": 120,
 }
 
+_SEEDED_SELF_PROMPTS: dict[tuple[str, str, str], tuple[str, ...]] = {
+    (
+        "science_and_natural_philosophy",
+        "physics",
+        "quantum_mechanics",
+    ): ("explain quantum mechanics to me",),
+}
+
 
 def _env_bool(name: str, default: bool = False) -> bool:
     raw = os.environ.get(name, "").strip().lower()
@@ -159,6 +167,14 @@ def _question_templates(grade_slug: str) -> list[str]:
     return templates.get(grade_slug, templates["elementary"])
 
 
+def _seeded_self_prompts(
+    domain_slug: str,
+    subdomain_slug: str,
+    micro_slug: str,
+) -> tuple[str, ...]:
+    return _SEEDED_SELF_PROMPTS.get((domain_slug, subdomain_slug, micro_slug), ())
+
+
 def generate_questions(
     *,
     domain_slug: str,
@@ -183,7 +199,7 @@ def generate_question_items(
     micro_slug: str,
     grade_slug: str,
     count: int,
-) -> list[dict[str, str]]:
+) -> list[dict[str, Any]]:
     names = lookup_names(domain_slug, subdomain=subdomain_slug, micro=micro_slug)
     grade = get_grade(grade_slug)
     grade_name = grade.name if grade else grade_slug.replace("_", " ").title()
@@ -199,13 +215,18 @@ def generate_question_items(
         "path": f"{domain_slug}.{subdomain_slug}.{micro_slug}",
     }
 
+    seeded = [
+        {**ctx, "question": question, "seeded": True}
+        for question in _seeded_self_prompts(domain_slug, subdomain_slug, micro_slug)
+    ][:count]
+    remaining = max(0, count - len(seeded))
     pool = _question_templates(grade_slug)
     random.shuffle(pool)
-    chosen = pool[:count]
-    items = [{**ctx, "question": q.format(**ctx)} for q in chosen]
+    chosen = pool[:remaining]
+    items = seeded + [{**ctx, "question": q.format(**ctx)} for q in chosen]
 
     ciper_q = ciper_follow_up_question(ctx["micro_display"])
-    if ciper_q and items:
+    if ciper_q and len(items) > len(seeded):
         items[-1] = {**ctx, "question": ciper_q, "ciper": True}
 
     return items

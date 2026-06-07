@@ -25,6 +25,19 @@
       "metadata": {"domain": "physics", "source_type": "primary"}
     },
     {
+      "doc_id": "seed_physics_quantum_001",
+      "title": "Quantum Mechanics — Core Idea",
+      "text": "Quantum mechanics explains matter and energy at atomic and subatomic scales. Particles are described by wavefunctions, measurements return probabilities, and energy often appears in discrete quanta. Superposition means a system can be represented as a combination of possible states until measurement selects an outcome. Entanglement links measurements between systems in ways classical physics cannot fully reproduce.",
+      "url": "seed://physics/quantum-mechanics",
+      "language": "en",
+      "metadata": {
+        "domain": "science_and_natural_philosophy",
+        "subdomain": "physics",
+        "micro_subdomain": "quantum_mechanics",
+        "source_type": "primary"
+      }
+    },
+    {
       "doc_id": "seed_history_001",
       "title": "The Scientific Revolution",
       "text": "The Scientific Revolution of the sixteenth and seventeenth centuries shifted European inquiry from authority-based reasoning to empirical observation and mathematical modeling. Figures such as Galileo, Kepler, and Newton established methods requiring reproducible experiments and peer scrutiny. Institutions like the Royal Society formalized peer review. This transformation accelerated technological progress and changed how knowledge was validated across domains.",

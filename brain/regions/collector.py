@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import uuid
+from typing import Any
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -66,6 +67,22 @@ def _topic_seed_text(topic: str, names: dict[str, str]) -> str:
         f"theoretical frameworks. Mastery includes vocabulary, foundational models, common techniques, "
         f"and awareness of open questions and contemporary applications across academic and professional settings."
     )
+
+
+def _seed_matches_context(metadata: dict[str, Any], ctx: AgentContext) -> bool:
+    domain = str(metadata.get("domain") or "").strip()
+    if domain and domain not in {ctx.domain_slug, ctx.subdomain_slug, ctx.micro_subdomain_slug}:
+        return False
+
+    subdomain = str(metadata.get("subdomain") or "").strip()
+    if subdomain and subdomain != ctx.subdomain_slug:
+        return False
+
+    micro = str(metadata.get("micro_subdomain") or "").strip()
+    if micro and micro != ctx.micro_subdomain_slug:
+        return False
+
+    return True
 
 
 class CollectorAgent(MicroAgentBase):
@@ -173,7 +190,8 @@ class CollectorAgent(MicroAgentBase):
                 continue
             payload = load_json_file_bounded(path)
             for item in payload.get("documents", []):
-                if item.get("metadata", {}).get("domain") != ctx.domain_slug:
+                metadata = item.get("metadata", {})
+                if not _seed_matches_context(metadata, ctx):
                     continue
                 doc = RawDocument(
                     doc_id=item.get("doc_id", str(uuid.uuid4())),
@@ -181,7 +199,7 @@ class CollectorAgent(MicroAgentBase):
                     title=item["title"],
                     text=item["text"],
                     url=item.get("url", ""),
-                    metadata=item.get("metadata", {}),
+                    metadata=metadata,
                 )
                 count += 1
                 self._persist_doc(session, ctx, doc)
